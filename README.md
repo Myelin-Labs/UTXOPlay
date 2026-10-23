@@ -58,7 +58,7 @@ The gateway injects the authenticated account, enforces same-origin writes, and 
 
 ### Local platform
 
-Build with `npm run build`, then run `npm run dev:platform` to start the store and all five game runtimes together. Stop any existing processes on ports 8781–8785 and 8790 first. The launcher requires the Chess/Skyward binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`), plus a built sibling `myelin-openstrike` checkout (`OPENSTRIKE_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
+Build with `npm run build`, then run `npm run dev:platform` to start the store and all six game runtimes together. Stop any existing processes on ports 8781–8786 and 8790 first. The launcher requires the Chess/Skyward/Arcade/Neon Prospector binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`), plus a built sibling `myelin-openstrike` checkout (`OPENSTRIKE_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
 
 Games enter immersive mode on a Play/Start click and request browser fullscreen in that user gesture. Browsers that reject fullscreen retain the immersive page layout. Exit or Escape restores the store. The shared first-party game shell validates the sender and origin of frame messages.
 
@@ -100,3 +100,7 @@ Store 0.9.0 expands Skyward to twelve islands, three consumable items per island
 ## In-game items and coins
 
 Store 0.11.0 adds Skyward's in-game Item Store. Earn coins through play, buy extra supplies, equip flight powers and use owned items inside the game. Rewards, balances, purchases and inventory consumption are part of the authority-signed Myelin game state and deterministic host replay. There is no real-money payment. The eight bundled games keep controls in their own viewports, with flat menu sections and keyboard isolation. See [coin campaign rules and archive/rollback details](docs/skyward-coins.md).
+
+## Neon Prospector — store 0.12.0
+
+A cyberpunk Gold Miner game with 20 sectors, earned-credit upgrades, synthesized music and a game-owned interface. Its isolated Myelin runtime executes inputs, score, inventory and purchases; the browser never supplies a score or balance. See [release and verification notes](docs/neon-miner-release.md).

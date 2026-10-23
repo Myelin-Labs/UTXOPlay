@@ -1,5 +1,26 @@
 [
   {
+    "id": "neon-miner",
+    "title": "Neon Prospector",
+    "subtitle": "Time the swing. Take the gold.",
+    "genre": "Arcade",
+    "mode": "Single-player",
+    "runtime": "miner",
+    "description": "A cyberpunk Gold Miner expedition. Swing a mechanical claw through 20 neon sectors, haul gold and data crystals, and spend earned credits on a better rig. Myelin signs every haul and purchase.",
+    "cover": "/assets/neon-miner-cover.webp",
+    "version": "1.0.0",
+    "controls": "Space, down arrow or tap to cast. X for EMP, E for boost, T for time. P or Escape opens the in-game menu.",
+    "players": "1 player",
+    "headline": "The undercity.|Yours to mine.",
+    "heroDescription": "Gold below. Neon above. Build your rig and work your way through twenty sectors beneath a city that never sleeps.",
+    "caption": "NEON PROSPECTOR · DEEP CITY MINING",
+    "myelin": {
+      "based": true,
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
+    }
+  },
+  {
     "id": "prism-breaker",
     "title": "Prism Breaker",
     "subtitle": "Find the angle. Break the spectrum.",

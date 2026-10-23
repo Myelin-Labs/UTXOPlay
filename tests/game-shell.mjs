@@ -17,6 +17,9 @@ for (const {id} of games) {
   let blurs=0,gameKeys=0;
   w.addEventListener('blur',()=>blurs++);
   w.addEventListener('keydown',()=>gameKeys++);
+  if(id==='neon-miner'){
+    const surface=d.querySelector('.game-surface');assert.ok(surface);for(const control of controls)assert.ok(surface.contains(control));assert.ok(surface.querySelector('.game-myelin-badge img'));assert.ok(surface.querySelector('#game-menu'));assert.ok(!d.querySelector('script[src*="game-shell"]'));console.log('neon-miner: native game-owned viewport; interactive behavior covered by miner-flow.mjs');dom.window.close();continue;
+  }
   w.eval(shell);
   const surface=d.querySelector('.game-surface');
   assert.ok(surface,`${id}: owns a viewport`);

@@ -1,0 +1,70 @@
+import {createGame,step,shop,districts,sameState} from './engine.mjs';
+import {MinerRenderer} from './renderer.mjs';
+import {MinerAudio} from './audio.mjs';
+import {startRenderLoop,readQuality} from './performance.mjs';
+const $=id=>document.getElementById(id),canvas=$('mine'),renderer=new MinerRenderer(canvas),audio=new MinerAudio(),menu=$('game-menu');
+let doc=null,g=createGame(),previous=structuredClone(g),running=false,connected=false,busy=false,saving=null,tape=[],pulse=0,accumulator=0,started=false,menuReady=false,toastTimer=0,tab='game',blurEpoch=0,dirty=true;
+const text=(id,value)=>{const el=$(id);if(el.textContent!==String(value))el.textContent=String(value);};
+function preference(key,fallback){try{return localStorage.getItem('neon-miner:'+key)??fallback;}catch{return fallback;}}
+function remember(key,value){try{localStorage.setItem('neon-miner:'+key,String(value));}catch{}}
+audio.music=preference('music','false')==='true';audio.effects=preference('sound','true')==='true';
+async function request(path,body){const r=await fetch('./api/'+path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to save');return data;}
+function adopt(value){doc=value;g=structuredClone(value.game);previous=structuredClone(g);tape=[];accumulator=0;pulse=0;connected=true;dirty=true;hud();}
+function stop(){running=false;pulse=0;accumulator=0;audio.setActive(false);}
+function toast(message){text('toast',message);$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,3200);}
+async function recover(error){stop();tape=[];connected=false;text('status','Reconnecting…');try{adopt(await request('state'));toast('Restored your last confirmed save. Press Resume when ready.');}catch{connected=false;toast('Connection lost. Reconnect before playing or spending.');}text('shop-status',error.message);showRest();hud();}
+function save(){if(saving)return saving;if(!tape.length||!connected)return Promise.resolve(connected);const inputs=tape.splice(0,60),expected=structuredClone(g); // At most 30 new samples are dispatched per frame.
+ const body={session_id:doc.session.id,expected_block:doc.session.block_hash,action:{type:'ticks',inputs}};
+ saving=(async()=>{try{const result=await request('action',body);doc=result;
+  // If no tail was queued yet the full prediction must match the authority.
+  if(!tape.length&&!sameState(result.game,expected)) {adopt(result);stop();toast('Prediction resynced to your signed save.');showRest();}
+  text('status','Myelin · saved');return true;
+ }catch(error){await recover(error);return false;}finally{saving=null;hud();if(!running&&!menu.open)showRest();}})();return saving;
+}
+async function flush(){if(saving&&!(await saving))return false;while(tape.length){if(!(await save()))return false;}return connected;}
+function stats(){return `${g.score.toLocaleString()} ore value · ${g.coins} credits · ${g.lives} recoveries left`;}
+// Keep frequent HUD work separate from dialog rebuilding.
+function updateHud(){text('level',String(g.level).padStart(2,'0'));text('district',districts[Math.floor((g.level-1)/5)].toUpperCase());text('progress',g.level_score);text('goal',g.goal);$('meter').max=g.goal;$('meter').value=g.level_score;text('coins',g.coins);text('time',(g.time/30).toFixed(1));document.querySelector('.timer').classList.toggle('warning',g.time<300);text('emp-stock',`${g.stock[0]} charge${g.stock[0]===1?'':'s'}`);text('boost-stock',g.boost?`${Math.ceil(g.boost/30)}s active`:`${g.stock[1]} charges`);text('clock-stock',`${g.stock[2]} · ${2-g.time_used} uses left`);text('cast-label',g.phase===0?'CAST CLAW':g.phase===1?'SEARCHING…':'REELING IN…');$('cast').disabled=!running||g.phase!==0;$('emp').disabled=!running||g.cargo<0||!g.stock[0];$('boost').disabled=!running||g.boost>0||!g.stock[1];$('clock').disabled=!running||g.time_used>=2||!g.stock[2];$('play').disabled=busy||!!saving;text('hint',g.cargo>=0?`${['Gold','Heavy gold','Data crystal','Heavy scrap','Power cell','Data cache'][g.ores[g.cargo].kind]} on the line`:'Space / tap to cast · X to discard a catch');$('resume').disabled=busy||!menuReady||!connected||g.mode!=='mining';$('replay').disabled=busy||!menuReady||!connected;$('restart').disabled=busy||!menuReady||!connected;
+ if(menu.open&&tab==='items')updateShop();
+}
+const hud=updateHud;
+function showRest(){if(running)return;$('overlay').hidden=false;$('overlay').classList.toggle('result',started||g.tick>0);text('summary',stats());$('features').hidden=started||g.tick>0;
+ if(!connected){text('overline','LINK INTERRUPTED');text('title','Connection paused');text('description','Your confirmed expedition is safe. Reconnect to continue.');text('play','Reconnect');}
+ else if(g.mode==='cleared'){text('overline',`SECTOR ${String(g.level).padStart(2,'0')} COMPLETE`);text('title','Good haul.');text('description',`+15 completion credits. The next sector is waiting. Upgrade your rig in the Item Store before descending.`);text('play',saving?'Saving sector…':'Descend to sector '+(g.level+1));}
+ else if(g.mode==='complete'){text('overline','ALL 20 SECTORS COMPLETE');text('title','Own the undercity.');text('description','You reached the reactor heart. Your expedition is signed and ready to replay or export.');text('play','New expedition');}
+ else if(g.mode==='lost'){text('overline','POWER DEPLETED');text('title',g.over?'End of the line.':'One more descent?');text('description',g.over?'Your expedition is saved. Start fresh with a new rig.':`Use one of your ${g.lives} recovery charges for 60 more seconds. Collected ore stays collected; upgrades and credits stay yours.`);text('play',g.over?'New expedition':'Recover this sector');}
+ else if(started||g.tick>0){text('overline','EXPEDITION PAUSED');text('title','Ready when you are.');text('description',`Sector ${g.level} · ${districts[Math.floor((g.level-1)/5)]}. Your rig and upgrades are right where you left them.`);text('play','Resume expedition');}
+ else{text('play','Start mining');}
+ updateHud();
+}
+function resume(){if(!connected||busy||saving||menu.open||g.mode!=='mining'||document.hidden)return;started=true;running=true;accumulator=0;pulse=0;$('overlay').hidden=true;audio.unlock().then(()=>audio.setActive(running));text('status','Myelin · mining');canvas.focus();updateHud();}
+async function command(action){if(busy||!connected)return false;busy=true;stop();updateHud();try{if(!(await flush()))return false;const result=await request('action',{session_id:doc.session.id,expected_block:doc.session.block_hash,action});adopt(result);text('status','Myelin · saved');return true;}catch(error){await recover(error);return false;}finally{busy=false;updateHud();if(!menu.open)showRest();}}
+function updateShop(){const state=doc?.game??g;text('store-coins',state.coins);for(let n=0;n<shop.length;n++){const item=shop[n],price=item.price*(n===3?state.lens+1:1),owned=n===3?state.lens:state.stock[n],button=$('buy-'+item.id);text('owned-'+item.id,n===3?`TIER ${owned} / 3`:`OWNED ${owned} / 3`);button.textContent=owned>=3?'MAX':`◈ ${price}`;button.disabled=busy||!menuReady||!connected||state.over||state.mode==='complete'||owned>=3||state.coins<price;}}
+for(const item of shop){const row=document.createElement('div');row.className='shop-row';row.innerHTML=`<span class="shop-icon" aria-hidden="true">${item.icon}</span><div><h3>${item.name}</h3><p>${item.desc}</p><small id="owned-${item.id}"></small></div><button id="buy-${item.id}" aria-label="Buy ${item.name}"></button>`;$('shop').append(row);$('buy-'+item.id).addEventListener('click',async()=>{if(!menuReady||busy)return;text('shop-status','Saving purchase…');if(await command({type:'buy',item:item.id})){audio.effect('buy');text('shop-status',`${item.name} added to your rig. Balance confirmed.`);}updateShop();});}
+function view(name){tab=name;for(const el of menu.querySelectorAll('[data-view]'))el.hidden=el.dataset.view!==name;for(const el of menu.querySelectorAll('[data-tab]'))el.setAttribute('aria-pressed',String(el.dataset.tab===name));$('reset-confirm').hidden=true;text('menu-title',name==='items'?'Upgrade your rig':name==='settings'?'Make it yours':name==='help'?'Know the mine':'Expedition paused');if(name==='items')updateShop();}
+async function openMenu(name='game'){stop();menuReady=false;view(name);if(!menu.open)menu.showModal();updateHud();const ok=await flush();menuReady=ok;updateHud();}
+function closeMenu(){menu.close();$('menu').focus();showRest();}
+$('menu').onclick=()=>openMenu();$('wallet').onclick=()=>openMenu('items');$('close-menu').onclick=closeMenu;
+menu.addEventListener('cancel',e=>{e.preventDefault();closeMenu();});menu.addEventListener('keydown',e=>{e.stopPropagation();});menu.addEventListener('close',()=>{if(!running)showRest();});
+for(const el of menu.querySelectorAll('[data-tab]'))el.onclick=()=>view(el.dataset.tab);
+$('resume').onclick=()=>{menu.close();resume();};
+$('play').onclick=async()=>{if(busy||saving)return;await audio.unlock();if(!connected){busy=true;try{adopt(await request('state'));}catch(error){toast(error.message);}finally{busy=false;showRest();}return;}
+ if(g.mode==='cleared'||(g.mode==='lost'&&!g.over)){const epoch=blurEpoch;if(await command({type:g.mode==='cleared'?'next':'retry'})){if(epoch===blurEpoch)resume();}return;}
+ if(g.over){await openMenu('game');$('reset-confirm').hidden=false;return;}resume();};
+$('restart').onclick=()=>{$('reset-confirm').hidden=false;};$('cancel-reset').onclick=()=>{$('reset-confirm').hidden=true;};
+$('confirm-reset').onclick=async()=>{if(busy||!connected)return;busy=true;stop();updateHud();try{if(!(await flush()))return;adopt(await request('new',{}));started=false;menu.close();text('title','New expedition.');text('description','Fresh rig. Fresh credits. Twenty sectors to discover.');}catch(error){await recover(error);}finally{busy=false;showRest();}};
+$('replay').onclick=async()=>{if(busy||!menuReady)return;busy=true;updateHud();try{const result=await request('replay',{});toast(`Verified ${result.frames} signed frames.`);}catch(error){toast(error.message);}finally{busy=false;updateHud();}};
+$('export').addEventListener('click',e=>{if(busy||!menuReady||!connected)e.preventDefault();});
+function activate(bit){if(!running||menu.open||busy)return;pulse|=bit;audio.unlock();}
+$('cast').onclick=()=>activate(1);canvas.addEventListener('pointerdown',e=>{if(e.isPrimary===false)return;e.preventDefault();activate(1);canvas.focus();});$('emp').onclick=()=>activate(2);$('boost').onclick=()=>activate(4);$('clock').onclick=()=>activate(8);
+window.addEventListener('keydown',e=>{if(menu.open||e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.code==='Escape'||e.code==='KeyP'){e.preventDefault();openMenu();return;}if(e.target.closest?.('button,a'))return;const bit={Space:1,ArrowDown:1,KeyX:2,KeyE:4,KeyT:8}[e.code];if(bit&&running){e.preventDefault();activate(bit);}else if(e.code==='Enter'&&!running&&e.target===canvas){e.preventDefault();$('play').click();}});
+async function pauseOnBlur(){blurEpoch++;if(!running)return;stop();await flush();if(!menu.open)showRest();}
+window.addEventListener('blur',pauseOnBlur);document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseOnBlur();});
+for(const [id,key] of [['music','music'],['sound','effects']]){const refresh=()=>{text(id,audio[key]?'On':'Off');$(id).setAttribute('aria-pressed',String(audio[key]));};refresh();$(id).onclick=async()=>{audio[key]=!audio[key];remember(id,audio[key]);await audio.unlock();audio.setActive(running);refresh();};}
+$('quality').value=readQuality();renderer.quality=readQuality();$('quality').onchange=()=>{try{localStorage.setItem('utxoplay:quality',$('quality').value);}catch{}renderer.quality=$('quality').value;window.dispatchEvent(new Event('utxoplay:quality'));resize();};
+$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('.game-surface').requestFullscreen();}catch{toast('Fullscreen is unavailable in this browser.');}};
+function resize(){const field=document.querySelector('.field'),r=field.getBoundingClientRect(),width=Math.min(r.width,r.height*10/7),height=width*.7,ratio=renderer.quality==='low'?1:Math.min(devicePixelRatio||1,2);canvas.style.width=width+'px';canvas.style.height=height+'px';canvas.width=Math.max(1,Math.round(width*ratio));canvas.height=Math.max(1,Math.round(height*ratio));renderer.draw(g,0);}
+new ResizeObserver(resize).observe(document.querySelector('.field'));
+startRenderLoop((now,dt)=>{if(running){accumulator+=Math.min(dt,80);while(accumulator>=1000/30){if(tape.length>=60){text('status','Waiting for signed save…');accumulator=0;break;}previous=structuredClone(g);const before=g.score,oldCargo=g.cargo,oldStock=g.stock[0],oldPhase=g.phase;const input=pulse;pulse=0;step(g,input);tape.push(input);if(oldPhase===0&&g.phase===1)audio.effect('cast');if(oldCargo<0&&g.cargo>=0)audio.effect('catch');if(g.stock[0]<oldStock)audio.effect('emp');if(g.score>before)audio.effect('ore');accumulator-=1000/30;if(g.mode!=='mining'){stop();if(g.mode==='cleared'||g.mode==='complete')audio.effect('clear');showRest();flush();break;}}if(tape.length>=30&&!saving)save();}if(running||dirty||renderer.particles.length||renderer.labels.length)renderer.draw(g,dt,running?Math.min(1,accumulator/(1000/30)):1,previous);dirty=false;updateHud();},{active:()=>running});
+window.addEventListener('pagehide',()=>audio.dispose());
+try{await fetch('/api/guest',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});adopt(await request('state'));text('status','Myelin · connected');showRest();}catch(error){connected=false;showRest();toast(error.message);}

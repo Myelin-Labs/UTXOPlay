@@ -7,16 +7,16 @@ test('search tolerates case and surrounding spaces while combining genre and pla
  assert.deepEqual(selectGames(games,{query:'  SKYward  ',genre:'Arcade',mode:'solo'}).map(g=>g.id),['sling']);
  assert.deepEqual(selectGames(games,{query:'skyward',genre:'Action'}),[]);
  assert.deepEqual(selectGames(games,{query:'skyward',mode:'friends'}),[]);
- assert.deepEqual(selectGames(games,{mode:'solo'}).map(g=>g.id),['prism-breaker','neon-coil','starfall','drift-run','openstrike','teeworlds','sling']);
+ assert.deepEqual(selectGames(games,{mode:'solo'}).map(g=>g.id),['neon-miner','prism-breaker','neon-coil','starfall','drift-run','openstrike','teeworlds','sling']);
  assert.deepEqual(selectGames(games,{genre:'Strategy',mode:'friends'}).map(g=>g.id),['chess']);
- assert.equal(selectGames(games,{query:'   '}).length,8);
- assert.equal(games.length,8);
+ assert.equal(selectGames(games,{query:'   '}).length,9);
+ assert.equal(games.length,9);
 });
 test('network failures and timeouts have actionable messages, server validation is preserved',()=>{
  assert.match(apiError(new TypeError('Failed to fetch')),/connection/);
  assert.match(apiError(new DOMException('timeout','TimeoutError')),/try again/);
  assert.equal(apiError(new Error('Use an HTTPS URL.')),'Use an HTTPS URL.');
 });
-test('every bundled game loads the shared game viewport with the current cache key',()=>{
- for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');assert.match(html,/\/game-shell\.js\?v=0\.11\.0/);}
+test('every bundled game owns its viewport and loads its current interface',()=>{
+ for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');if(game.id==='neon-miner'){assert.match(html,/data-surface="miner"/);assert.match(html,/id="game-menu"/);assert.match(html,/app\.mjs\?v=0\.12\.0/);}else assert.match(html,/\/game-shell\.js\?v=0\.11\.0/);}
 });

@@ -1,0 +1,8 @@
+{
+  "tool": "image_gen.imagegen (built-in)",
+  "prompt": "Use case: stylized-concept. Asset type: original cover illustration for a cyberpunk Gold Miner arcade game called Neon Prospector (do not render text). Wide landscape 1536x1024. A charismatic tiny industrial mining robot on a suspended gantry operates a large three-pronged golden mechanical claw on a cyan luminous cable descending into a deep underground futuristic mine. Faceted gold ore, luminous violet data crystals, dark scrap metal embedded in cavern walls. Moody dark navy and charcoal environment, electric cyan rim lighting, magenta industrial signage without readable text, molten amber ore, atmospheric dust, carefully composed premium indie game key art, beautifully painted hard-surface details and depth. Clear silhouette of claw carrying a big gold nugget in foreground, distant underground cyberpunk infrastructure. Keep upper left relatively dark for title overlay. No text, letters, logo, watermark, UI, frames or collage. Original design, no existing characters.",
+  "source": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-b2e1f57a-4d9a-4164-b8bd-f16be0b943aa.png",
+  "asset": "public/assets/neon-miner-cover.webp",
+  "encoding": "1536 × 1024 WebP, quality 85",
+  "notes": "Original cover. Canvas sprites and Web Audio music are authored code. Myelin logo uses the owner's supplied asset."
+}

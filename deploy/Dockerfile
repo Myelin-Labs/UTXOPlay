@@ -9,6 +9,7 @@ COPY games/chess/web ./games/chess/web
 COPY games/sling/web ./games/sling/web
 COPY games/teeworlds/web ./games/teeworlds/web
 COPY games/openstrike/web ./games/openstrike/web
+COPY games/neon-miner/web ./games/neon-miner/web
 COPY games/arcade/web ./games/arcade/web
 COPY games/prism-breaker/web ./games/prism-breaker/web
 COPY games/neon-coil/web ./games/neon-coil/web

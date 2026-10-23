@@ -7,3 +7,5 @@ Lucide provides the existing icon set under the ISC license. React, CCC and othe
 The interface loads no animation library from an external CDN. The new WebP covers are format-optimized versions of the existing store artwork; the source PNGs are retained.
 
 The 0.7.0 arcade rules, Canvas renderers, SVG covers and synthesized sounds are original UTXOPlay code under `games/arcade/LICENSE`. No source or assets were copied from the genre references listed in `docs/arcade-release.md`. The Myelin logo was supplied by the site owner.
+
+Neon Prospector (0.12.0) is an original deterministic implementation of the classic Gold Miner genre. [Lor3walker/gold-miner](https://github.com/Lor3walker/gold-miner), MIT, was inspected as a gameplay reference; its code, artwork and audio are not redistributed. New code uses `games/neon-miner/LICENSE`. The original AI-generated cover prompt and provenance are in `docs/neon-miner-art.json`.

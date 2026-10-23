@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.11.0
+    image: utxoplay:0.12.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -8,6 +8,7 @@ services:
       PUBLIC_ORIGIN: https://store.utxoplay.io
       VIRTUAL_HOST: store.utxoplay.io,utxoplay.io,www.utxoplay.io
       VIRTUAL_PORT: '8790'
+      MINER_URL: http://utxoplay-miner:8786
       ARCADE_URL: http://utxoplay-arcade:8785
       CHESS_URL: http://utxoplay-chess:8781
       SLING_URL: http://utxoplay-sling:8782
@@ -137,6 +138,31 @@ services:
     logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:8785/prism-breaker/api/state',{headers:{'X-Runtime-Token':process.env.RUNTIME_TOKEN,'X-UTXOPlay-Account':'0'.repeat(64)}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  miner:
+    image: utxoplay:0.12.0
+    container_name: utxoplay-miner
+    restart: unless-stopped
+    init: true
+    command: [/app/bin/myelin-neon-miner]
+    environment: {PORT: '8786', BIND: 0.0.0.0}
+    env_file: /data/utxoplay/shared/runtime.env
+    volumes:
+      - /data/utxoplay/shared/neon-miner:/app/data
+    networks: [games]
+    mem_limit: 384m
+    cpus: '0.75'
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp:size=64m]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8786/neon-miner/api/state',{headers:{'X-Runtime-Token':process.env.RUNTIME_TOKEN,'X-UTXOPlay-Account':'0'.repeat(64)}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3

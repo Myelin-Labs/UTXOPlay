@@ -22,6 +22,6 @@ function compress(root) {
 }
 for (const root of [
   "dist",
-  ...["chess", "sling", "teeworlds", "openstrike", "arcade", "prism-breaker", "neon-coil", "starfall", "drift-run"].map((g) => `games/${g}/web`),
+  ...["chess", "sling", "teeworlds", "openstrike", "arcade", "prism-breaker", "neon-coil", "starfall", "drift-run", "neon-miner"].map((g) => `games/${g}/web`),
 ])
   compress(root);
