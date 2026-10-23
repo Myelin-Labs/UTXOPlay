@@ -888,7 +888,7 @@ function App({ walletApi }) {
                     <div className="hero-bottom">
                       <span className="hero-caption">
                         {gameMeta[hero.id]?.tag}
-                        {hero.myelin?.based && <span className="myelin-badge"><img src="/assets/myelin-logo.png" alt="" />MYELIN BASED</span>}
+                        {hero.myelin?.based && <span className="myelin-badge"><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN BASED</span>}
                       </span>
                       <span className="hero-index">
                         0{featuredGames.findIndex((g) => g.id === hero.id) + 1}

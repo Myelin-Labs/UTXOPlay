@@ -17,7 +17,7 @@
       "based": true,
       "version": "0.31.0",
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
     "runtime": "arcade"
   },
@@ -39,7 +39,7 @@
       "based": true,
       "version": "0.31.0",
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
     "runtime": "arcade"
   },
@@ -61,7 +61,7 @@
       "based": true,
       "version": "0.31.0",
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
     "runtime": "arcade"
   },
@@ -83,7 +83,7 @@
       "based": true,
       "version": "0.31.0",
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
     "runtime": "arcade"
   },
@@ -104,7 +104,7 @@
     "myelin": {
       "based": true,
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     }
   },
   {
@@ -124,7 +124,7 @@
     "myelin": {
       "based": true,
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     }
   },
   {
@@ -144,7 +144,7 @@
     "myelin": {
       "based": true,
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     }
   },
   {
@@ -164,7 +164,7 @@
     "myelin": {
       "based": true,
       "evidence": "host-replay",
-      "logo": "/assets/myelin-logo.png"
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
     }
   }
 ]

@@ -121,7 +121,7 @@ export function Skeletons() {
   );
 }
 export function MyelinBadge({ game }) {
-  return game.myelin?.based ? <span className="myelin-badge" title="Myelin host replay. Off-chain; no CKB settlement."><img src="/assets/myelin-logo.png" alt="" />MYELIN BASED</span> : null;
+  return game.myelin?.based ? <span className="myelin-badge" title="Myelin host replay. Off-chain; no CKB settlement."><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN BASED</span> : null;
 }
 export function GameCard({ g, onPlay, onDetails, launching, updated }) {
   const meta = gameMeta[g.id] || { accent: "#8bf4b9", length: "Vendor hosted" };

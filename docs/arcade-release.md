@@ -49,3 +49,7 @@ Build the native binary in Debian Bookworm using `deploy/ArcadeBuilder.Container
 Store and arcade use `utxoplay:0.7.0`. Other services retain their previous image tags. Persistent arcade data lives at `/data/utxoplay/shared/arcade` and must be writable by UID 1000. Back up the live platform SQLite database with SQLite's backup API and retain the previous compose file and image before switching only `store` and `arcade`.
 
 To roll back the store, run the previous release's compose definition with project name `utxoplay` and recreate only `store`; then stop the unused arcade service. Keep its data and matching image for a later recovery. A store rollback does not require overwriting account, purchase or game data.
+
+## Store 0.7.1 logo delivery fix
+
+The uploaded logo retained file mode 0600. Docker COPY made it root-owned, so the unprivileged website process could not read it and the image URL returned HTTP 500. The image build now normalizes public static directories to 0755 and static files to 0644 before switching to the node user. Logo references use a fresh query version to avoid cached failures. Only the store image advances to 0.7.1; the arcade runtime and game session profiles remain unchanged.
