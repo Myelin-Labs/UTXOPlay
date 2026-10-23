@@ -29,7 +29,6 @@ import {
   Check,
   Wallet,
   X,
-  Expand,
   ShieldCheck,
   RefreshCw,
   LogOut,
@@ -215,7 +214,6 @@ function App({ walletApi }) {
     [launching, setLaunching] = useState("");
   const [mobileNav, setMobileNav] = useState(false),
     [frameKey, setFrameKey] = useState(0),
-    [immersive, setImmersive] = useState(false),
     [frameStatus, setFrameStatus] = useState("loading"),
     [revision, setRevision] = useState(0),
     [motionSetting, setMotionSetting] = useState(readMotion),
@@ -262,6 +260,7 @@ function App({ walletApi }) {
       (remoteGame && page === "/play/" + remoteGame.id ? remoteGame : null),
     hero = featuredGames.find((g) => g.id === featured) || featuredGames[0],
     signedIn = !!user && !user.guest;
+  const activeGame = !!(game && !game.vendor && user && !loadingUser);
   useEffect(() => {
     let live = true;
     setRemoteGame(null);
@@ -303,21 +302,15 @@ function App({ walletApi }) {
       setLoadingUser(false);
     }
   }, []);
-  function exitImmersive() {
-    setImmersive(false);
+  function exitFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-  }
-  function enterImmersive() {
-    setImmersive(true);
-    if (!document.fullscreenElement)
-      document.documentElement.requestFullscreen?.().catch(() => {});
   }
   function go(p) {
     if (p === page) {
       setMobileNav(false);
       return;
     }
-    exitImmersive();
+    exitFullscreen();
     history.pushState({}, "", p);
     setPage(p);
     setMobileNav(false);
@@ -355,7 +348,7 @@ function App({ walletApi }) {
             : page === "/purchases"
               ? "Purchases"
               : "Good games. Yours to play.") + " · UTXOPlay";
-    if (!page.startsWith("/play/")) exitImmersive();
+    if (!page.startsWith("/play/")) exitFullscreen();
     mainRef.current?.focus({ preventScroll: true });
   }, [page, game?.title]);
   useEffect(() => {
@@ -528,17 +521,6 @@ function App({ walletApi }) {
       setWalletBusy(false);
     }
   }
-  function syncFrame() {
-    frameRef.current?.contentWindow?.postMessage(
-      { type: "utxoplay:immersion", enabled: immersive },
-      location.origin,
-    );
-  }
-  useEffect(() => {
-    syncFrame();
-    document.body.classList.toggle("playing-immersive", immersive);
-    return () => document.body.classList.remove("playing-immersive");
-  }, [immersive, page]);
   useEffect(() => {
     setFrameStatus("loading");
     clearTimeout(frameTimer.current);
@@ -556,31 +538,14 @@ function App({ walletApi }) {
         e.source !== frameRef.current?.contentWindow
       )
         return;
-      if (e.data?.type === "utxoplay:game-start") enterImmersive();
-      if (e.data?.type === "utxoplay:exit-immersive") exitImmersive();
       if (e.data?.type === "utxoplay:game-ready") {
         setFrameStatus("ready");
         clearTimeout(frameTimer.current);
       }
     };
-    const onFull = () => {
-      if (!document.fullscreenElement) setImmersive(false);
-    };
-    const onKey = (e) => {
-      if (
-        e.key === "Escape" &&
-        !e.defaultPrevented &&
-        !document.querySelector("dialog[open]")
-      )
-        exitImmersive();
-    };
     addEventListener("message", onMessage);
-    addEventListener("keydown", onKey);
-    document.addEventListener("fullscreenchange", onFull);
     return () => {
       removeEventListener("message", onMessage);
-      removeEventListener("keydown", onKey);
-      document.removeEventListener("fullscreenchange", onFull);
     };
   }, []);
   async function launch(id) {
@@ -703,7 +668,7 @@ function App({ walletApi }) {
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
     >
       <div
-        className={"app" + (immersive ? " immersive" : "")}
+        className={"app" + (activeGame ? " game-active" : "")}
         inert={isOpen ? true : undefined}
       >
         <a href="#main" className="skip-link">
@@ -1218,32 +1183,6 @@ function App({ walletApi }) {
                     </button>
                     <span className="play-divider">/</span>
                     <span>{game.title}</span>
-                    <div className="play-tools">
-                      <button
-                        onClick={() => setDialog("reload")}
-                        aria-label="Reload game"
-                        title="Reload game"
-                      >
-                        <RefreshCw size={16} />
-                      </button>
-                      <button
-                        onClick={() => setDialog("controls")}
-                        aria-label="Game controls"
-                        title="Game controls"
-                      >
-                        <Gamepad2 size={17} />
-                        <span>Controls</span>
-                      </button>
-                      <button
-                        onClick={immersive ? exitImmersive : enterImmersive}
-                        aria-label={
-                          immersive ? "Exit immersive mode" : "Fullscreen"
-                        }
-                      >
-                        {immersive ? <X size={17} /> : <Expand size={17} />}
-                        <span>{immersive ? "Exit" : "Fullscreen"}</span>
-                      </button>
-                    </div>
                   </div>
                   <div className="play-title">
                     <div>
@@ -1283,7 +1222,6 @@ function App({ walletApi }) {
                         className={"game-frame " + game.id}
                         src={"/games/" + game.id + "/"}
                         title={game.title}
-                        onLoad={syncFrame}
                         allow="fullscreen; autoplay"
                         allowFullScreen
                       />
@@ -1646,60 +1584,8 @@ function App({ walletApi }) {
             </p>
           </Modal>
         )}
-        {dialog === "controls" && game && (
-          <Modal title="Game controls" onClose={() => setDialog(null)}>
-            <div className="modal-icon">
-              <Gamepad2 />
-            </div>
-            <div className="eyebrow">{game.title}</div>
-            <h2>Get into your groove.</h2>
-            <p>{game.controls}</p>
-            <div className="control-note">
-              <p>{gameMeta[game.id]?.note}</p>
-              <p>
-                Escape exits fullscreen. Online rounds continue while you view
-                this menu.
-              </p>
-            </div>
-            <button
-              className="primary full"
-              onClick={() => {
-                setDialog(null);
-                requestAnimationFrame(() => frameRef.current?.focus());
-              }}
-            >
-              Back to the game <ArrowRight size={16} />
-            </button>
-          </Modal>
-        )}
-        {dialog === "reload" && game && (
-          <Modal title="Reload game" onClose={() => setDialog(null)}>
-            <div className="modal-icon">
-              <RefreshCw />
-            </div>
-            <h2>Reload {game.title}?</h2>
-            <p>
-              Your saved progress stays. Reloading interrupts your controls; a
-              live online round will keep running.
-            </p>
-            <div className="dialog-actions">
-              <button className="outline" onClick={() => setDialog(null)}>
-                Keep playing
-              </button>
-              <button
-                className="primary"
-                onClick={() => {
-                  setFrameKey((k) => k + 1);
-                  setDialog(null);
-                }}
-              >
-                Reload game <RefreshCw size={16} />
-              </button>
-            </div>
-          </Modal>
-        )}
         <AnimatePresence>
-          {toast && (
+          {toast && !activeGame && (
             <motion.div
               className={"toast " + toast.type}
               role={toast.type === "error" ? "alert" : "status"}

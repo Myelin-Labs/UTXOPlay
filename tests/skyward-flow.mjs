@@ -10,7 +10,7 @@ const root=resolve(import.meta.dirname,'..'),base=process.env.STORE_URL||'http:/
 const realFetch=globalThis.fetch;
 const guest=await realFetch(base+'/api/guest',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
 assert.equal(guest.status,200);const cookie=guest.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');
-const dom=new JSDOM(readFileSync(root+'/games/sling/web/index.html','utf8'),{pretendToBeVisual:true,url:base+'/games/sling/'});
+const dom=new JSDOM(readFileSync(root+'/games/sling/web/index.html','utf8'),{pretendToBeVisual:true,url:base+'/games/sling/',runScripts:'outside-only'});
 const {window}=dom,errors=[];
 window.addEventListener('error',e=>errors.push(e.error));
 const bitmaps={};
@@ -41,7 +41,12 @@ globalThis.requestAnimationFrame=cb=>{raf.set(++seq,cb);return seq;};globalThis.
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function pump(frames){for(let i=0;i<frames;i++){time+=1000/60;const jobs=[...raf.values()];raf.clear();for(const cb of jobs)cb(time);}}
 const $=s=>document.querySelector(s),state=async()=>await(await globalThis.fetch('/games/sling/api/state')).json();
+window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+window.HTMLDialogElement.prototype.close=function(){this.open=false;};
+window.eval(readFileSync(root+'/public/game-shell.js','utf8'));
 await import(root+'/games/sling/web/app.js');
+$('.game-menu-toggle').click();assert.equal($('#game-menu').open,true);
+$('#game-menu .game-menu-close').click();assert.equal($('#game-menu').open,false);
 assert.equal($('#total-levels').textContent,'12');assert.equal($('#level-name').textContent,'First flight');
 assert.equal($('#sound').textContent,'♫ Music off');
 $('[data-power="burst"]').click();await $('#extra-flight').onclick();

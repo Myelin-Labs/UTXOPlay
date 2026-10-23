@@ -11,7 +11,7 @@ assert.ok(['prism-breaker','neon-coil','starfall','drift-run'].includes(kind));
 const nativeFetch=globalThis.fetch;
 const guest=await nativeFetch(base+'/api/guest',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
 assert.equal(guest.status,200);const cookie=guest.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');
-const dom=new JSDOM(readFileSync(`${root}/games/${kind}/web/index.html`,'utf8'),{pretendToBeVisual:true,url:base+`/games/${kind}/`});
+const dom=new JSDOM(readFileSync(`${root}/games/${kind}/web/index.html`,'utf8'),{pretendToBeVisual:true,url:base+`/games/${kind}/`,runScripts:'outside-only'});
 const {window}=dom,errors=[];
 window.addEventListener('error',e=>errors.push(e.error));
 // Drawing is checked separately. This harness exercises actual UI flow and input.
@@ -39,12 +39,17 @@ async function until(test){for(let n=0;n<200&&!test();n++)await sleep(10);assert
 async function pump(frames){for(let i=0;i<frames;i++){time+=1000/60;const jobs=[...raf.values()];raf.clear();for(const cb of jobs)cb(time);if(i%15===0)await sleep(2);}}
 const $=s=>document.querySelector(s),state=async()=>await (await globalThis.fetch('./api/state')).json();
 function key(type,code){$('canvas').dispatchEvent(new window.KeyboardEvent(type,{bubbles:true,code}));}
+window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+window.HTMLDialogElement.prototype.close=function(){this.open=false;};
+window.eval(readFileSync(root+'/public/game-shell.js','utf8'));
 await import(`${root}/games/arcade/web/app.js`);
 await until(()=>!$('#launch').disabled);assert.equal($('#overlay').dataset.art,'true');
 // Holding a direction during countdown must affect the first simulation tick.
 await $('#launch').onclick();key('keydown',kind==='neon-coil'?'KeyW':'KeyA');await pump(130);key('keyup',kind==='neon-coil'?'KeyW':'KeyA');
 assert.equal($('#overlay').hidden,true);assert.equal($('#countdown').hidden,true);
-await $('#pause').onclick();let saved=await state();assert.ok(saved.game.tick>0);
+$('.game-menu-toggle').click();assert.equal($('#game-menu').open,true);await until(()=>$('#pause').textContent==='Resume');
+$('#game-menu .game-menu-close').click();assert.equal($('#game-menu').open,false);
+await until(()=>$('#launch').disabled===false);let saved=await state();assert.ok(saved.game.tick>0);
 if(kind==='neon-coil')assert.ok(saved.game.trail[0][1]<12);else assert.ok(saved.game.x<(kind==='drift-run'?1:500));
 if(kind==='starfall')assert.ok(saved.game.bodies.some(b=>b.tag===2),'auto fire must produce real input tape shots');
 if(kind==='starfall'){

@@ -691,6 +691,9 @@ document.addEventListener("keydown", (e) => {
     feedback("Pull cancelled.");
   }
 });
+document.addEventListener("utxoplay:menu", (e) => {
+  if (e.detail.open && drag) {drag = null;feedback("Pull cancelled.");}
+});
 canvas.onkeydown = (e) => {
   if (busy || flight) return;
   if (e.code === "Space") {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>The Quiet Board · UTXOPlay</title>
     <link rel="stylesheet" href="/games/chess/style.css" />
-  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/><link rel="stylesheet" href="/game-shell.css?v=0.4.0"/></head>
+  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/><link rel="stylesheet" href="/game-shell.css?v=0.10.0"/></head>
   <body>
     <header>
       <a class="brand" href="/" target="_top" aria-label="UTXOPlay Chess home"
@@ -122,7 +122,7 @@
       <div id="promotion-choices"></div>
       <button id="promotion-cancel">Cancel</button>
     </dialog>
-    <dialog id="help"><h2>Your table, your move.</h2><p>Two players share this device. White moves first. Select a piece to reveal legal destinations; rings mark captures.</p><p>Castling: select the king and move it two squares. En passant and promotion appear automatically when legal. A red square marks a king in check.</p><p>Use the move journal or ‹ / › to review. Return to Live to continue playing. Review never changes your saved match.</p><p>F flips the board. Escape clears your selection and exits immersive mode. Tab and Enter also work on every square.</p><button id="help-close">Back to the board</button></dialog>
+    <dialog id="help"><h2>Your table, your move.</h2><p>Two players share this device. White moves first. Select a piece to reveal legal destinations; rings mark captures.</p><p>Castling: select the king and move it two squares. En passant and promotion appear automatically when legal. A red square marks a king in check.</p><p>Use the move journal or ‹ / › to review. Return to Live to continue playing. Review never changes your saved match.</p><p>F flips the board. Escape clears your selection and opens the game menu. Tab and Enter also work on every square.</p><button id="help-close">Back to the board</button></dialog>
     <dialog id="confirm-action"><h2 id="confirm-title"></h2><p id="confirm-copy"></p><div class="button-row"><button id="confirm-cancel">Keep playing</button><button id="confirm-yes" class="primary">Confirm</button></div></dialog>
     <dialog id="credits">
       <button class="close" id="credits-close" aria-label="Close credits">
@@ -156,5 +156,5 @@
       /></label>
     </dialog>
     <script type="module" src="/games/chess/app.js"></script>
-  <script type="module" src="/game-shell.js?v=0.7.0"></script></body>
+  <script type="module" src="/game-shell.js?v=0.10.0"></script></body>
 </html>

@@ -17,6 +17,6 @@ test('network failures and timeouts have actionable messages, server validation 
  assert.match(apiError(new DOMException('timeout','TimeoutError')),/try again/);
  assert.equal(apiError(new Error('Use an HTTPS URL.')),'Use an HTTPS URL.');
 });
-test('every bundled game loads the shared ready/immersion shell with the current cache key',()=>{
- for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');assert.match(html,/\/game-shell\.js\?v=0\.7\.0/);}
+test('every bundled game loads the shared game viewport with the current cache key',()=>{
+ for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');assert.match(html,/\/game-shell\.js\?v=0\.10\.0/);}
 });

@@ -2134,64 +2134,6 @@ h3 {
     transform: rotate(360deg);
   }
 }
-/* Immersive mode is reserved for starting a game, not browsing its store entry. */
-body.playing-immersive {
-  overflow: hidden;
-}
-.immersive > .skip-link,
-.immersive .topbar,
-.immersive .sidebar,
-.immersive .play-title,
-.immersive .play-info,
-.immersive .footer {
-  display: none;
-}
-.immersive .shell {
-  display: block;
-  min-height: 0;
-}
-.immersive .main {
-  padding: 0 !important;
-  margin: 0 !important;
-  max-width: none;
-  width: 100%;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-.immersive .play-heading {
-  height: 46px;
-  min-height: 46px;
-  margin: 0;
-  padding: 0 16px;
-  background: #101813;
-  border-bottom: 1px solid #ffffff15;
-}
-.immersive .game-stage {
-  flex: 1;
-  min-height: 0;
-  border: 0;
-  border-radius: 0;
-}
-.immersive .game-frame {
-  height: 100% !important;
-  min-height: 0 !important;
-  border: 0;
-  border-radius: 0;
-}
-.immersive .play-tools button {
-  min-height: 32px;
-  padding: 6px 10px;
-}
-.immersive .main:before {
-  display: none;
-}
-.immersive .notice {
-  margin: 0;
-}
-.immersive .launch-placeholder {
-  flex: 1;
-}
 .play-heading > span:not(.play-divider) {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3223,3 +3165,11 @@ html[data-motion="reduced"] .cover-button:hover img {
 }
 
 .myelin-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 9px 5px 5px;border:1px solid #b6a5ff44;background:#080b19eb;border-radius:8px;color:#e2ddff;font-size:9px;font-weight:800;letter-spacing:.1em;white-space:nowrap}.myelin-badge img{width:22px!important;height:22px!important;object-fit:contain!important;border-radius:5px;position:static!important}.cover-button>.myelin-badge{position:absolute;top:14px;right:14px;z-index:2}.detail-copy>.myelin-badge{margin:0 0 14px}.hero-myelin{margin:12px 0}.game-card .cover-button>.myelin-badge img{transform:none}
+
+/* The game owns the entire play viewport and all of its controls. */
+body:has(.game-active){overflow:hidden}
+.game-active>.skip-link,.game-active>.topbar,.game-active .sidebar,.game-active .play-heading,.game-active .play-title,.game-active .play-info,.game-active .footer,.game-active .notice{display:none}
+.game-active .shell,.game-active .main{display:block;margin:0;padding:0;width:100%;max-width:none;min-height:0}
+.game-active .main:before{display:none}
+.game-active .game-stage{position:fixed;inset:0;z-index:100;width:100vw;height:100dvh;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:#0b121b}
+.game-active .game-frame{display:block;width:100%;height:100%;min-height:0;border:0;border-radius:0}
