@@ -598,3 +598,7 @@ input {
     display: none;
   }
 }
+
+/* UTXOPlay platform mark, shared with the store. */
+.utxoplay-mark{display:block;width:44px;height:44px;object-fit:contain;flex-shrink:0}
+@media(max-width:600px){.utxoplay-mark{width:34px;height:34px}}

@@ -7,3 +7,4 @@ games/*/target/
 *.log
 deploy/*.tar*
 deploy/bin/
+artifacts/

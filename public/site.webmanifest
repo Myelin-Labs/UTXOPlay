@@ -1,0 +1,31 @@
+{
+  "id": "/",
+  "name": "UTXOPlay",
+  "short_name": "UTXOPlay",
+  "description": "Good games. Yours to play.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#151715",
+  "theme_color": "#151715",
+  "icons": [
+    {
+      "src": "/brand/utxoplay-logo-dark-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/utxoplay-logo-dark-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/utxoplay-maskable-dark-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
