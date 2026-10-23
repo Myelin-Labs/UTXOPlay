@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-23",
+  "referenceCommit": "1a7362d6ef1be24a871e0b2211214f90c3dbc4b1",
+  "method": "Native Canvas, 600 CSS px, DPR 1/2, 20 warmup + 80 measured frames, forced raster readback per frame. Fixed scene, 80 snake segments. Not browser FPS.",
+  "before": [
+    {
+      "kind": "prism-breaker",
+      "ratio": 1,
+      "medianMs": 1.665,
+      "p95Ms": 1.899
+    },
+    {
+      "kind": "prism-breaker",
+      "ratio": 2,
+      "medianMs": 3.766,
+      "p95Ms": 4.364
+    },
+    {
+      "kind": "neon-coil",
+      "ratio": 1,
+      "medianMs": 1.814,
+      "p95Ms": 1.995
+    },
+    {
+      "kind": "neon-coil",
+      "ratio": 2,
+      "medianMs": 4.182,
+      "p95Ms": 4.421
+    },
+    {
+      "kind": "starfall",
+      "ratio": 1,
+      "medianMs": 1.705,
+      "p95Ms": 1.984
+    },
+    {
+      "kind": "starfall",
+      "ratio": 2,
+      "medianMs": 4.058,
+      "p95Ms": 4.689
+    },
+    {
+      "kind": "drift-run",
+      "ratio": 1,
+      "medianMs": 3.312,
+      "p95Ms": 3.959
+    },
+    {
+      "kind": "drift-run",
+      "ratio": 2,
+      "medianMs": 9.95,
+      "p95Ms": 12.053
+    }
+  ],
+  "after": [
+    {
+      "kind": "prism-breaker",
+      "ratio": 1,
+      "medianMs": 0.154,
+      "p95Ms": 0.169
+    },
+    {
+      "kind": "prism-breaker",
+      "ratio": 2,
+      "medianMs": 0.355,
+      "p95Ms": 0.488
+    },
+    {
+      "kind": "neon-coil",
+      "ratio": 1,
+      "medianMs": 1.269,
+      "p95Ms": 1.495
+    },
+    {
+      "kind": "neon-coil",
+      "ratio": 2,
+      "medianMs": 1.957,
+      "p95Ms": 2.709
+    },
+    {
+      "kind": "starfall",
+      "ratio": 1,
+      "medianMs": 1.146,
+      "p95Ms": 1.226
+    },
+    {
+      "kind": "starfall",
+      "ratio": 2,
+      "medianMs": 1.821,
+      "p95Ms": 2.238
+    },
+    {
+      "kind": "drift-run",
+      "ratio": 1,
+      "medianMs": 0.293,
+      "p95Ms": 0.311
+    },
+    {
+      "kind": "drift-run",
+      "ratio": 2,
+      "medianMs": 0.48,
+      "p95Ms": 0.525
+    }
+  ]
+}

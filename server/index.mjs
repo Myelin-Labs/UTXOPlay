@@ -42,7 +42,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   next();
  });
  app.use(express.json({limit:'64kb'}));
- app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.8.1'}));
+ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.8.2'}));
  app.get('/api/games',(_req,res)=>res.json({games:[...games,...marketplace.catalog()]}));
  app.get('/api/me',(req,res)=>res.json({user:userView(account(req))}));
  app.post('/api/guest',(req,res)=>{

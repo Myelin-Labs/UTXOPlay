@@ -50,7 +50,7 @@ if(kind==='starfall')assert.ok(saved.game.bodies.some(b=>b.tag===2),'auto fire m
 if(kind==='starfall'){
  $('#autofire').click();assert.equal($('#autofire').getAttribute('aria-pressed'),'false');await $('#launch').onclick();await pump(140);await $('#pause').onclick();saved=await state();assert.equal(saved.game.cooldown,0,'manual mode must stop sending automatic fire');$('#autofire').click();
 }
-const pausedTick=saved.game.tick;await pump(60);assert.equal((await state()).game.tick,pausedTick);
+const pausedTick=saved.game.tick;let hudWrites=0;const observer=new window.MutationObserver(records=>hudWrites+=records.length);observer.observe($('#lives'),{attributes:true});await pump(60);observer.disconnect();assert.equal(hudWrites,0,'idle HUD must not rewrite unchanged attributes');assert.equal((await state()).game.tick,pausedTick);
 await $('#replay').onclick();assert.match($('#status').textContent,/Replay verified/);
 // Cancel is safe; rapid clicks on confirmation create exactly one session.
 await $('#restart').onclick();assert.equal($('#cancel-restart').hidden,false);assert.equal(newCalls,0);

@@ -20,7 +20,21 @@ let predicted=createGame(id),previous=structuredClone(predicted),confirmed=null,
 let running=false,loaded=false,stopping=false,accumulator=0,saveTimer=0,countdown=0,lastCount=0;
 let best=Number(read(`utxoplay:best:${id}`,'0'))||0,runBest=best;
 let autoFire=read('utxoplay:autofire','on')==='on',hoverX=null,overlayAction='play',resumeEpoch=0,busy=false;
-let noticeTime=0;
+let noticeTime=0,quality=readQuality();
+const hud={};
+function updateHud(){
+  if(hud.score!==predicted.score){hud.score=predicted.score;setText('score',predicted.score.toLocaleString());}
+  if(hud.level!==predicted.level){hud.level=predicted.level;setText('level',String(predicted.level).padStart(2,'0'));}
+  if(hud.lives!==predicted.lives){
+    hud.lives=predicted.lives;const maxLives=id==='neon-coil'||id==='drift-run'?1:3;
+    setText('lives','●'.repeat(predicted.lives)+'○'.repeat(maxLives-predicted.lives));
+    $('#lives').setAttribute('aria-label',predicted.lives+' lives remaining');
+  }
+  const seconds=Math.floor(predicted.tick/30);
+  if(hud.seconds!==seconds){hud.seconds=seconds;setText('time',`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`);}
+}
+const qualityChanged=()=>{quality=readQuality();};
+addEventListener('storage',qualityChanged);addEventListener('utxoplay:quality',qualityChanged);
 const status=t=>setText('status',t);
 const announce=t=>setText('announcement',t);
 function clearInput(){input.clear();gesture.clear();hoverX=null;document.querySelectorAll('[data-input]').forEach(b=>b.classList.remove('pressed'));}
@@ -174,11 +188,8 @@ function frame(now,delta,ratio){
     saveTimer+=delta;if(saveTimer>=1000){saveTimer=0;void flush().catch(()=>{});}
   }
   if(noticeTime>0){noticeTime-=delta;if(noticeTime<=0)$('#notice').hidden=true;}
-  renderer.draw(predicted,previous,accumulator/(1000/30),delta,ratio,{running,reduced:motion.matches,low:readQuality()==='low'||ratio<=1});
-  setText('score',predicted.score.toLocaleString());setText('level',String(predicted.level).padStart(2,'0'));
-  const maxLives=id==='neon-coil'||id==='drift-run'?1:3;
-  setText('lives','●'.repeat(predicted.lives)+'○'.repeat(maxLives-predicted.lives));$('#lives').setAttribute('aria-label',predicted.lives+' lives remaining');
-  setText('time',`${Math.floor(predicted.tick/1800)}:${String(Math.floor(predicted.tick/30)%60).padStart(2,'0')}`);
+  renderer.draw(predicted,previous,accumulator/(1000/30),delta,ratio,{running,reduced:motion.matches,low:quality==='low'||ratio<=1});
+  updateHud();
 }
 showOverlay(config.title,'Connecting to your saved Myelin session…','Connecting…',true);busy=true;refreshButtons();void boot().finally(()=>{busy=false;refreshButtons();});
 startRenderLoop(frame,{active:()=>running||countdown>0});

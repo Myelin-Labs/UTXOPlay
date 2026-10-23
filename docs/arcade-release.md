@@ -89,3 +89,7 @@ ARCADE_TEST_MODULES=/tmp/arcade-test/node_modules STORE_URL=http://127.0.0.1:190
 ```
 
 Browser attachment still times out; the DOM harness does not establish physical touch feel, browser layout or audio quality. Only the store image changes to `utxoplay:0.8.1`; the native image and persisted profiles stay on the existing runtime. Deploy/revert only the store, preserving game data and the supplied logo.
+
+## Store 0.8.2 rendering performance
+
+Static scenery and brick layers now reuse raster caches, paused scenes stop drawing after effects settle, and unchanged HUD values avoid DOM writes. ResizeObserver supplies canvas dimensions and quality settings are cached between preference events. Native rules, timing, save cadence and runtime image stay unchanged. Benchmark method, before/after numbers, pixel validation, bounded memory tradeoffs and reproduction commands are in [arcade-performance.md](arcade-performance.md).
