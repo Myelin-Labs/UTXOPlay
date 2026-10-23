@@ -53,3 +53,23 @@ To roll back the store, run the previous release's compose definition with proje
 ## Store 0.7.1 logo delivery fix
 
 The uploaded logo retained file mode 0600. Docker COPY made it root-owned, so the unprivileged website process could not read it and the image URL returned HTTP 500. The image build now normalizes public static directories to 0755 and static files to 0644 before switching to the node user. Logo references use a fresh query version to avoid cached failures. Only the store image advances to 0.7.1; the arcade runtime and game session profiles remain unchanged.
+
+## Store 0.8.0 arcade presentation update
+
+The four arcade entries now use original generated key art on store cards and welcome screens. Full generation prompts and source paths are recorded in `docs/arcade-art.json` (built-in `image_gen.imagegen`, four distinct assets). Production uses 1536×1024 WebP encodings at quality 82, 166–260 KiB each. No generated logo replaces the owner's supplied Myelin mark. In-game sprites remain authored Canvas geometry and keep the original collision dimensions.
+
+The new renderer separates presentation from the deterministic engine. It interpolates adjacent simulation states, uses collision-positioned crystal fragments, pickup rings, enemy bursts and score labels, and gives ships, snake segments, bricks and the car shaded surfaces. Particle motion uses elapsed time and a bounded pool; reduced-motion mode suppresses particles, moving scenery, trails and bloom. Low-power/automatic resolution controls and visibility-aware scheduling share the existing performance helper. Hidden tabs pause and stop the render loop. Synthesized event-specific audio is opt-in and remembers the device preference.
+
+Snake input buffers two legal turns across movement ticks; runner presses queue one lane change and wait through cooldown. Keyboard and touch sources release independently. Start/resume has a short countdown. Pause, loss of focus and disconnect clear held inputs; new-run confirmation pauses first. Best scores are device-local and updated from confirmed saves, not a public leaderboard. Routine saves no longer repeatedly announce through a screen reader. Small landscape layouts move controls beside the board.
+
+The Rust source, Cargo.lock, `engine.mjs`, signed application profiles and runtime binary are unchanged. Only the store image advances to `utxoplay:0.8.0`; the arcade service stays on `utxoplay:0.7.0`. Deploy/revert only the store with `docker compose -p utxoplay -f <release>/deploy/compose.yml up -d --no-deps store`. Do not stop the arcade service or replace persistent data when reverting this presentation update.
+
+Validation on 2026-10-23:
+
+- `npm test`: 44 passing tests, including seven input/feedback/particle regression tests.
+- Production build succeeds; only existing dependency bundling warnings remain.
+- The exact deployed native binary passes all 144 conformance tapes (259,200 input ticks).
+- All four games pass authenticated live gateway tests against the real local runtime, including isolated accounts, stale/malformed rejection, signed replay and offline export verification.
+- A temporary jsdom + native Canvas harness executes the actual frontend module for each game against that runtime: boot, countdown, keyboard events, save, pause, resume, replay and window blur pass without script errors. This is not browser layout validation.
+- Actual Canvas renders were inspected in normal mode and exercised in low-power/reduced-motion modes. Contact sheet: `artifacts/arcade-polish/gameplay-contact.png` (local verification artifact, not shipped).
+- The browser attachment timed out, so browser screenshots, physical touch gestures and subjective audio/animation checks remain unverified.

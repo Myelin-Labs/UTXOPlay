@@ -1,0 +1,23 @@
+{
+  "tool": "Built-in image_gen.imagegen",
+  "date": "2026-10-23",
+  "usage": "Original generated key art for store cards and game welcome screens. Runtime sprites are hand-authored Canvas geometry. WebP files are encoding-only derivatives; full originals remain in the generation output directory.",
+  "assets": {
+    "prism-breaker": {
+      "prompt": "Create an original premium arcade game key art image, landscape 3:2 composition, polished stylized 3D illustration with cinematic lighting, tactile materials, atmospheric depth and restrained bloom. No text, no typography, no logos, no watermarks. Clean strong silhouettes legible as a small game card; deep midnight background, beautiful controlled color. A luminous white energy sphere ricocheting through a floating wall of faceted translucent lavender, periwinkle and mint crystal bricks inside a dark refraction laboratory. A sleek pale lavender paddle near the lower foreground. Spectral light trails and tiny glass fragments, dynamic diagonal camera, elegant futuristic arcade sculpture.",
+      "source": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-3da90887-3237-4980-9181-01556f7efab8.png"
+    },
+    "neon-coil": {
+      "prompt": "Create an original premium arcade game key art image, landscape 3:2 composition, polished stylized 3D illustration with cinematic lighting, tactile materials, atmospheric depth and restrained bloom. No text, no typography, no logos, no watermarks. Clean strong silhouettes legible as a small game card; deep midnight background, beautiful controlled color. An elegant friendly segmented mint-green luminous circuit snake coiling across a dark teal square grid garden, reaching toward one glowing golden energy orb. Chunky rounded translucent segments, expressive tiny bright eyes, emerald circuit traces and bioluminescent particles. Isometric camera, playful and sophisticated, dark spacious background.",
+      "source": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-59f53ee5-a94f-4a40-8c45-697d75fc965e.png"
+    },
+    "starfall": {
+      "prompt": "Create an original premium arcade game key art image, landscape 3:2 composition, polished stylized 3D illustration with cinematic lighting, tactile materials, atmospheric depth and restrained bloom. No text, no typography, no logos, no watermarks. Clean strong silhouettes legible as a small game card; deep midnight background, beautiful controlled color. A distinctive small ivory and cyan triangular starfighter seen from above and behind in the foreground, facing rows of jewel-like violet and turquoise alien drone ships across a deep blue nebula. Cyan engine trails, a few bright laser streaks, distant planet rim, crisp designed shapes, exhilarating space arcade action.",
+      "source": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-4666703a-6864-4779-8d5e-7b86bb8adf0c.png"
+    },
+    "drift-run": {
+      "prompt": "Create an original premium arcade game key art image, landscape 3:2 composition, polished stylized 3D illustration with cinematic lighting, tactile materials, atmospheric depth and restrained bloom. No text, no typography, no logos, no watermarks. Clean strong silhouettes legible as a small game card; deep midnight background, beautiful controlled color. A sleek lavender retro-futurist sports car driving away from camera along a rain-slick three-lane elevated highway through a midnight violet city. Amber energy rings floating ahead, coral geometric road barriers, peach-pink setting sun beyond the skyline, restrained neon reflections, dramatic low rear camera, vibrant synthwave arcade racing.",
+      "source": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-fe0432ca-3814-4ffd-afd4-b683bd6b1ce0.png"
+    }
+  }
+}
