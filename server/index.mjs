@@ -1,4 +1,5 @@
 import express from 'express';
+import {teeworldsSockets} from './teeworlds-socket.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, existsSync } from 'node:fs';
@@ -36,7 +37,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   next();
  });
  app.use(express.json({limit:'24kb'}));
- app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.2.0'}));
+ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.2.1'}));
  app.get('/api/games',(_req,res)=>res.json({games}));
  app.get('/api/me',(req,res)=>res.json({user:userView(account(req))}));
  app.post('/api/guest',(req,res)=>{
@@ -94,16 +95,18 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
    res.status(result.status).type('json').send(content);
   }catch(e){console.error('runtime request failed',req.params.game,e.name);res.status(503).json({error:'The game is waking up. Please retry in a moment; your saved progress is safe.'});}
  });
- for(const game of games)app.use('/games/'+game.id,(_req,res,next)=>{res.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");next();},express.static(path.join(root,'games',game.id,'web'),{index:'index.html',maxAge:0}));
+ for(const game of games)app.use('/games/'+game.id,(_req,res,next)=>{res.set('Content-Security-Policy',`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self' ${new URL(origin).protocol==='https:'?'wss:':'ws:'}//${new URL(origin).host}; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`);next();},express.static(path.join(root,'games',game.id,'web'),{index:'index.html',maxAge:0}));
  app.use('/api',(_req,res)=>res.status(404).json({error:'Unknown API endpoint'}));
  app.use(express.static(path.join(root,'dist'),{maxAge:'1h',index:false}));
  app.get('/{*path}',(_req,res)=>{res.set('Cache-Control','no-cache');res.sendFile(path.join(root,'dist','index.html'));});
  app.use((err,_req,res,_next)=>res.status(err.status||500).json({error:err.status===413?'Request too large':'Unable to complete request'}));
  const cleanup=setInterval(()=>{const t=Date.now();db.prepare('DELETE FROM sessions WHERE expires<?').run(t);db.prepare('DELETE FROM challenges WHERE expires<?').run(t);db.prepare('DELETE FROM limits WHERE expires<?').run(t);},60000);cleanup.unref();
- return {app,db,close:()=>{clearInterval(cleanup);db.close();}};
+ const sockets=teeworldsSockets({account,origin,limited});
+ return {app,db,attachSockets:sockets.attach,close:()=>{sockets.close();clearInterval(cleanup);db.close();}};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
  if(!process.env.RUNTIME_TOKEN||process.env.RUNTIME_TOKEN.length<32)throw new Error('RUNTIME_TOKEN must be set');
  const service=createApp();const server=service.app.listen(Number(process.env.PORT||8790),process.env.BIND||'127.0.0.1',()=>console.log('UTXOPlay listening on '+(process.env.PORT||8790)));
- for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(()=>{service.close();process.exit(0);}));
+ service.attachSockets(server);
+ for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{service.close();server.close(()=>process.exit(0));});
 }

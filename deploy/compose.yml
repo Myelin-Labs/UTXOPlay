@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.2.0
+    image: utxoplay:0.2.1
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -69,7 +69,7 @@ services:
     tmpfs: [/tmp:size=64m]
     logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
   teeworlds:
-    image: myelin-teeworlds:0.1.0
+    image: myelin-teeworlds:0.1.1
     container_name: utxoplay-teeworlds
     restart: unless-stopped
     init: true
