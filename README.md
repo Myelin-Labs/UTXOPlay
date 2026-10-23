@@ -1,6 +1,6 @@
 # UTXOPlay
 
-A deployed browser game store at https://store.utxoplay.io. The launch collection contains The Quiet Board (same-device two-player chess) and Skyward (single-player slingshot).
+A deployed browser game store at https://store.utxoplay.io. The launch collection contains The Quiet Board (same-device two-player chess) , Skyward (single-player slingshot), and Teeworlds (online duels and practice).
 
 ## Shipped in this release
 
@@ -11,7 +11,7 @@ A deployed browser game store at https://store.utxoplay.io. The launch collectio
 - Rust Myelin runtimes with per-account storage, bounded open-session caches, signed records, replay and export.
 - Developer workspace with private project drafts, a same-origin JavaScript API helper, integration guide and manifest validator.
 
-Public third-party publishing, cross-origin game grants, remote chess rooms and CKB settlement are not implemented. The games run on server-side Rust; wallet login does not submit blockchain transactions.
+Public third-party publishing, cross-origin game grants, remote chess rooms and CKB settlement are not implemented. Chess/Skyward run on server-side Rust; Teeworlds runs its original C++ simulation with Rust Myelin replay verification; wallet login does not submit blockchain transactions.
 
 ## Local development
 
@@ -48,3 +48,9 @@ Back up platform SQLite with its backup API and game stores while their writers 
 ## Source provenance
 
 Game snapshots are based on Myelin Chess `321c4bfc35a1560d0b4eebc1a011a876c1bb263a` and Myelin Sling `c3dbd83380ae11499b71c0fd3fdb87f34f7cf126`. Platform adapters replace their single shared HTTP session with account isolation. Original rules and session formats are retained. Their MIT licenses, asset provenance and music attribution are included under `games/` and inside the game credits.
+
+## Teeworlds release
+
+The third game is maintained in https://github.com/Myelin-Labs/myelin-teeworlds, derived from xxuejie’s fixed-point CKB fork. `games/teeworlds/web` is its static browser client; the dedicated `myelin-teeworlds:0.1.0` image runs private room/engine/replay services. Only the store image advances to `utxoplay:0.2.0`; existing chess and sling services retain their original image and data. Preserve `/data/utxoplay/shared/teeworlds` across releases.
+
+The gateway injects the authenticated account, enforces same-origin writes, and caps room creation at 20/hour/account. The private room service caps concurrent arenas at eight. Each 60-second round is replayed and sealed in Myelin; this is native replay, not CKB settlement. A finished match survives restart; an unfinished match is marked interrupted. See the game repository for matching engine/verifier artifacts and independent verification instructions.

@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.1.0
+    image: utxoplay:0.2.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -10,6 +10,7 @@ services:
       VIRTUAL_PORT: '8790'
       CHESS_URL: http://utxoplay-chess:8781
       SLING_URL: http://utxoplay-sling:8782
+      TEEWORLDS_URL: http://utxoplay-teeworlds:8783
     env_file: /data/utxoplay/shared/runtime.env
     volumes:
       - /data/utxoplay/shared/platform:/app/data
@@ -67,6 +68,29 @@ services:
     read_only: true
     tmpfs: [/tmp:size=64m]
     logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+  teeworlds:
+    image: myelin-teeworlds:0.1.0
+    container_name: utxoplay-teeworlds
+    restart: unless-stopped
+    init: true
+    env_file: /data/utxoplay/shared/runtime.env
+    volumes:
+      - /data/utxoplay/shared/teeworlds:/app/data
+    networks: [games]
+    mem_limit: 512m
+    cpus: '1.0'
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp:size=64m]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8783/api/state',{headers:{'X-Runtime-Token':process.env.RUNTIME_TOKEN,'X-UTXOPlay-Account':'0'.repeat(64)}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   edge: {external: true, name: stack-network}
   games: {internal: true}

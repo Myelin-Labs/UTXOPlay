@@ -6,6 +6,7 @@ COPY dist ./dist
 COPY server ./server
 COPY games/chess/web ./games/chess/web
 COPY games/sling/web ./games/sling/web
+COPY games/teeworlds/web ./games/teeworlds/web
 COPY deploy/bin ./bin
 RUN mkdir /app/data && chown node:node /app/data
 USER node
