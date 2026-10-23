@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Skyward · UTXOPlay</title>
-    <link rel="stylesheet" href="/games/sling/style.css" />
+    <link rel="stylesheet" href="/games/sling/style.css?v=0.9.0" />
   <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/><link rel="stylesheet" href="/game-shell.css?v=0.4.0"/></head>
   <body>
     <header>
@@ -12,15 +12,15 @@
         ><img class="utxoplay-mark" src="/brand/utxoplay-logo-dark-96.webp" srcset="/brand/utxoplay-logo-dark-96.webp 1x, /brand/utxoplay-logo-dark-192.webp 2x" width="40" height="40" alt=""/><span>skyward<small>A UTXOPLAY ADVENTURE</small></span></a
       >
       <nav>
-        <span class="tag">A LITTLE PLAY GOES A LONG WAY</span
-        ><button id="sound" aria-pressed="false">♫ Sound off</button
+        <span class="tag"><img src="/assets/myelin-logo.png?v=0.7.1" alt="Myelin" width="22" height="22"/> MYELIN BASED</span
+        ><button id="sound" aria-pressed="true">♫ Play music</button
         ><button id="credits-open" aria-label="Art and music credits">ⓘ</button>
       </nav>
     </header>
     <main>
       <section class="intro">
         <div>
-          <span class="eyebrow">THE FLOATING GARDENS</span>
+          <span class="eyebrow"><span id="region">Morning gardens</span></span>
           <h1>A little pull. A big adventure.</h1>
         </div>
         <p>
@@ -28,12 +28,13 @@
           sprites home.
         </p>
       </section>
+      <div class="journey"><label id="journey-label" for="journey">1 / 12 islands · Morning gardens</label><progress id="journey" max="12" value="0"></progress></div>
       <section class="game-shell" aria-label="Slingshot game">
         <div class="hud">
           <div class="level-badge">
             <span class="level-icon">✦</span>
             <div>
-              <small>CHAPTER <span id="level">01</span> / 03</small
+              <small>CHAPTER <span id="level">01</span> / <span id="total-levels">12</span></small
               ><strong id="level-name">First flight</strong>
             </div>
           </div>
@@ -56,6 +57,7 @@
             <span class="eyebrow" id="result-kicker">BEAUTIFULLY FLOWN</span>
             <h2 id="result-title">Garden cleared!</h2>
             <p id="result-copy">A new island is waiting on the horizon.</p>
+            <button id="rescue-flight" class="primary" hidden>✚ Use extra flight</button>
             <button id="continue" class="primary">Next island →</button>
           </div>
         </div>
@@ -67,6 +69,16 @@
         </div>
       </section>
       <div class="flight-feedback"><span id="flight-status" role="status">Ready when you are</span><label><input id="aim-guide" type="checkbox" checked/> Aim guide</label><label><input id="gentle-effects" type="checkbox"/> Gentle effects</label><label>Replay speed <select id="replay-speed"><option value="1">1×</option><option value="0.5">½×</option></select></label></div>
+      <section class="satchel" aria-label="Adventure items">
+        <div class="satchel-heading"><strong>Pip’s satchel</strong><span>One of each per island · choose before launch</span></div>
+        <div class="item-buttons" role="group" aria-label="Choose flight power">
+          <button data-power="normal" aria-pressed="true"><span aria-hidden="true">↗</span><span>Classic flight<small>Always available</small></span></button>
+          <button data-power="burst" aria-pressed="false"><span aria-hidden="true">✹</span><span>Bloom bomb<small>Clears nearby targets</small></span><b class="item-count">1</b></button>
+          <button data-power="pierce" aria-pressed="false"><span aria-hidden="true">✦</span><span>Star feather<small>Pierces stone & wood</small></span><b class="item-count">1</b></button>
+          <button id="extra-flight"><span aria-hidden="true">✚</span><span>Extra flight<small>Add one more try</small></span><b id="extra-count">1</b></button>
+        </div>
+        <p id="item-hint" role="status">Choose a boost before launching. Each item refills on the next island or retry.</p>
+      </section>
       <div class="under-game">
         <div class="aim-controls">
           <label
@@ -93,7 +105,7 @@
           <span class="eyebrow">A NOTE FROM THE GARDEN</span>
           <h2>Good things take a little practice.</h2>
           <p>
-            Four flights per island. Break wooden supports, nudge the sprites,
+            Twelve islands across four regions. Four flights per island, plus an extra flight in your satchel. Use a bloom bomb to clear a cluster or a star feather to pierce stone. Break wooden supports, nudge the sprites,
             and find your perfect arc. Stone takes two hits. Click a target to inspect it. Use ← / → to aim, ↑ / ↓ for power, and Space to launch. Escape cancels a pull. Every spare flight
             earns a bonus.
           </p>
@@ -102,7 +114,7 @@
           <div>
             <span class="eyebrow">YOUR ADVENTURE, REMEMBERED</span>
             <h3>Small flights. Lasting stories.</h3>
-            <p>Your session saves after every launch.</p>
+            <p>Your session saves every launch and item use. This expanded campaign begins a new adventure; previous campaign records are archived.</p>
           </div>
           <div class="memory-actions">
             <button id="verify">✓ Verify replay</button
@@ -161,6 +173,6 @@
         <input id="volume" type="range" min="0" max="100" value="30"
       /></label>
     </dialog>
-    <script type="module" src="/games/sling/app.js"></script>
+    <script type="module" src="/games/sling/app.js?v=0.9.0"></script>
   <script type="module" src="/game-shell.js?v=0.7.0"></script></body>
 </html>

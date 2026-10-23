@@ -3,26 +3,50 @@ const music = new Audio("/games/sling/assets/music.mp3");
 music.loop = true;
 music.volume = 0.3;
 music.preload = "none";
-let ctx,
-  enabled = false;
+const KEY = "skyward:audio";
+let saved;
+try { saved = JSON.parse(localStorage.getItem(KEY)); } catch {}
+let ctx, master, enabled = saved?.enabled !== false;
+let level = Number.isFinite(saved?.volume) ? Math.max(0, Math.min(1, saved.volume)) : 0.3;
+let playing = false, request = 0;
+music.volume = level;
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify({enabled, volume: level})); } catch {}
+}
+export function audioState() { return {enabled, playing, volume: level}; }
+function notify() { document.dispatchEvent(new CustomEvent("skyward:audio", {detail: audioState()})); }
+export async function startSound() {
+  if (!enabled || document.hidden) return;
+  const id = ++request;
+  try {
+    ctx ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (!master) { master = ctx.createGain(); master.connect(ctx.destination); master.gain.value = level; }
+    // Both calls originate in the gesture, before yielding to a promise.
+    await Promise.all([ctx.resume(), music.play()]);
+    if (id !== request) return;
+    playing = true;
+  } catch { if (id === request) playing = false; }
+  if (!enabled || document.hidden) { music.pause(); playing = false; }
+  notify();
+}
 export async function toggleSound() {
+  // A blocked/failed playback can be retried directly from this button.
+  if (enabled && !playing) { await startSound(); return enabled; }
   enabled = !enabled;
-  if (enabled) {
-    ctx ??= new AudioContext();
-    await ctx.resume();
-    try {
-      await music.play();
-    } catch {
-      enabled = false;
-    }
-  } else music.pause();
+  persist();
+  if (enabled) await startSound();
+  else { request++; music.pause(); playing = false; if (ctx) await ctx.suspend(); notify(); }
   return enabled;
 }
 export function volume(v) {
-  music.volume = Math.max(0, Math.min(1, v));
+  level = Math.max(0, Math.min(1, v));
+  music.volume = level;
+  if (master) master.gain.setTargetAtTime(level, ctx.currentTime, 0.03);
+  persist();
+  notify();
 }
 export function sound(kind = "move") {
-  if (!enabled || !ctx) return;
+  if (!enabled || !playing || !ctx || document.hidden) return;
   const now = ctx.currentTime;
   const notes =
     kind === "win"
@@ -47,12 +71,15 @@ export function sound(kind = "move") {
     g.gain.setValueAtTime(0.0001, now + i * 0.065);
     g.gain.exponentialRampToValueAtTime(0.12, now + i * 0.065 + 0.008);
     g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.065 + 0.28);
-    o.connect(f).connect(g).connect(ctx.destination);
+    o.connect(f).connect(g).connect(master);
     o.start(now + i * 0.065);
     o.stop(now + i * 0.065 + 0.3);
   });
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) music.pause();
-  else if (enabled) music.play().catch(() => {});
+  if (document.hidden) {
+    request++; music.pause(); playing = false;
+    ctx?.suspend().catch(() => {}); notify();
+  } else if (enabled && ctx) void startSound();
 });
+music.addEventListener("error", () => { playing = false; notify(); });

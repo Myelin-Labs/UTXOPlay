@@ -92,3 +92,7 @@ Wallet and commerce tools load on demand. First-party games share visibility-awa
 Four free arcade games run on a dedicated Myelin v0.31.0 Rust service: Prism Breaker, Neon Coil, Starfall and Drift Run. They include keyboard/touch controls, pause/resume, account-isolated saves, verified replay and signed export. All bundled games carry the supplied Myelin logo and tag. Evidence remains off-chain host replay, with no CKB settlement claim.
 
 See [the arcade release record](docs/arcade-release.md) for architecture, provenance, build commands, tests, acceptance limits and rollback. The server image advances to `utxoplay:0.7.0`; existing four game runtimes retain their images and data. Build the new native binary with `deploy/ArcadeBuilder.Containerfile` and place it at `deploy/bin/myelin-arcade`. `ARCADE_URL` defaults to `http://127.0.0.1:8785` locally.
+
+## Skyward expanded gardens
+
+Store 0.9.0 expands Skyward to twelve islands, three consumable items per island, and gesture-started music with remembered settings. See [release and saved-record notes](docs/skyward-release.md). The expanded campaign begins a new adventure while the original campaign records remain archived.

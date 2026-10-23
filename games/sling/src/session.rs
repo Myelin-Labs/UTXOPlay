@@ -375,6 +375,24 @@ mod tests {
         }
     }
     #[test]
+    fn item_usage_survives_signed_recovery_and_export() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut app = App::open(dir.path()).unwrap();
+        for action in [json!({"type":"extra"}), json!({"type":"launch","dx":-96,"dy":48,"power":"burst"})] {
+            let before = app.view().unwrap();
+            app.action(json!({"action":action,"expected_block":before["session"]["block_hash"],"session_id":before["session"]["id"]}))
+                .unwrap();
+        }
+        let after = app.view().unwrap();
+        assert_eq!(after["game"]["inventory"]["burst"], 0);
+        assert_eq!(after["game"]["inventory"]["extra"], 0);
+        assert_eq!(app.replay().unwrap()["frames"], 2);
+        assert_eq!(verify_export(&app.export().unwrap()).unwrap()["verified"], true);
+        drop(app);
+        let app = App::open(dir.path()).unwrap();
+        assert_eq!(app.view().unwrap(), after);
+    }
+    #[test]
     fn signed_session_recovery_replay_and_tamper_rejection() {
         let dir = tempfile::tempdir().unwrap();
         let mut app = App::open(dir.path()).unwrap();

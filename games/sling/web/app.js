@@ -1,8 +1,9 @@
 import { startRenderLoop, startPolling, setText } from "./performance.mjs";
-import { toggleSound, volume, sound } from "./audio.js";
+import { toggleSound, volume, sound, startSound, audioState } from "./audio.js?v=0.9.0";
 const $ = (s) => document.querySelector(s),
   canvas = $("#world"),
   ctx = canvas.getContext("2d");
+let selectedPower = "normal";
 let data,
   busy = false,
   drag = null,
@@ -162,20 +163,35 @@ function ui() {
     `${g.remaining} sprite${g.remaining === 1 ? "" : "s"} to free`;
   $("#replay-shot").disabled = busy || !!flight || !g.trace.length;
   $("#level").textContent = String(g.level).padStart(2, "0");
-  $("#level-name").textContent = [
-    "First flight",
-    "Stone & sky",
-    "The high garden",
-  ][g.level - 1];
+  $("#level-name").textContent = g.level_name;
+  $("#total-levels").textContent = g.total_levels;
+  $("#region").textContent = g.region;
+  $("#journey").value = g.level - (g.won ? 0 : 1);
+  $("#journey").max = g.total_levels;
+  $("#journey-label").textContent = `${g.level} / ${g.total_levels} islands · ${g.region}`;
+  if (selectedPower !== "normal" && !g.inventory[selectedPower]) selectedPower = "normal";
+  for (const button of document.querySelectorAll("[data-power]")) {
+    const kind = button.dataset.power;
+    button.disabled = busy || !!flight || g.won || g.lost || (kind !== "normal" && !g.inventory[kind]);
+    button.setAttribute("aria-pressed", String(kind === selectedPower));
+    const count = button.querySelector(".item-count");
+    if (count) count.textContent = g.inventory[kind];
+  }
+  $("#extra-flight").disabled = busy || !!flight || g.won || !g.inventory.extra;
+  $("#extra-count").textContent = g.inventory.extra;
+  $("#rescue-flight").hidden = !g.lost || !g.inventory.extra;
+  $("#rescue-flight").disabled = busy || !!flight;
+  $("#item-hint").textContent = selectedPower === "burst" ? "Bloom bomb · bursts on first impact, clearing nearby targets." : selectedPower === "pierce" ? "Star feather · breaks stone in one hit and keeps its speed." : "Choose a boost before launching. Each item refills on the next island or retry.";
+  document.body.dataset.region = String(Math.floor((g.level - 1) / 3));
   $("#score").textContent = String(flight?.score ?? g.score).padStart(4, "0");
-  $("#shots").textContent = "● ".repeat(g.shots) + "○ ".repeat(4 - g.shots);
+  $("#shots").textContent = "● ".repeat(g.shots) + "○ ".repeat(Math.max(0, 4 - g.shots));
   $("#level-result").hidden = !!flight || (!g.won && !g.lost);
   $("#launch").disabled = busy || !!flight || g.won || g.lost;
   $("#new").disabled = busy || !!flight;
   for (const id of ["angle", "power", "replay-speed"])
     $("#" + id).disabled = busy || !!flight;
   $("#continue").textContent = g.won
-    ? g.level === 3
+    ? g.level === g.total_levels
       ? "A new adventure ↗"
       : "Next island →"
     : "Try this island again ↻";
@@ -183,13 +199,13 @@ function ui() {
     ? "BEAUTIFULLY FLOWN"
     : "ONE MORE LITTLE TRY";
   $("#result-title").textContent = g.won
-    ? g.level === 3
+    ? g.level === g.total_levels
       ? "A sky full of stories."
       : "Garden cleared!"
     : "Find a different arc.";
   $("#result-copy").textContent = g.won
-    ? g.level === 3
-      ? "All three gardens are home again. Your adventure is ready to save."
+    ? g.level === g.total_levels
+      ? "All twelve gardens are home again. Your adventure is ready to save."
       : "A new island is waiting on the horizon."
     : "The garden is patient. Pull a little higher, or aim for a support.";
   $("#session-short").textContent = data.session.id.slice(0, 12) + "…";
@@ -224,6 +240,15 @@ function render(now, elapsed) {
     ctx.fillRect(0, 0, 1100, 560);
   }
   if (!data) return;
+  const region = Math.floor((data.game.level - 1) / 3);
+  if (region) {
+    ctx.fillStyle = ["", "#f6b85220", "#8580df26", "#10285666"][region];
+    ctx.fillRect(0, 0, 1100, 560);
+    if (region === 3) {
+      ctx.fillStyle = "#fff5cacc";
+      for (let i=0;i<26;i++) { ctx.beginPath(); ctx.arc(30+(i*137)%1040, 24+(i*43)%215, i%3===0?2:1, 0, Math.PI*2); ctx.fill(); }
+    }
+  }
   ctx.save();
   if (shake > 0) {
     ctx.translate(
@@ -262,6 +287,12 @@ function render(now, elapsed) {
         if (!flight.fired.has(hit[1])) {
           flight.fired.add(hit[1]);
           const target = targets[hit[1]];
+          if (g.last_power === "burst" && !flight.burst) {
+            flight.burst = true;
+            const [x,y] = g.trace[hit[0]].map(v => v / 1000);
+            effects.push({x,y,life:45,kind:"bloom",color:"#ffdd91"});
+            sound("win");
+          }
           impact(
             (target.x + target.w / 2) / 1000,
             (target.y + target.h / 2) / 1000,
@@ -412,6 +443,14 @@ function render(now, elapsed) {
     ctx.arc(px, py, 38, Math.PI * 0.75, Math.PI * 0.75 + Math.PI * 1.5 * power);
     ctx.stroke();
   }
+  const visiblePower = step >= 0 ? g.last_power : selectedPower;
+  if (visiblePower !== "normal" && (step >= 0 || !g.won && !g.lost)) {
+    ctx.strokeStyle = visiblePower === "burst" ? "#ffc15c" : "#b5eeff";
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(px,py,32,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = ctx.strokeStyle; ctx.font = "bold 20px Georgia"; ctx.textAlign = "center";
+    ctx.fillText(visiblePower === "burst" ? "✹" : "✦",px,py-40);
+  }
   if (step >= 0 || (!g.won && !g.lost))
     sprite(
       0,
@@ -448,11 +487,11 @@ function render(now, elapsed) {
   for (const e of effects) {
     e.life -= delta;
     ctx.globalAlpha = Math.min(1, Math.max(0, e.life / 22));
-    if (e.kind === "ring") {
+    if (e.kind === "ring" || e.kind === "bloom") {
       ctx.strokeStyle = e.color;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(e.x, e.y, 10 + (45 - e.life) * 1.25, 0, 7);
+      ctx.arc(e.x, e.y, 10 + (45 - e.life) * (e.kind === "bloom" ? 2.1 : 1.25), 0, 7);
       ctx.stroke();
     } else {
       ctx.font = "bold 20px system-ui";
@@ -545,8 +584,9 @@ canvas.onpointerleave = () => {
 };
 async function act(action, animate = false) {
   if (!data || busy || flight) return;
+  if (action.type === "launch") { action.power = selectedPower; void startSound(); }
   busy = true;
-  feedback("Preparing your flight…");
+  feedback(action.type === "extra" ? "One more flight…" : "Preparing your flight…");
   ui();
   try {
     data = await api("/games/sling/api/action", {
@@ -554,6 +594,8 @@ async function act(action, animate = false) {
       expected_block: data.session.block_hash,
       session_id: data.session.id,
     });
+    if (action.type !== "extra") selectedPower = "normal";
+    else { sound("move"); feedback("Extra flight ready. Find your arc!"); }
     if (animate) {
       beginFlight();
       sound("launch");
@@ -566,6 +608,10 @@ async function act(action, animate = false) {
     ui();
   }
 }
+for (const button of document.querySelectorAll("[data-power]")) {
+  button.onclick = () => { selectedPower = button.dataset.power; ui(); sound("move"); };
+}
+$("#extra-flight").onclick = $("#rescue-flight").onclick = () => act({type:"extra"});
 $("#launch").onclick = () =>
   act({ type: "launch", ...aimFromControls() }, true);
 for (const name of ["angle", "power"])
@@ -581,6 +627,7 @@ async function newGame() {
   busy = true;
   try {
     data = await api("/games/sling/api/new", {});
+    selectedPower = "normal";
     $("#verification").textContent = "";
     particles = [];
     effects = [];
@@ -596,7 +643,7 @@ async function newGame() {
 }
 $("#new").onclick = newGame;
 $("#continue").onclick = () => {
-  if (data.game.won && data.game.level === 3) newGame();
+  if (data.game.won && data.game.level === data.game.total_levels) newGame();
   else act({ type: data.game.won ? "next" : "retry" });
 };
 $("#verify").onclick = async () => {
@@ -621,11 +668,20 @@ $("#replay-shot").onclick = () => {
   beginFlight(true);
   ui();
 };
-$("#sound").onclick = async () => {
-  const on = await toggleSound();
-  $("#sound").textContent = on ? "♫ Sound on" : "♫ Sound off";
-  $("#sound").setAttribute("aria-pressed", on);
-};
+function syncAudio() {
+  const state = audioState();
+  $("#sound").textContent = state.playing ? "♫ Music on" : state.enabled ? "♫ Play music" : "♫ Music off";
+  $("#sound").setAttribute("aria-pressed", String(state.enabled));
+  $("#volume").value = Math.round(state.volume * 100);
+}
+document.addEventListener("skyward:audio", syncAudio);
+syncAudio();
+$("#sound").onclick = async () => { await toggleSound(); syncAudio(); };
+// Unlock audio on a real interaction, including touch/keyboard; respect a saved mute.
+for (const name of ["pointerdown", "keydown"]) document.addEventListener(name, (event) => {
+  if (event.target.closest?.("#sound") || audioState().playing) return;
+  void startSound();
+}, {capture:true});
 $("#volume").oninput = (e) => volume(+e.target.value / 100);
 $("#credits-open").onclick = () => $("#credits").showModal();
 $("#credits-close").onclick = () => $("#credits").close();

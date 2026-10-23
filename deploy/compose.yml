@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.8.2
+    image: utxoplay:0.9.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -52,7 +52,7 @@ services:
     tmpfs: [/tmp:size=64m]
     logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
   sling:
-    image: utxoplay:0.1.0
+    image: utxoplay:0.9.0
     container_name: utxoplay-sling
     restart: unless-stopped
     init: true
@@ -60,7 +60,7 @@ services:
     environment: {PORT: '8782', BIND: 0.0.0.0}
     env_file: /data/utxoplay/shared/runtime.env
     volumes:
-      - /data/utxoplay/shared/sling:/app/data
+      - /data/utxoplay/shared/sling-gardens:/app/data
     networks: [games]
     mem_limit: 384m
     cpus: '0.75'

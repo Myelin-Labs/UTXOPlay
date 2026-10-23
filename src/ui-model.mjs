@@ -68,7 +68,7 @@ export const gameMeta = {
     tag: "THE FLOATING GARDENS",
     length: "Play at your pace",
     input: "Mouse or touch",
-    note: "A solo adventure across three floating islands.",
+    note: "Twelve islands, three helpful items, and a sky full of music.",
     repo: "myelin-sling",
   },
   chess: {
