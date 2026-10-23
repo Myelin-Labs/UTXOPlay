@@ -1,7 +1,11 @@
 // Shared by the bundled first-party games. Only the owning, same-origin frame controls layout.
 const embedded = window.parent !== window;
 function start(){
-  if(embedded) window.parent.postMessage({type:'utxoplay:game-start'},location.origin);
+  if(embedded) {
+    // Request within the real input event; postMessage alone can lose activation.
+    try {const doc=parent.document;if(!doc.fullscreenElement)doc.documentElement.requestFullscreen?.().catch(()=>{});} catch {}
+    window.parent.postMessage({type:'utxoplay:game-start'},location.origin);
+  }
   else {document.documentElement.classList.add('immersive-game');document.documentElement.requestFullscreen?.().catch(()=>{});}
 }
 function exit(){
@@ -14,3 +18,8 @@ document.addEventListener('utxoplay:game-start',start);
 document.addEventListener('click',e=>{if(e.target.closest('#new,#launch,#continue,#practice,#create,#join'))start();},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')exit();});
 if(!embedded){const b=document.createElement('button');b.className='standalone-fullscreen';b.textContent='Fullscreen';b.onclick=()=>document.documentElement.classList.contains('immersive-game')?exit():start();document.body.append(b);document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)document.documentElement.classList.remove('immersive-game');});}
+
+if(embedded){
+ const ready=()=>parent.postMessage({type:'utxoplay:game-ready'},location.origin);
+ if(document.readyState==='complete')ready();else addEventListener('load',ready,{once:true});
+}

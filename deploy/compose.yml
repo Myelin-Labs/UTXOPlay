@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.3.0
+    image: utxoplay:0.4.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true

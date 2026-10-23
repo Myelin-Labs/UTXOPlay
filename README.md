@@ -67,3 +67,9 @@ Games enter immersive mode on a Play/Start click and request browser fullscreen 
 `myelin-openstrike:0.1.0` adds the fourth game with an original browser renderer and the upstream native OpenStrike simulation. The source, English architecture, API guide and verifier are published at https://github.com/Myelin-Labs/myelin-openstrike. Store 0.3.0 adds catalog entry, static assets and account-authenticated HTTP/WebSocket routing to port 8784. Preserve `/data/utxoplay/shared/openstrike`. The existing three runtimes keep their images and data.
 
 Public play is free. Fiber is retained only in the upstream native developer testnet path. `node tests/live-openstrike.mjs` exercises disposable CKB sign-ins, a two-account duel and verified export without transactions; set `STORE_URL` to test a deployment. The export must be verified using its matching native binary pair.
+
+## Store 0.4.0 interaction refresh
+
+A redesigned dark storefront adds game details, play-style filters, recent play, clearer loading/retry states, accessible dialogs and a mobile drawer. The developer studio includes manifest copying, reference links and persistent in-page draft fields. Motion is bundled locally, follows reduced-motion preferences and can be disabled in Display preferences. Cover WebP variants reduce their combined transfer size by 89%.
+
+Game entry waits for a same-origin ready signal and offers a retry if loading stalls. Actual game starts request fullscreen, with an immersive layout fallback; controls and reload confirmation remain available. Only the store image advances to `utxoplay:0.4.0`; game runtime images and persistent data remain unchanged. See [the interaction audit](docs/interaction-audit.md) for findings, verification and device limits.

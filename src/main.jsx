@@ -1,51 +1,1846 @@
-import React,{useState,useEffect,useRef} from 'react';
-import {createRoot} from 'react-dom/client';
-import {ccc} from '@ckb-ccc/connector-react';
-import {ArrowUpRight,ArrowRight,Play,Search,Gamepad2,Grid2X2,Library,Code2,ChevronRight,Check,Wallet,X,Expand,Volume2,ShieldCheck,RefreshCw,LogOut,Plus,Terminal,Globe,Clock,Menu,ExternalLink} from 'lucide-react';
-import './style.css';
-import initialGames from '../server/catalog.json';
-async function api(url,body){const r=await fetch(url,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error||'Something went wrong. Please try again.');return d;}
-const short=a=>a?`${a.slice(0,9)}…${a.slice(-6)}`:'';
-const filter=async(info)=>['CkbSecp256k1','BtcEcdsa','JoyId'].includes(info.signer.signType);
-function BrandIcon({className=''}){return <img className={'utxoplay-mark '+className} src="/brand/utxoplay-logo-dark-96.webp" srcSet="/brand/utxoplay-logo-dark-96.webp 1x, /brand/utxoplay-logo-dark-192.webp 2x" width="40" height="40" alt=""/>;}
-function Root(){const [client,setClient]=useState(null);useEffect(()=>{const owner=ccc.ClientPublicMainnet.open();setClient(owner.value);return()=>void owner.dispose();},[]);if(!client)return <div className="boot" role="status" aria-label="Loading UTXOPlay"><BrandIcon/><div>UTXO<span>Play</span></div></div>;return <ccc.Provider defaultClient={client} clientOptions={[{client,name:'CKB Mainnet'}]} name="UTXOPlay" icon={location.origin+'/brand/utxoplay-logo-dark-192.png'} signerFilter={filter} hideKhie locale="en"><App/></ccc.Provider>;}
-function App(){
- const [page,setPage]=useState(location.pathname),[games,setGames]=useState(initialGames),[user,setUser]=useState(null),[loadingUser,setLoadingUser]=useState(true),[query,setQuery]=useState(''),[genre,setGenre]=useState('All games'),[featured,setFeatured]=useState('teeworlds'),[toast,setToast]=useState(''),[walletDialog,setWalletDialog]=useState(false),[busy,setBusy]=useState(false),[intent,setIntent]=useState(false),[library,setLibrary]=useState([]),[projects,setProjects]=useState([]),[projectModal,setProjectModal]=useState(false),[menu,setMenu]=useState(false),[frameKey,setFrameKey]=useState(0),[immersive,setImmersive]=useState(false);
- const signer=ccc.useSigner();const {open,disconnect,wallet}=ccc.useCcc();const previousSigner=useRef(null),signing=useRef(false);
- const notify=m=>setToast(m);
- function go(p){if(!p.startsWith('/play/'))exitImmersive();history.pushState({},'',p);setPage(p);setMenu(false);window.scrollTo(0,0);}
- useEffect(()=>{const listener=()=>setPage(location.pathname);addEventListener('popstate',listener);api('/api/me').then(d=>setUser(d.user)).catch(()=>{}).finally(()=>setLoadingUser(false));api('/api/games').then(d=>setGames(d.games)).catch(()=>{});return()=>removeEventListener('popstate',listener);},[]);
- useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),6500);return()=>clearTimeout(t);},[toast]);
- useEffect(()=>{if(user){api('/api/library').then(d=>setLibrary(d.games)).catch(()=>{});if(page==='/developers')api('/api/developer/projects').then(d=>setProjects(d.projects)).catch(()=>{});}else{setLibrary([]);setProjects([]);}},[user,page]);
- useEffect(()=>{if(previousSigner.current&&previousSigner.current!==signer){api('/api/auth/logout',{}).then(()=>{setUser(null);setFrameKey(k=>k+1);}).catch(()=>{});}previousSigner.current=signer;},[signer]);
- async function signIn(){if(!signer||signing.current)return;signing.current=true;setBusy(true);setIntent(false);try{const address=await signer.getRecommendedAddress();const challenge=await api('/api/auth/challenge',{address});const proof=await signer.signMessage(challenge.message);const d=await api('/api/auth/verify',{id:challenge.id,proof});setUser(d.user);setWalletDialog(false);setFrameKey(k=>k+1);notify('Signed in. Your wallet-linked library is ready.');}catch(e){notify(e.message||'Wallet request cancelled.');}finally{setBusy(false);signing.current=false;}}
- useEffect(()=>{if(intent&&signer)void signIn();},[intent,signer]);
- function connect(){setWalletDialog(true);}
- async function chooseWallet(){if(signer){await signIn();}else{setIntent(true);open();}}
- async function logout(){try{await api('/api/auth/logout',{});disconnect();setIntent(false);setUser(null);setFrameKey(k=>k+1);go('/');notify('Signed out. Your wallet saves are kept for your next visit.');}catch(e){notify(e.message);}}
- function enterImmersive(){setImmersive(true);if(!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});}
- function exitImmersive(){setImmersive(false);if(document.fullscreenElement)document.exitFullscreen?.().catch(()=>{});}
- function syncFrame(){document.querySelector('.game-frame')?.contentWindow?.postMessage({type:'utxoplay:immersion',enabled:immersive},location.origin);}
- useEffect(()=>{syncFrame();document.body.classList.toggle('playing-immersive',immersive);return()=>document.body.classList.remove('playing-immersive');},[immersive,page]);
- useEffect(()=>{const onMessage=e=>{if(e.origin!==location.origin||e.source!==document.querySelector('.game-frame')?.contentWindow)return;if(e.data?.type==='utxoplay:game-start')enterImmersive();if(e.data?.type==='utxoplay:exit-immersive')exitImmersive();};const onFull=()=>{if(!document.fullscreenElement)setImmersive(false);};const onKey=e=>{if(e.key==='Escape')exitImmersive();};addEventListener('message',onMessage);addEventListener('keydown',onKey);document.addEventListener('fullscreenchange',onFull);return()=>{removeEventListener('message',onMessage);removeEventListener('keydown',onKey);document.removeEventListener('fullscreenchange',onFull);};},[]);
- useEffect(()=>{if(!page.startsWith('/play/'))exitImmersive();},[page]);
- async function launch(id){enterImmersive();setBusy(true);try{if(!user){const d=await api('/api/guest',{});setUser(d.user);}go('/play/'+id);}catch(e){exitImmersive();notify(e.message);}finally{setBusy(false);}}
- const game=games.find(g=>page==='/play/'+g.id),hero=games.find(g=>g.id===featured)||games[1];
- const filtered=games.filter(g=>(genre==='All games'||g.genre===genre)&&(g.title+' '+g.description).toLowerCase().includes(query.toLowerCase()));
- const libraryGames=library.map(p=>({...games.find(g=>g.id===p.game),updated:p.updated})).filter(g=>g.id);
- const signedIn=user&&!user.guest;
- function GameCard({g}){return <article className={'game-card '+g.id}><button className="cover-button" onClick={()=>launch(g.id)} aria-label={'Play '+g.title}><img src={g.cover} alt={g.title+' cover art'} loading="lazy"/><span className="card-badge">{g.genre}</span><span className="card-play"><Play size={20} fill="currentColor"/></span></button><div className="game-card-info"><div><h3>{g.title}</h3><p>{g.mode} <span>·</span> Browser game</p></div><span className="price">Free</span></div></article>;}
- return <div className={"app"+(immersive?" immersive":"")}><header className="topbar"><button className="mobile-menu icon-btn" onClick={()=>setMenu(!menu)} aria-label="Menu"><Menu/></button><button className="brand" onClick={()=>go('/')} aria-label="UTXOPlay home"><BrandIcon/><span>UTXO<span className="brand-light">Play</span></span></button><nav className="top-nav"><button className={page==='/'?'active':''} onClick={()=>go('/')}>Store</button><button className={page==='/library'?'active':''} onClick={()=>go('/library')}>My library</button><button className={page==='/developers'?'active':''} onClick={()=>go('/developers')}>For developers <ArrowUpRight size={13}/></button></nav><div className="top-right"><span className="network"><i/>CKB mainnet</span><button className="wallet-button" disabled={busy||loadingUser} onClick={signedIn?()=>setWalletDialog(true):connect}><Wallet size={16}/>{busy?'Confirm in wallet…':signedIn?short(user.address):'Connect wallet'}</button></div></header>
- <div className="shell"><aside className={'sidebar '+(menu?'mobile-open':'')}><div><p className="sidebar-label">YOUR PLAYGROUND</p><button className={page==='/'?'selected':''} onClick={()=>go('/')}><Grid2X2 size={18}/>Discover</button><button className={page==='/library'?'selected':''} onClick={()=>go('/library')}><Library size={18}/>My library {library.length>0&&<span className="count">{library.length}</span>}</button><div className="side-rule"/><p className="sidebar-label">EXPLORE</p>{['All games','Action','Arcade','Strategy'].map(g=><button key={g} className={page==='/'&&genre===g?'sub-active':''} onClick={()=>{setGenre(g);go('/');}}><span className={'genre-dot '+g.toLowerCase().split(' ')[0]}/>{g}</button>)}</div><div className="sidebar-bottom"><div className="build-note"><Code2 size={21}/><strong>Made something fun?</strong><p>Your next game belongs here.</p><button onClick={()=>go('/developers')}>Build with UTXOPlay <ArrowUpRight size={14}/></button></div><span className="sidebar-foot">Small games. Big possibilities.</span></div></aside>
- <main className="main">{page==='/'?<><section className="page-heading"><div><div className="eyebrow"><span className="tiny-line"/>THE OPEN PLAYGROUND</div><h1>Find your next <em>little obsession.</em></h1><p>Good games. No downloads. Just one more round.</p></div><div className="edition">THE LAUNCH COLLECTION <span>01 — {String(games.length).padStart(2,'0')}</span></div></section><section className={'hero '+hero.id}><img className="hero-image" src={hero.cover} alt=""/><div className="hero-shade"/><div className="hero-content"><span className="pill"><span/>EDITOR'S PICK <span className="pill-sep">/</span> {hero.genre.toUpperCase()}</span><h2>{hero.headline.split('|')[0]}<br/>{hero.headline.split('|')[1]}</h2><p>{hero.heroDescription}</p><div className="hero-actions"><button className="primary" disabled={busy} onClick={()=>launch(hero.id)}><Play size={17} fill="currentColor"/>Play {hero.title}<ArrowUpRight size={17}/></button><span>Free to play <span>·</span> No install</span></div></div><div className="hero-bottom"><span className="hero-index">{String(games.findIndex(g=>g.id===hero.id)+1).padStart(2,'0')} <span>/ {String(games.length).padStart(2,'0')}</span></span><div className="hero-tabs">{games.map(g=>g.id).map(id=><button key={id} className={featured===id?'active':''} onClick={()=>setFeatured(id)} aria-label={'Feature '+id}/>)}</div><span className="hero-caption">{hero.caption}</span></div></section>
- <div className="benefits"><span><Globe size={17}/>Play in your browser</span><span><Wallet size={17}/>Your wallet. Your library.</span><span><ShieldCheck size={17}/>Your games. Your replays.</span></div>
- <section className="collection"><div className="section-head"><div><span className="eyebrow">PICK UP & PLAY</span><h2>A small collection.<br className="mobile-only"/> A lot to discover.</h2></div><label className="search"><Search size={17}/><input aria-label="Search games" placeholder="Find your kind of fun" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button onClick={()=>setQuery('')} aria-label="Clear search"><X size={14}/></button>}</label></div><div className="filter-row">{['All games','Action','Arcade','Strategy'].map(g=><button key={g} className={genre===g?'active':''} onClick={()=>setGenre(g)}>{g}{g==='All games'&&<span>{String(games.length).padStart(2,'0')}</span>}</button>)}<span className="results">{filtered.length} {filtered.length===1?'game':'games'}</span></div><div className="game-grid">{filtered.map(g=><GameCard key={g.id} g={g}/>)}</div>{!filtered.length&&<div className="empty"><Search/><h3>No games found</h3><p>Try a different name or explore all games.</p><button className="outline" onClick={()=>{setQuery('');setGenre('All games');}}>Show all games</button></div>}</section>
- <section className="wallet-banner"><div className="wallet-art"><Wallet size={31}/><span><Check size={12}/></span></div><div><span className="eyebrow">LESS FRICTION. MORE PLAY.</span><h2>Bring your wallet. Keep your progress.</h2><p>Sign in with a CKB-compatible wallet and return to your games on any device.<br/>Just trying things out? Guest play is always one click away.</p></div><button className="outline" onClick={connect}>{signedIn?'Your account':'Connect your wallet'}<ArrowUpRight size={16}/></button></section></>:page==='/library'?<><PageHeading eyebrow="YOUR CORNER OF THE PLAYGROUND" title="Pick up where you left off." description={signedIn?'Your games, linked to your wallet.':"Your guest games stay in this browser. Sign in for a separate wallet-linked library."}/>{!signedIn&&<div className="info-strip"><Wallet size={20}/><span>Keep a library you can come back to on any device.</span><button onClick={connect}>Connect wallet <ArrowRight size={15}/></button></div>}<div className="game-grid library-grid">{libraryGames.map(g=><div key={g.id}><GameCard g={g}/><p className="last-played"><Clock size={13}/>Last played {new Date(g.updated).toLocaleDateString()}</p></div>)}</div>{!libraryGames.length&&<div className="empty"><Library size={38}/><h2>A little empty. Full of possibility.</h2><p>Start a game and it will be waiting right here.</p><button className="primary" onClick={()=>go('/')}>Discover games <ArrowRight size={17}/></button></div>}</>:page==='/developers'?<><PageHeading eyebrow="UTXOPLAY STUDIO" title="You build the fun. We bring the playground." description="A home for browser games, with wallet identity and replayable Myelin sessions."/><section className="developer-hero"><div><span className="pill">FOR INDEPENDENT BUILDERS</span><h2>Small team.<br/>Big play energy.</h2><p>Register your game project, explore the integration contract, and build on the same runtime as our launch collection.</p><button className="primary" onClick={()=>signedIn?setProjectModal(true):connect}><Plus size={17}/>Create a project</button></div><div className="code-panel"><div><span/><span/><span/><b>utxoplay.manifest.json</b></div><pre>{JSON.stringify({name:'Your next great game',version:'1.0.0',entrypoint:'https://your.game',genre:'arcade',runtime:'browser',capabilities:['player','session']},null,2)}</pre><span className="code-footer"><Check size={14}/> One identity. More ways to play.</span></div></section><div className="dev-features"><article><Wallet/><h3>Wallet identity</h3><p>CKB-compatible login with a server-verified challenge. No keys in your game.</p></article><article><RefreshCw/><h3>Replayable sessions</h3><p>Our launch games preserve signed Myelin histories with downloadable evidence.</p></article><article><Terminal/><h3>An open starting point</h3><p>Read the SDK contract and use the launch games as integration references.</p><a href="/integration.html" target="_blank" rel="noreferrer">Read integration guide <ArrowUpRight size={14}/></a></article></div><div className="section-head"><div><span className="eyebrow">YOUR WORKSPACE</span><h2>Projects</h2></div>{signedIn&&<button className="outline" onClick={()=>setProjectModal(true)}><Plus size={16}/>New project</button>}</div><p className="muted">Projects are saved as private drafts. Public game publishing is curated for this first release.</p>{projects.length?<div className="projects">{projects.map(p=><article key={p.id}><Code2/><div><h3>{p.title}</h3><p>{p.description}</p><a href={p.url} target="_blank" rel="noreferrer">Open game <ExternalLink size={12}/></a></div><span className="pill">DRAFT</span></article>)}</div>:<div className="empty compact"><Code2 size={28}/><h3>{signedIn?'Your next game starts here.':'Sign in to your developer workspace.'}</h3><p>{signedIn?'Create a private project to save your game details.':'Use a CKB-compatible wallet to create and manage your projects.'}</p></div>}</>:game?<><div className="play-heading"><button onClick={()=>go('/')} className="back">Store <ChevronRight size={14}/></button><span>{game.title}</span><div className="play-tools"><button onClick={()=>setFrameKey(k=>k+1)} title="Reload game"><RefreshCw size={16}/></button><button onClick={immersive?exitImmersive:enterImmersive} title={immersive?'Exit immersive mode':'Fullscreen'} aria-label={immersive?'Exit immersive mode':'Fullscreen'}>{immersive?<X size={17}/>:<Expand size={17}/>}<span>{immersive?'Exit':'Fullscreen'}</span></button></div></div><div className="play-title"><div><span className="eyebrow">{game.genre} <span>·</span> {game.players}</span><h1>{game.title}</h1></div><span className="save-indicator"><i/>{signedIn?'Wallet save':'Guest save'}</span></div>{user?<iframe key={frameKey} className={'game-frame '+game.id} src={'/games/'+game.id+'/'} title={game.title} onLoad={syncFrame} allow="fullscreen; autoplay" allowFullScreen/>:<div className="empty"><Gamepad2 size={38}/><h2>Your next round is waiting.</h2><p>Play as a guest or connect your wallet to continue your saved game.</p><button className="primary" disabled={busy||loadingUser} onClick={()=>launch(game.id)}><Play size={17}/>Start playing</button></div>}<div className="play-info"><div><h3>How to play</h3><p>{game.controls}</p>{game.id==='chess'&&<p>This release is local two-player chess: both players share this device.</p>}</div><div><h3>Your progress, remembered</h3><p>{['teeworlds','openstrike'].includes(game.id)?'Finished rounds are replayed and saved to your account. Unfinished live rounds can be interrupted by a server restart.':signedIn?'Moves and launches save to your wallet-linked account.':'Guest progress is tied to this browser. Wallet sign-in opens your separate account library.'}</p><p>{game.id==='openstrike'?'Completed rounds provide a verified export. Download it before leaving the room to keep a copy.':'You can replay and export your session inside the game.'}</p></div></div></>:<div className="empty"><h1>That page wandered off.</h1><button className="primary" onClick={()=>go('/')}>Back to the store</button></div>}
- <footer className="footer"><button className="brand" onClick={()=>go('/')}><BrandIcon/><span>UTXO<span className="brand-light">Play</span></span></button><p>A little more play in your day.</p><div><button onClick={()=>go('/developers')}>Developers</button><a href="/privacy.html">Privacy</a><a href="/about.html">About</a><span>© {new Date().getFullYear()} UTXOPlay</span></div></footer></main></div>
- {walletDialog&&<div className="modal-backdrop" onClick={()=>!busy&&setWalletDialog(false)}><section className="modal" role="dialog" aria-modal="true" aria-label="Wallet account" onClick={e=>e.stopPropagation()}><button className="modal-close icon-btn" onClick={()=>setWalletDialog(false)} aria-label="Close"><X/></button><div className="modal-icon"><BrandIcon/></div><span className="eyebrow">YOUR KEY TO THE PLAYGROUND</span><h2>{signedIn?'You’re right at home.':'One wallet. More play.'}</h2>{signedIn?<><p>Your CKB account is signed in.</p><div className="address">{user.address}</div><button className="primary full" onClick={()=>{setWalletDialog(false);go('/library');}}>Open my library <ArrowRight size={16}/></button><button className="text-button" onClick={()=>{setWalletDialog(false);logout();}}><LogOut size={15}/>Sign out</button></>:<><p>Connect your wallet, then sign a message to open your UTXOPlay account.</p><div className="wallet-list"><span>JoyID</span><span>UTXO Global</span><span>UniSat</span><span>OKX</span></div><button className="primary full" disabled={busy} onClick={chooseWallet}><Wallet size={17}/>{busy?'Confirm the message in your wallet':signer?'Sign in with '+(wallet?.name||'wallet'):'Choose a wallet'}<ArrowUpRight size={16}/></button>{signer&&<button className="text-button" onClick={()=>{setIntent(true);open();}}>Choose another wallet</button>}<p className="modal-note"><ShieldCheck size={14}/>Login only. No transactions. No funds required.</p><p className="fine">Wallet accounts use CKB mainnet. Wallet saves and guest saves are separate.</p></>}</section></div>}
- {projectModal&&<div className="modal-backdrop" onClick={()=>setProjectModal(false)}><form className="modal project-form" onClick={e=>e.stopPropagation()} onSubmit={async e=>{e.preventDefault();const form=new FormData(e.currentTarget);setBusy(true);try{await api('/api/developer/projects',Object.fromEntries(form));setProjects((await api('/api/developer/projects')).projects);setProjectModal(false);notify('Your project draft has been saved.');}catch(err){notify(err.message);}finally{setBusy(false);}}}><button type="button" className="modal-close icon-btn" onClick={()=>setProjectModal(false)} aria-label="Close"><X/></button><span className="eyebrow studio-brand"><BrandIcon/>UTXOPLAY STUDIO</span><h2>Something worth playing.</h2><p>Create a private project draft for your game.</p><label>Game title<input name="title" required minLength={3} maxLength={80} placeholder="Your game's name"/></label><label>Description<textarea name="description" required maxLength={2000} placeholder="What makes it fun?"/></label><label>Game URL<input name="url" type="url" required pattern="https://.*" placeholder="https://your.game"/></label><button className="primary full" disabled={busy}>{busy?'Saving…':'Save project'}<ArrowRight size={16}/></button><p className="fine">Saving a draft does not publish your game.</p></form></div>}
- {toast&&<div className="toast" role="status"><span>{toast}</span><button onClick={()=>setToast('')} aria-label="Dismiss"><X size={17}/></button></div>}
- </div>;
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
+import { ccc } from "@ckb-ccc/connector-react";
+import {
+  MotionConfig,
+  motion,
+  AnimatePresence,
+  useReducedMotion,
+} from "motion/react";
+import {
+  ArrowUpRight,
+  ArrowRight,
+  ArrowLeft,
+  Play,
+  Search,
+  Gamepad2,
+  Grid2X2,
+  Library,
+  Code2,
+  ChevronRight,
+  Check,
+  Wallet,
+  X,
+  Expand,
+  ShieldCheck,
+  RefreshCw,
+  LogOut,
+  Plus,
+  Terminal,
+  Globe,
+  Clock,
+  Menu,
+  ExternalLink,
+  Settings2,
+  Copy,
+  Download,
+  Users,
+  Sparkles,
+  Monitor,
+  ChevronLeft,
+  BookOpen,
+  CheckCircle2,
+  WifiOff,
+} from "lucide-react";
+import {
+  WalletPickerGuard,
+  BrandIcon,
+  Spinner,
+  Modal,
+  Notice,
+  Skeletons,
+  GameCard,
+  GameDetails,
+  PageHeading,
+} from "./ui.jsx";
+import {
+  genres,
+  selectGames,
+  gameMeta,
+  accountLabel,
+  apiError,
+} from "./ui-model.mjs";
+import "./style.css";
+import initialGames from "../server/catalog.json";
+async function api(url, body) {
+  const r = await fetch(url, {
+    method: body === undefined ? "GET" : "POST",
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(15000),
+  });
+  let data;
+  try {
+    data = await r.json();
+  } catch {
+    throw Error("The service is temporarily unavailable. Please try again.");
+  }
+  if (!r.ok) {
+    const e = Error(data.error || "Something went wrong. Please try again.");
+    e.status = r.status;
+    throw e;
+  }
+  return data;
 }
-function PageHeading({eyebrow,title,description}){return <section className="page-heading secondary"><div><div className="eyebrow">{eyebrow==='UTXOPLAY STUDIO'?<BrandIcon className="studio-mark"/>:<span className="tiny-line"/>}{eyebrow}</div><h1>{title}</h1><p>{description}</p></div></section>;}
-createRoot(document.getElementById('root')).render(<Root/>);
+const short = (a) => (a ? `${a.slice(0, 9)}…${a.slice(-6)}` : "");
+const filter = async (info) =>
+  ["CkbSecp256k1", "BtcEcdsa", "JoyId"].includes(info.signer.signType);
+function readMotion() {
+  try {
+    return localStorage.getItem("utxoplay:motion") || "system";
+  } catch {
+    return "system";
+  }
+}
+function Root() {
+  const [client, setClient] = useState(null);
+  useEffect(() => {
+    const owner = ccc.ClientPublicMainnet.open();
+    setClient(owner.value);
+    return () => void owner.dispose();
+  }, []);
+  if (!client)
+    return (
+      <div className="boot" role="status">
+        <BrandIcon />
+        <span>Opening your playground…</span>
+        <Spinner />
+      </div>
+    );
+  return (
+    <ccc.Provider
+      defaultClient={client}
+      clientOptions={[{ client, name: "CKB Mainnet" }]}
+      name="UTXOPlay"
+      icon={location.origin + "/brand/utxoplay-logo-dark-192.png"}
+      signerFilter={filter}
+      hideKhie
+      connectorProps={{
+        role: "dialog",
+        "aria-modal": true,
+        "aria-label": "Choose your wallet",
+        style: {
+          "--background": "#181e1b",
+          "--divider": "#303b34",
+          "--btn-primary": "#222d26",
+          "--btn-primary-hover": "#344b3b",
+          "--btn-secondary": "#303b34",
+          "--btn-secondary-hover": "#415648",
+          "--icon-primary": "#edf5ef",
+          "--icon-secondary": "#a3b2a8",
+          "--tip-color": "#a3b2a8",
+          color: "#edf5ef",
+        },
+      }}
+    >
+      <App />
+    </ccc.Provider>
+  );
+}
+function useAccountResource(user, url, revision = 0) {
+  const [state, setState] = useState({
+    owner: null,
+    data: [],
+    loading: false,
+    error: "",
+  });
+  useEffect(() => {
+    let live = true;
+    const id = user?.id;
+    if (!id) {
+      setState({ owner: null, data: [], loading: false, error: "" });
+      return;
+    }
+    setState({ owner: id, data: [], loading: true, error: "" });
+    api(url)
+      .then((d) => {
+        if (live)
+          setState({
+            owner: id,
+            data: d.games || d.projects || [],
+            loading: false,
+            error: "",
+          });
+      })
+      .catch((e) => {
+        if (live)
+          setState({ owner: id, data: [], loading: false, error: apiError(e) });
+      });
+    return () => {
+      live = false;
+    };
+  }, [user?.id, url, revision]);
+  return state.owner === user?.id
+    ? state
+    : { data: [], loading: !!user, error: "" };
+}
+function App() {
+  const [page, setPage] = useState(location.pathname),
+    [games, setGames] = useState(initialGames),
+    [user, setUser] = useState(null),
+    [loadingUser, setLoadingUser] = useState(true),
+    [accountError, setAccountError] = useState("");
+  const [query, setQuery] = useState(""),
+    [genre, setGenre] = useState("All games"),
+    [mode, setMode] = useState("all"),
+    [featured, setFeatured] = useState("openstrike");
+  const [toast, setToast] = useState(null),
+    [dialog, setDialog] = useState(null),
+    [details, setDetails] = useState(null),
+    [walletBusy, setWalletBusy] = useState(false),
+    [walletPhase, setWalletPhase] = useState("idle"),
+    [intent, setIntent] = useState(false),
+    [walletError, setWalletError] = useState(""),
+    [launching, setLaunching] = useState(""),
+    [projectBusy, setProjectBusy] = useState(false),
+    [projectError, setProjectError] = useState("");
+  const [projectDraft, setProjectDraft] = useState({
+      title: "",
+      description: "",
+      url: "",
+    }),
+    [mobileNav, setMobileNav] = useState(false),
+    [frameKey, setFrameKey] = useState(0),
+    [immersive, setImmersive] = useState(false),
+    [frameStatus, setFrameStatus] = useState("loading"),
+    [revision, setRevision] = useState(0),
+    [motionSetting, setMotionSetting] = useState(readMotion),
+    [online, setOnline] = useState(navigator.onLine);
+  const signer = ccc.useSigner();
+  const { open, close: closePicker, disconnect, wallet, isOpen } = ccc.useCcc();
+  const previousSigner = useRef(null),
+    signing = useRef(false),
+    authEpoch = useRef(0),
+    authTransition = useRef(Promise.resolve()),
+    launchLock = useRef(false),
+    searchRef = useRef(null),
+    mainRef = useRef(null),
+    frameRef = useRef(null),
+    frameTimer = useRef(null),
+    walletPickerSeen = useRef(false),
+    cancelSignature = useRef(null);
+  const reduceSystem = useReducedMotion(),
+    reduced = motionSetting === "reduced" || !!reduceSystem;
+  const libraryState = useAccountResource(user, "/api/library", revision),
+    projectState = useAccountResource(
+      page === "/developers" && !user?.guest ? user : null,
+      "/api/developer/projects",
+      revision,
+    );
+  const libraryGames = libraryState.data
+    .map((p) => ({ ...games.find((g) => g.id === p.game), updated: p.updated }))
+    .filter((g) => g.id);
+  const game = games.find((g) => page === "/play/" + g.id),
+    hero = games.find((g) => g.id === featured) || games[0],
+    signedIn = !!user && !user.guest;
+  const notify = useCallback(
+    (text, type = "success") => setToast({ text, type, id: Date.now() }),
+    [],
+  );
+  const loadAccount = useCallback(async () => {
+    setLoadingUser(true);
+    setAccountError("");
+    try {
+      setUser((await api("/api/me")).user);
+    } catch (e) {
+      setAccountError(apiError(e));
+    } finally {
+      setLoadingUser(false);
+    }
+  }, []);
+  function exitImmersive() {
+    setImmersive(false);
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  }
+  function enterImmersive() {
+    setImmersive(true);
+    if (!document.fullscreenElement)
+      document.documentElement.requestFullscreen?.().catch(() => {});
+  }
+  function go(p) {
+    if (p === page) {
+      setMobileNav(false);
+      return;
+    }
+    exitImmersive();
+    history.pushState({}, "", p);
+    setPage(p);
+    setMobileNav(false);
+    setDialog(null);
+    setDetails(null);
+    window.scrollTo(0, 0);
+    setRevision((r) => r + 1);
+  }
+  const navigateRef = useRef(go);
+  navigateRef.current = go;
+  useEffect(() => {
+    const onPop = () => {
+      setPage(location.pathname);
+      setMobileNav(false);
+      setDialog(null);
+      setDetails(null);
+      setRevision((r) => r + 1);
+      window.scrollTo(0, 0);
+    };
+    addEventListener("popstate", onPop);
+    loadAccount();
+    api("/api/games")
+      .then((d) => setGames(d.games))
+      .catch(() => {});
+    return () => removeEventListener("popstate", onPop);
+  }, [loadAccount]);
+  useEffect(() => {
+    document.title =
+      (game
+        ? game.title
+        : page === "/library"
+          ? "Your library"
+          : page === "/developers"
+            ? "Studio"
+            : "Good games. Yours to play.") + " · UTXOPlay";
+    if (!page.startsWith("/play/")) exitImmersive();
+    mainRef.current?.focus({ preventScroll: true });
+  }, [page]);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(
+      () => setToast(null),
+      toast.type === "error" ? 10000 : 5000,
+    );
+    return () => clearTimeout(timer);
+  }, [toast]);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    addEventListener("online", update);
+    addEventListener("offline", update);
+    return () => {
+      removeEventListener("online", update);
+      removeEventListener("offline", update);
+    };
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.motion = reduced ? "reduced" : "full";
+    try {
+      localStorage.setItem("utxoplay:motion", motionSetting);
+    } catch {}
+  }, [motionSetting, reduced]);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (
+        e.defaultPrevented ||
+        page.startsWith("/play/") ||
+        dialog ||
+        details ||
+        isOpen ||
+        e.target.closest("input,textarea,select,[contenteditable]")
+      )
+        return;
+      if (
+        (e.key === "/" && !e.ctrlKey && !e.metaKey) ||
+        ((e.metaKey || e.ctrlKey) && e.key === "k")
+      ) {
+        e.preventDefault();
+        if (page !== "/") navigateRef.current("/");
+        requestAnimationFrame(() => {
+          document.getElementById("collection")?.scrollIntoView({
+            block: "start",
+            behavior: reduced ? "instant" : "smooth",
+          });
+          searchRef.current?.focus({ preventScroll: true });
+        });
+      }
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [page, dialog, details, isOpen, reduced]);
+  // Serialize wallet changes before a new challenge to prevent a late logout revoking the new account.
+  useEffect(() => {
+    if (previousSigner.current && previousSigner.current !== signer) {
+      cancelSignature.current?.();
+      authEpoch.current++;
+      setUser(null);
+      setFrameKey((k) => k + 1);
+      authTransition.current = authTransition.current
+        .catch(() => {})
+        .then(() => api("/api/auth/logout", {}));
+      authTransition.current.catch((e) => notify(apiError(e), "error"));
+    }
+    previousSigner.current = signer;
+  }, [signer, notify]);
+  async function signIn() {
+    if (!signer || signing.current) return;
+    const epoch = authEpoch.current;
+    signing.current = true;
+    setWalletBusy(true);
+    setWalletPhase("signature");
+    setIntent(false);
+    setWalletError("");
+    setDialog("wallet");
+    const cancellation = new Promise((_, reject) => {
+      cancelSignature.current = () => reject(new Error("Sign-in cancelled."));
+    });
+    cancellation.catch(() => {});
+    try {
+      await authTransition.current;
+      if (epoch !== authEpoch.current) return;
+      const address = await Promise.race([
+        signer.getRecommendedAddress(),
+        cancellation,
+      ]);
+      const challenge = await api("/api/auth/challenge", { address });
+      if (epoch !== authEpoch.current) return;
+      const proof = await Promise.race([
+        signer.signMessage(challenge.message),
+        cancellation,
+      ]);
+      if (epoch !== authEpoch.current) return;
+      setWalletPhase("verifying");
+      cancelSignature.current = null;
+      const d = await api("/api/auth/verify", { id: challenge.id, proof });
+      if (epoch !== authEpoch.current) return;
+      setUser(d.user);
+      setDialog(null);
+      setFrameKey((k) => k + 1);
+      notify("You’re signed in. Your wallet library is ready.");
+    } catch (e) {
+      if (epoch === authEpoch.current) setWalletError(apiError(e));
+    } finally {
+      cancelSignature.current = null;
+      setWalletBusy(false);
+      setWalletPhase("idle");
+      signing.current = false;
+    }
+  }
+  useEffect(() => {
+    if (intent && signer && !isOpen) void signIn();
+  }, [intent, signer, isOpen]);
+  useEffect(() => {
+    if (isOpen) walletPickerSeen.current = true;
+    else if (walletPickerSeen.current) {
+      walletPickerSeen.current = false;
+      if (!signer) {
+        setIntent(false);
+        setDialog("wallet");
+      }
+    }
+  }, [isOpen, signer]);
+  function connect() {
+    setWalletError("");
+    setDialog("wallet");
+  }
+  function chooseWallet(change = false) {
+    if (signer && !change) {
+      void signIn();
+      return;
+    }
+    setIntent(true);
+    flushSync(() => setDialog(null));
+    open();
+  }
+  async function logout() {
+    setWalletBusy(true);
+    try {
+      authEpoch.current++;
+      await api("/api/auth/logout", {});
+      previousSigner.current = null;
+      await disconnect();
+      setIntent(false);
+      setUser(null);
+      setFrameKey((k) => k + 1);
+      setDialog(null);
+      go("/");
+      notify("Signed out. Your saved games are kept for your next visit.");
+    } catch (e) {
+      setWalletError(apiError(e));
+    } finally {
+      setWalletBusy(false);
+    }
+  }
+  function syncFrame() {
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "utxoplay:immersion", enabled: immersive },
+      location.origin,
+    );
+  }
+  useEffect(() => {
+    syncFrame();
+    document.body.classList.toggle("playing-immersive", immersive);
+    return () => document.body.classList.remove("playing-immersive");
+  }, [immersive, page]);
+  useEffect(() => {
+    setFrameStatus("loading");
+    clearTimeout(frameTimer.current);
+    if (game && user)
+      frameTimer.current = setTimeout(
+        () => setFrameStatus((s) => (s === "loading" ? "slow" : s)),
+        15000,
+      );
+    return () => clearTimeout(frameTimer.current);
+  }, [game?.id, user?.id, frameKey]);
+  useEffect(() => {
+    const onMessage = (e) => {
+      if (
+        e.origin !== location.origin ||
+        e.source !== frameRef.current?.contentWindow
+      )
+        return;
+      if (e.data?.type === "utxoplay:game-start") enterImmersive();
+      if (e.data?.type === "utxoplay:exit-immersive") exitImmersive();
+      if (e.data?.type === "utxoplay:game-ready") {
+        setFrameStatus("ready");
+        clearTimeout(frameTimer.current);
+      }
+    };
+    const onFull = () => {
+      if (!document.fullscreenElement) setImmersive(false);
+    };
+    const onKey = (e) => {
+      if (
+        e.key === "Escape" &&
+        !e.defaultPrevented &&
+        !document.querySelector("dialog[open]")
+      )
+        exitImmersive();
+    };
+    addEventListener("message", onMessage);
+    addEventListener("keydown", onKey);
+    document.addEventListener("fullscreenchange", onFull);
+    return () => {
+      removeEventListener("message", onMessage);
+      removeEventListener("keydown", onKey);
+      document.removeEventListener("fullscreenchange", onFull);
+    };
+  }, []);
+  async function launch(id) {
+    if (launchLock.current || loadingUser) return;
+    launchLock.current = true;
+    setLaunching(id);
+    try {
+      if (!user) setUser((await api("/api/guest", {})).user);
+      setDetails(null);
+      go("/play/" + id);
+    } catch (e) {
+      notify(apiError(e), "error");
+    } finally {
+      setLaunching("");
+      launchLock.current = false;
+    }
+  }
+  async function copy(text, message = "Copied to clipboard.") {
+    try {
+      await navigator.clipboard.writeText(text);
+      notify(message);
+    } catch {
+      notify(
+        "Clipboard is unavailable. Select and copy the text instead.",
+        "error",
+      );
+    }
+  }
+  function browseGenre(value) {
+    setGenre(value);
+    setQuery("");
+    setMode("all");
+    go("/");
+    requestAnimationFrame(() =>
+      document
+        .getElementById("collection")
+        ?.scrollIntoView({ behavior: reduced ? "instant" : "smooth" }),
+    );
+  }
+  function resetFilters() {
+    setQuery("");
+    setGenre("All games");
+    setMode("all");
+    searchRef.current?.focus();
+  }
+  const filtered = selectGames(games, { query, genre, mode });
+  const navItems = [
+    ["/", "Discover", Grid2X2],
+    ["/library", "My library", Library],
+    ["/developers", "Developer studio", Code2],
+  ];
+  const navContent = (
+    <>
+      <p className="sidebar-label">PLAY SOMETHING GOOD</p>
+      <nav aria-label="Main navigation">
+        {navItems.map(([p, label, Icon]) => (
+          <button
+            key={p}
+            aria-current={page === p ? "page" : undefined}
+            className={page === p ? "selected" : ""}
+            onClick={() => go(p)}
+          >
+            <Icon size={18} />
+            {label}
+            {p === "/library" && libraryGames.length > 0 && (
+              <span className="count">{libraryGames.length}</span>
+            )}
+          </button>
+        ))}
+      </nav>
+      <div className="side-rule" />
+      <p className="sidebar-label">YOUR KIND OF PLAY</p>
+      <nav aria-label="Genres">
+        {genres.map((g) => (
+          <button
+            key={g}
+            aria-pressed={page === "/" && genre === g}
+            onClick={() => browseGenre(g)}
+          >
+            <span className={"genre-dot " + g.toLowerCase().split(" ")[0]} />
+            {g}
+          </button>
+        ))}
+      </nav>
+      <div className="sidebar-bottom">
+        <div className="build-note">
+          <Code2 size={22} />
+          <strong>Make the next great game.</strong>
+          <p>A small studio. A big playground.</p>
+          <button onClick={() => go("/developers")}>
+            Start building <ArrowUpRight size={14} />
+          </button>
+        </div>
+        <button
+          className="preference-link"
+          onClick={() => {
+            setMobileNav(false);
+            setDialog("preferences");
+          }}
+        >
+          <Settings2 size={15} />
+          Display preferences
+        </button>
+        <a
+          className="source-link"
+          href="https://github.com/Myelin-Labs/UTXOPlay"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Built in the open <ArrowUpRight size={12} />
+        </a>
+      </div>
+    </>
+  );
+  return (
+    <MotionConfig
+      reducedMotion={reduced ? "always" : "user"}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div
+        className={"app" + (immersive ? " immersive" : "")}
+        inert={isOpen ? true : undefined}
+      >
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        <header className="topbar">
+          <button
+            className="mobile-menu icon-btn"
+            onClick={() => setMobileNav(true)}
+            aria-label="Open navigation"
+            aria-expanded={mobileNav}
+          >
+            <Menu />
+          </button>
+          <button
+            className="brand"
+            onClick={() => go("/")}
+            aria-label="UTXOPlay home"
+          >
+            <BrandIcon />
+            <span>
+              UTXO<span className="brand-light">Play</span>
+              <small>YOUR OPEN PLAYGROUND</small>
+            </span>
+          </button>
+          <div className="top-context">
+            <span className="status-dot" />
+            Good games. Zero downloads.
+          </div>
+          <div className="top-right">
+            <button
+              className="top-search icon-btn"
+              aria-label="Search games"
+              onClick={() => {
+                go("/");
+                requestAnimationFrame(() => {
+                  document.getElementById("collection")?.scrollIntoView({
+                    behavior: reduced ? "instant" : "smooth",
+                  });
+                  searchRef.current?.focus({ preventScroll: true });
+                });
+              }}
+            >
+              <Search size={18} />
+            </button>
+            <span className="guest-pill">
+              {loadingUser ? "Checking account…" : accountLabel(user)}
+            </span>
+            <button
+              className="wallet-button"
+              disabled={walletBusy || loadingUser}
+              onClick={connect}
+            >
+              {walletBusy ? <Spinner /> : <Wallet size={17} />}
+              <span>
+                {walletBusy
+                  ? "Signing in…"
+                  : signedIn
+                    ? short(user.address)
+                    : "Connect wallet"}
+              </span>
+            </button>
+          </div>
+        </header>
+        <div className="shell">
+          <aside className="sidebar">{navContent}</aside>
+          <main className="main" id="main" tabIndex={-1} ref={mainRef}>
+            {!online && (
+              <Notice>
+                You’re offline. Reconnect to load games or save changes.
+              </Notice>
+            )}
+            {accountError && (
+              <Notice onRetry={loadAccount}>{accountError}</Notice>
+            )}
+            {page === "/" ? (
+              <>
+                <PageHeading
+                  eyebrow="PRESS PLAY. FEEL SOMETHING."
+                  title={
+                    <>
+                      Your next <em>good time.</em>
+                    </>
+                  }
+                  description="Four little worlds. No downloads. A lot of ‘one more round’."
+                >
+                  <div className="edition">
+                    <span>CURATED COLLECTION</span>
+                    <b>
+                      VOL. 01 <i>↗</i>
+                    </b>
+                  </div>
+                </PageHeading>
+                <section
+                  className={"hero " + hero.id}
+                  aria-label="Featured game"
+                  style={{ "--accent": gameMeta[hero.id]?.accent }}
+                >
+                  <AnimatePresence initial={false}>
+                    <motion.img
+                      key={hero.id}
+                      className="hero-image"
+                      src={hero.cover}
+                      alt=""
+                      initial={{ opacity: 0, scale: reduced ? 1 : 1.025 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.45 }}
+                    />
+                  </AnimatePresence>
+                  <div className="hero-shade" />
+                  <div className="hero-orbit" aria-hidden="true" />
+                  <div className="hero-content">
+                    <span className="pill">
+                      <Sparkles size={12} />
+                      {hero.id === "openstrike"
+                        ? "NEW ON THE PLAYGROUND"
+                        : "IN THE SPOTLIGHT"}
+                    </span>
+                    <motion.div
+                      key={hero.id}
+                      initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <p className="hero-game-name">
+                        {hero.title} <span>／ {hero.genre}</span>
+                      </p>
+                      <h2>
+                        {hero.headline.split("|").map((line, i) => (
+                          <React.Fragment key={line}>
+                            {i > 0 && <br />}
+                            {line}
+                          </React.Fragment>
+                        ))}
+                      </h2>
+                      <p className="hero-description">{hero.heroDescription}</p>
+                    </motion.div>
+                    <div className="hero-actions">
+                      <button
+                        className="primary"
+                        disabled={!!launching || loadingUser}
+                        onClick={() => launch(hero.id)}
+                      >
+                        {launching === hero.id ? (
+                          <Spinner />
+                        ) : (
+                          <Play size={17} fill="currentColor" />
+                        )}
+                        {launching === hero.id
+                          ? "Opening…"
+                          : "Play " + hero.title}
+                        <ArrowUpRight size={17} />
+                      </button>
+                      <button
+                        className="hero-details"
+                        onClick={() => setDetails(hero)}
+                      >
+                        Take a look <ArrowRight size={17} />
+                      </button>
+                    </div>
+                    <div className="hero-trust">
+                      <span>
+                        <Check size={13} />
+                        Always free
+                      </span>
+                      <span>
+                        <Check size={13} />
+                        No wallet required
+                      </span>
+                    </div>
+                  </div>
+                  <div className="hero-bottom">
+                    <span className="hero-caption">
+                      {gameMeta[hero.id]?.tag}
+                    </span>
+                    <span className="hero-index">
+                      0{games.findIndex((g) => g.id === hero.id) + 1}
+                      <i> / 0{games.length}</i>
+                    </span>
+                    <button
+                      className="hero-next icon-btn"
+                      aria-label="Next featured game"
+                      onClick={() =>
+                        setFeatured(
+                          games[
+                            (games.findIndex((g) => g.id === hero.id) + 1) %
+                              games.length
+                          ].id,
+                        )
+                      }
+                    >
+                      <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </section>
+                <div className="feature-rail" aria-label="Choose featured game">
+                  {games.map((g, i) => (
+                    <button
+                      key={g.id}
+                      aria-pressed={hero.id === g.id}
+                      onClick={() => setFeatured(g.id)}
+                      className={hero.id === g.id ? "active" : ""}
+                    >
+                      <img src={g.cover} alt="" />
+                      <span>
+                        <small>
+                          0{i + 1} / {g.genre}
+                        </small>
+                        <b>{g.title}</b>
+                      </span>
+                      {hero.id === g.id && (
+                        <motion.i
+                          layoutId="featured-mark"
+                          className="featured-mark"
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="benefits">
+                  <span>
+                    <Globe size={16} />
+                    Open a tab. Start a game.
+                  </span>
+                  <span>
+                    <Wallet size={16} />A wallet when you want one.
+                  </span>
+                  <span>
+                    <ShieldCheck size={16} />A replay you can keep.
+                  </span>
+                </div>
+                {libraryGames.length > 0 && (
+                  <section className="recent-strip">
+                    <div>
+                      <span className="eyebrow">BACK FOR ANOTHER ROUND?</span>
+                      <h2>Jump back in.</h2>
+                    </div>
+                    <button
+                      className="recent-game"
+                      onClick={() => launch(libraryGames[0].id)}
+                      disabled={!!launching}
+                    >
+                      <img src={libraryGames[0].cover} alt="" />
+                      <span>
+                        <strong>{libraryGames[0].title}</strong>
+                        <small>{gameMeta[libraryGames[0].id]?.length}</small>
+                      </span>
+                      <Play size={18} fill="currentColor" />
+                    </button>
+                    <button
+                      className="text-link"
+                      onClick={() => go("/library")}
+                    >
+                      Your library <ArrowRight size={15} />
+                    </button>
+                  </section>
+                )}
+                <section className="collection" id="collection">
+                  <div className="section-head">
+                    <div>
+                      <span className="eyebrow">FIND YOUR NEXT FAVORITE</span>
+                      <h2>
+                        Small collection. <span>Big play energy.</span>
+                      </h2>
+                    </div>
+                    <label className="search">
+                      <Search size={18} />
+                      <input
+                        ref={searchRef}
+                        aria-label="Search games"
+                        placeholder="Search your next obsession"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                      {query ? (
+                        <button
+                          onClick={() => {
+                            setQuery("");
+                            searchRef.current?.focus();
+                          }}
+                          aria-label="Clear search"
+                        >
+                          <X size={16} />
+                        </button>
+                      ) : (
+                        <kbd>/</kbd>
+                      )}
+                    </label>
+                  </div>
+                  <div className="filter-row">
+                    <div
+                      className="genre-filters"
+                      role="group"
+                      aria-label="Filter by genre"
+                    >
+                      {genres.map((g) => (
+                        <button
+                          key={g}
+                          aria-pressed={genre === g}
+                          className={genre === g ? "active" : ""}
+                          onClick={() => setGenre(g)}
+                        >
+                          {g}
+                          {g === "All games" && <span>{games.length}</span>}
+                        </button>
+                      ))}
+                    </div>
+                    <label className="mode-select">
+                      <Users size={15} />
+                      <span className="sr-only">Play style</span>
+                      <select
+                        aria-label="Play style"
+                        value={mode}
+                        onChange={(e) => setMode(e.target.value)}
+                      >
+                        <option value="all">Any play style</option>
+                        <option value="solo">Play solo</option>
+                        <option value="friends">With a friend</option>
+                      </select>
+                    </label>
+                    <span className="results" role="status">
+                      {filtered.length}{" "}
+                      {filtered.length === 1 ? "game" : "games"}
+                    </span>
+                  </div>
+                  <div className="game-grid">
+                    {filtered.map((g) => (
+                      <GameCard
+                        key={g.id}
+                        g={g}
+                        onPlay={launch}
+                        onDetails={setDetails}
+                        launching={launching}
+                      />
+                    ))}
+                  </div>
+                  {!filtered.length && (
+                    <div className="empty">
+                      <Search size={32} />
+                      <h3>No matches. Plenty to play.</h3>
+                      <p>
+                        Try another search or clear your filters to see all{" "}
+                        {games.length} games.
+                      </p>
+                      <button className="outline" onClick={resetFilters}>
+                        Clear filters <ArrowRight size={16} />
+                      </button>
+                    </div>
+                  )}
+                </section>
+                <section className="wallet-banner">
+                  <div className="wallet-art" aria-hidden="true">
+                    <BrandIcon />
+                    <span>
+                      <Check size={13} />
+                    </span>
+                  </div>
+                  <div>
+                    <span className="eyebrow">SAME YOU. ANY SCREEN.</span>
+                    <h2>Your games, wherever you land.</h2>
+                    <p>
+                      Connect a CKB-compatible wallet for a library you can
+                      return to.
+                      <br />
+                      Just here to play? A guest session works too.
+                    </p>
+                  </div>
+                  <button className="outline" onClick={connect}>
+                    {signedIn ? "Your account" : "Meet your wallet library"}
+                    <ArrowUpRight size={17} />
+                  </button>
+                </section>
+              </>
+            ) : page === "/library" ? (
+              <>
+                <PageHeading
+                  eyebrow="YOUR PERSONAL PLAYGROUND"
+                  title="Welcome back to play."
+                  description={
+                    signedIn
+                      ? "Your wallet library. Ready whenever you are."
+                      : "Your guest library lives in this browser. Make yourself at home."
+                  }
+                />
+                <div className="library-summary">
+                  <div className="identity-orb">
+                    <Library size={24} />
+                  </div>
+                  <div>
+                    <strong>
+                      {signedIn ? short(user.address) : "Your guest collection"}
+                    </strong>
+                    <p>
+                      {libraryGames.length} games played ·{" "}
+                      {signedIn
+                        ? "Available when you sign in on another device"
+                        : "Keep this browser’s cookies to keep access"}
+                    </p>
+                  </div>
+                  <button className="outline" onClick={connect}>
+                    {signedIn ? "Account details" : "Connect a wallet"}
+                    <ArrowUpRight size={16} />
+                  </button>
+                </div>
+                {libraryState.error ? (
+                  <Notice onRetry={() => setRevision((r) => r + 1)}>
+                    {libraryState.error}
+                  </Notice>
+                ) : loadingUser || libraryState.loading ? (
+                  <Skeletons />
+                ) : libraryGames.length ? (
+                  <div className="game-grid library-grid">
+                    {libraryGames.map((g) => (
+                      <GameCard
+                        key={g.id}
+                        g={g}
+                        updated={g.updated}
+                        onPlay={launch}
+                        onDetails={setDetails}
+                        launching={launching}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty collection-empty">
+                    <Gamepad2 size={42} />
+                    <h2>Every library starts with a first game.</h2>
+                    <p>
+                      Play something you like. It will be waiting right here.
+                    </p>
+                    <button className="primary" onClick={() => go("/")}>
+                      Find a game <ArrowRight size={17} />
+                    </button>
+                  </div>
+                )}
+                {!signedIn && (
+                  <p className="library-note">
+                    <ShieldCheck size={16} />
+                    Wallet and guest libraries are separate. Signing in won’t
+                    move your guest progress.
+                  </p>
+                )}
+              </>
+            ) : page === "/developers" ? (
+              <>
+                <PageHeading
+                  eyebrow="UTXOPLAY / STUDIO"
+                  title={
+                    <>
+                      Build something <em>worth playing.</em>
+                    </>
+                  }
+                  description="Wallet identity, replayable sessions, and room for your next idea."
+                />
+                <section className="developer-hero">
+                  <div>
+                    <span className="pill">
+                      <Code2 size={14} />
+                      FROM FIRST BUILD TO FIRST PLAYER
+                    </span>
+                    <h2>
+                      You build the fun.
+                      <br />
+                      <span>We bring the playground.</span>
+                    </h2>
+                    <p>
+                      Explore real game integrations and save your project in a
+                      private workspace. Publishing is curated for this release.
+                    </p>
+                    <div className="dev-hero-actions">
+                      <button
+                        className="primary"
+                        onClick={() =>
+                          signedIn ? setDialog("project") : connect()
+                        }
+                      >
+                        <Plus size={17} />
+                        Create a project
+                      </button>
+                      <a className="text-link" href="/integration.html">
+                        Read the guide <ArrowUpRight size={16} />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="code-panel">
+                    <div className="code-title">
+                      <span />
+                      <span />
+                      <span />
+                      <b>utxoplay.manifest.json</b>
+                      <button
+                        className="icon-btn"
+                        aria-label="Copy example manifest"
+                        onClick={() =>
+                          copy(
+                            JSON.stringify(
+                              {
+                                name: "Your next great game",
+                                version: "1.0.0",
+                                entrypoint: "https://your.game",
+                                genre: "arcade",
+                                runtime: "browser",
+                              },
+                              null,
+                              2,
+                            ),
+                            "Example manifest copied.",
+                          )
+                        }
+                      >
+                        <Copy size={15} />
+                      </button>
+                    </div>
+                    <pre>
+                      <span className="code-comment">
+                        // Big ideas start small.
+                      </span>
+                      {"\n" +
+                        JSON.stringify(
+                          {
+                            name: "Your next great game",
+                            version: "1.0.0",
+                            entrypoint: "https://your.game",
+                            genre: "arcade",
+                            runtime: "browser",
+                          },
+                          null,
+                          2,
+                        )}
+                    </pre>
+                    <span className="code-footer">
+                      <CheckCircle2 size={14} />
+                      Start with the same tools as our games.
+                    </span>
+                  </div>
+                </section>
+                <div className="dev-features">
+                  <a href="/integration.html">
+                    <Wallet />
+                    <h3>Bring your players.</h3>
+                    <p>
+                      CKB-compatible identity, verified by the store. No private
+                      keys in your game.
+                    </p>
+                    <span>
+                      Explore identity <ArrowUpRight size={15} />
+                    </span>
+                  </a>
+                  <a
+                    href="https://github.com/Myelin-Labs/myelin-openstrike/blob/main/docs/DEVELOPERS.md"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <RefreshCw />
+                    <h3>Make it replayable.</h3>
+                    <p>
+                      Learn from real native game sessions, signed records and
+                      downloadable replays.
+                    </p>
+                    <span>
+                      View a working integration <ArrowUpRight size={15} />
+                    </span>
+                  </a>
+                  <a
+                    href="https://github.com/Myelin-Labs/UTXOPlay"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Terminal />
+                    <h3>Start in the open.</h3>
+                    <p>
+                      Clone the store, validate a manifest, and build on the
+                      launch games.
+                    </p>
+                    <span>
+                      Browse the source <ArrowUpRight size={15} />
+                    </span>
+                  </a>
+                </div>
+                <div className="section-head">
+                  <div>
+                    <span className="eyebrow">YOUR WORKSPACE</span>
+                    <h2>
+                      Projects{" "}
+                      <span className="heading-count">
+                        {signedIn ? projectState.data.length : 0}
+                      </span>
+                    </h2>
+                  </div>
+                  {signedIn && (
+                    <button
+                      className="outline"
+                      onClick={() => setDialog("project")}
+                    >
+                      <Plus size={16} />
+                      New project
+                    </button>
+                  )}
+                </div>
+                <p className="muted">
+                  Private drafts, just for you. Saving a project doesn’t publish
+                  it.
+                </p>
+                {!signedIn ? (
+                  <div className="empty compact">
+                    <Code2 size={30} />
+                    <h3>A home for your work in progress.</h3>
+                    <p>
+                      Sign in with a CKB-compatible wallet to create and manage
+                      your projects.
+                    </p>
+                    <button className="primary" onClick={connect}>
+                      <Wallet size={17} />
+                      Sign in to Studio
+                    </button>
+                  </div>
+                ) : projectState.error ? (
+                  <Notice onRetry={() => setRevision((r) => r + 1)}>
+                    {projectState.error}
+                  </Notice>
+                ) : projectState.loading ? (
+                  <Skeletons />
+                ) : projectState.data.length ? (
+                  <div className="projects">
+                    {projectState.data.map((p) => (
+                      <article key={p.id}>
+                        <div className="project-icon">
+                          <Code2 />
+                        </div>
+                        <div>
+                          <span className="eyebrow">PRIVATE DRAFT</span>
+                          <h3>{p.title}</h3>
+                          <p>{p.description}</p>
+                          <a href={p.url} target="_blank" rel="noreferrer">
+                            Open game <ExternalLink size={14} />
+                          </a>
+                        </div>
+                        <span className="project-date">
+                          {new Date(p.created).toLocaleDateString()}
+                        </span>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty compact">
+                    <Plus size={32} />
+                    <h3>Your next game starts here.</h3>
+                    <p>
+                      Save a title, a description and a playable URL. Come back
+                      whenever you’re ready.
+                    </p>
+                    <button
+                      className="outline"
+                      onClick={() => setDialog("project")}
+                    >
+                      Create your first project <ArrowRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : game ? (
+              <>
+                <div className="play-heading">
+                  <button onClick={() => go("/")} className="back">
+                    <ArrowLeft size={16} />
+                    Store
+                  </button>
+                  <span className="play-divider">/</span>
+                  <span>{game.title}</span>
+                  <div className="play-tools">
+                    <button
+                      onClick={() => setDialog("reload")}
+                      aria-label="Reload game"
+                      title="Reload game"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                    <button
+                      onClick={() => setDialog("controls")}
+                      aria-label="Game controls"
+                      title="Game controls"
+                    >
+                      <Gamepad2 size={17} />
+                      <span>Controls</span>
+                    </button>
+                    <button
+                      onClick={immersive ? exitImmersive : enterImmersive}
+                      aria-label={
+                        immersive ? "Exit immersive mode" : "Fullscreen"
+                      }
+                    >
+                      {immersive ? <X size={17} /> : <Expand size={17} />}
+                      <span>{immersive ? "Exit" : "Fullscreen"}</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="play-title">
+                  <div>
+                    <div className="eyebrow">
+                      {game.genre}
+                      <span>·</span>
+                      {game.players}
+                    </div>
+                    <h1>{game.title}</h1>
+                  </div>
+                  <span className="save-indicator">
+                    <i />
+                    {loadingUser
+                      ? "Checking account"
+                      : signedIn
+                        ? "Wallet library"
+                        : user
+                          ? "Guest library"
+                          : "Free to play"}
+                  </span>
+                </div>
+                {loadingUser ? (
+                  <div className="launch-placeholder" role="status">
+                    <Spinner />
+                    <h2>Getting your playground ready…</h2>
+                  </div>
+                ) : user ? (
+                  <div
+                    className={
+                      "game-stage " +
+                      (frameStatus === "ready" ? "is-ready" : "")
+                    }
+                  >
+                    <iframe
+                      ref={frameRef}
+                      key={game.id + ":" + frameKey}
+                      className={"game-frame " + game.id}
+                      src={"/games/" + game.id + "/"}
+                      title={game.title}
+                      onLoad={syncFrame}
+                      allow="fullscreen; autoplay"
+                      allowFullScreen
+                    />
+                    {frameStatus !== "ready" && (
+                      <div className="frame-loading" role="status">
+                        {frameStatus === "slow" ? (
+                          <>
+                            <WifiOff size={30} />
+                            <h2>The game is taking a little longer.</h2>
+                            <p>
+                              Check your connection, then try reloading the
+                              game.
+                            </p>
+                            <button
+                              className="primary"
+                              onClick={() => setFrameKey((k) => k + 1)}
+                            >
+                              <RefreshCw size={16} />
+                              Try again
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <Spinner />
+                            <h2>Opening {game.title}…</h2>
+                            <p>Getting everything ready for your next round.</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className="launch-placeholder"
+                    style={{ "--launch-cover": `url(${game.cover})` }}
+                  >
+                    <div>
+                      <span className="pill">FREE · IN YOUR BROWSER</span>
+                      <h2>Your next round is waiting.</h2>
+                      <p>
+                        Play as a guest, or connect a wallet to open your
+                        library.
+                      </p>
+                      <button
+                        className="primary"
+                        disabled={!!launching}
+                        onClick={() => launch(game.id)}
+                      >
+                        {launching ? <Spinner /> : <Play size={17} />}Play as a
+                        guest <ArrowRight size={17} />
+                      </button>
+                      <button className="text-link" onClick={connect}>
+                        Connect a wallet instead <Wallet size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="play-info">
+                  <div>
+                    <Gamepad2 size={21} />
+                    <h3>Find your rhythm.</h3>
+                    <p>{game.controls}</p>
+                  </div>
+                  <div>
+                    <ShieldCheck size={21} />
+                    <h3>A round worth keeping.</h3>
+                    <p>
+                      {["teeworlds", "openstrike"].includes(game.id)
+                        ? "Completed rounds are replayed and saved to your account. Live rounds continue if you leave the page. Download your verified export after a match."
+                        : "Your moves and launches save as you play. Replay and export your session inside the game."}
+                    </p>
+                    <p>
+                      {signedIn
+                        ? "Sign back in with this wallet to return to your library."
+                        : "Guest saves belong to this browser. Wallet accounts have a separate library."}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="empty">
+                <Gamepad2 size={38} />
+                <h1>This page took a wrong turn.</h1>
+                <p>There are better adventures in the store.</p>
+                <button className="primary" onClick={() => go("/")}>
+                  Back to the playground <ArrowRight size={17} />
+                </button>
+              </div>
+            )}
+            <footer className="footer">
+              <div>
+                <button className="brand" onClick={() => go("/")}>
+                  <BrandIcon />
+                  <span>
+                    UTXO<span className="brand-light">Play</span>
+                  </span>
+                </button>
+                <p>A little more play in your day.</p>
+              </div>
+              <nav aria-label="Footer navigation">
+                <button onClick={() => go("/developers")}>Studio</button>
+                <a
+                  href="https://github.com/Myelin-Labs/UTXOPlay"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Source <ArrowUpRight size={12} />
+                </a>
+                <a href="/about.html">About</a>
+                <a href="/privacy.html">Privacy</a>
+                <button onClick={() => setDialog("preferences")}>
+                  Preferences
+                </button>
+              </nav>
+              <span>© {new Date().getFullYear()} UTXOPlay</span>
+            </footer>
+          </main>
+        </div>
+        {isOpen && (
+          <WalletPickerGuard
+            onClose={() => {
+              setIntent(false);
+              closePicker();
+            }}
+          />
+        )}
+        {mobileNav && (
+          <Modal
+            title="Navigation"
+            onClose={() => setMobileNav(false)}
+            className="mobile-drawer"
+          >
+            {navContent}
+          </Modal>
+        )}
+        {details && (
+          <GameDetails
+            game={details}
+            onClose={() => setDetails(null)}
+            onPlay={launch}
+            launching={launching}
+          />
+        )}
+        {dialog === "wallet" && (
+          <Modal
+            title="Wallet account"
+            onClose={() => {
+              if (!walletBusy || walletPhase === "signature") {
+                if (walletBusy) {
+                  authEpoch.current++;
+                  cancelSignature.current?.();
+                }
+                setDialog(null);
+                setIntent(false);
+              }
+            }}
+            dismissible={!walletBusy || walletPhase === "signature"}
+            className="wallet-modal"
+          >
+            <div className="modal-icon">
+              <BrandIcon />
+            </div>
+            <div className="eyebrow">YOUR KEY TO THE PLAYGROUND</div>
+            <h2>
+              {signedIn ? "You’re right at home." : "One wallet. More play."}
+            </h2>
+            {signedIn ? (
+              <>
+                <p>
+                  Your CKB account is signed in. Your library is ready on any
+                  device you sign in from.
+                </p>
+                <div className="address">{user.address}</div>
+                <button
+                  className="text-link copy-address"
+                  onClick={() => copy(user.address, "Wallet address copied.")}
+                >
+                  <Copy size={15} />
+                  Copy address
+                </button>
+                <button
+                  className="primary full"
+                  onClick={() => {
+                    setDialog(null);
+                    go("/library");
+                  }}
+                >
+                  Open my library <ArrowRight size={17} />
+                </button>
+                <button
+                  className="text-button"
+                  disabled={walletBusy}
+                  onClick={logout}
+                >
+                  {walletBusy ? <Spinner /> : <LogOut size={15} />}Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <p>
+                  Choose a wallet and sign a login message. No funds needed, and
+                  nothing to buy.
+                </p>
+                <div className="wallet-steps">
+                  <span className={walletBusy || signer ? "done" : ""}>
+                    <b>{signer ? <Check size={13} /> : 1}</b>Choose wallet
+                  </span>
+                  <i />
+                  <span className={walletBusy ? "current" : ""}>
+                    <b>2</b>Sign in
+                  </span>
+                </div>
+                <div className="wallet-list">
+                  <span>JoyID</span>
+                  <span>UTXO Global</span>
+                  <span>UniSat</span>
+                  <span>OKX</span>
+                </div>
+                <button
+                  className="primary full"
+                  disabled={walletBusy}
+                  onClick={() => chooseWallet()}
+                >
+                  {walletBusy ? <Spinner /> : <Wallet size={17} />}
+                  <span>
+                    {walletBusy
+                      ? walletPhase === "verifying"
+                        ? "Verifying your signature…"
+                        : "Confirm in your wallet…"
+                      : signer
+                        ? "Sign in with " + (wallet?.name || "wallet")
+                        : "Choose a wallet"}
+                  </span>
+                  {!walletBusy && <ArrowUpRight size={17} />}
+                </button>
+                {signer && !walletBusy && (
+                  <button
+                    className="text-button"
+                    onClick={() => chooseWallet(true)}
+                  >
+                    Choose another wallet
+                  </button>
+                )}
+                <div className="modal-note">
+                  <ShieldCheck size={16} />
+                  <span>A login signature only. No transactions.</span>
+                </div>
+                <p className="fine">
+                  CKB mainnet · Available choices depend on your installed
+                  wallets. Wallet and guest libraries stay separate.
+                </p>
+              </>
+            )}
+            {walletError && <Notice>{walletError}</Notice>}
+          </Modal>
+        )}
+        {dialog === "project" && (
+          <Modal
+            title="Create a project"
+            onClose={() => setDialog(null)}
+            dismissible={!projectBusy}
+          >
+            <form
+              className="project-form"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (projectBusy) return;
+                setProjectBusy(true);
+                setProjectError("");
+                try {
+                  await api("/api/developer/projects", projectDraft);
+                  setRevision((r) => r + 1);
+                  setDialog(null);
+                  setProjectDraft({ title: "", description: "", url: "" });
+                  notify("Project saved. Your draft is private to you.");
+                } catch (err) {
+                  setProjectError(apiError(err));
+                } finally {
+                  setProjectBusy(false);
+                }
+              }}
+            >
+              <div className="eyebrow">
+                <Code2 size={16} />
+                UTXOPLAY STUDIO
+              </div>
+              <h2>Something worth playing.</h2>
+              <p>Start with the essentials. Your draft stays private.</p>
+              <label>
+                Game title
+                <input
+                  autoFocus
+                  name="title"
+                  value={projectDraft.title}
+                  onChange={(e) =>
+                    setProjectDraft((d) => ({ ...d, title: e.target.value }))
+                  }
+                  required
+                  minLength={3}
+                  maxLength={80}
+                  placeholder="Your game’s name"
+                />
+              </label>
+              <label>
+                Description <span>{projectDraft.description.length}/2000</span>
+                <textarea
+                  name="description"
+                  value={projectDraft.description}
+                  onChange={(e) =>
+                    setProjectDraft((d) => ({
+                      ...d,
+                      description: e.target.value,
+                    }))
+                  }
+                  required
+                  maxLength={2000}
+                  placeholder="What makes it fun?"
+                />
+              </label>
+              <label>
+                Playable URL
+                <input
+                  name="url"
+                  type="url"
+                  value={projectDraft.url}
+                  onChange={(e) =>
+                    setProjectDraft((d) => ({ ...d, url: e.target.value }))
+                  }
+                  required
+                  maxLength={500}
+                  pattern="https://.*"
+                  placeholder="https://your.game"
+                  aria-describedby="url-help"
+                />
+              </label>
+              <p id="url-help" className="fine">
+                Use an HTTPS link. We won’t publish or run it when you save.
+              </p>
+              {projectError && <Notice>{projectError}</Notice>}
+              <button className="primary full" disabled={projectBusy}>
+                {projectBusy ? <Spinner /> : <Plus size={17} />}{" "}
+                {projectBusy ? "Saving your draft…" : "Save project"}
+              </button>
+              <p className="fine centered">
+                Close and reopen this form to keep editing your unsaved draft.
+              </p>
+            </form>
+          </Modal>
+        )}
+        {dialog === "preferences" && (
+          <Modal title="Display preferences" onClose={() => setDialog(null)}>
+            <div className="modal-icon">
+              <Settings2 />
+            </div>
+            <div className="eyebrow">MAKE YOURSELF COMFORTABLE</div>
+            <h2>Your kind of motion.</h2>
+            <p>
+              Keep the little transitions, or make the store a quieter place.
+            </p>
+            <fieldset className="motion-options">
+              <legend className="sr-only">Animation preference</legend>
+              {[
+                [
+                  "system",
+                  "Follow your device",
+                  "Subtle transitions. Respects your system’s reduced-motion setting.",
+                ],
+                [
+                  "reduced",
+                  "Reduce motion",
+                  "No moving backgrounds or sliding transitions.",
+                ],
+              ].map(([v, label, desc]) => (
+                <label key={v}>
+                  <input
+                    type="radio"
+                    name="motion"
+                    value={v}
+                    checked={motionSetting === v}
+                    onChange={() => setMotionSetting(v)}
+                  />
+                  <span>
+                    <strong>{label}</strong>
+                    <small>{desc}</small>
+                  </span>
+                  {motionSetting === v && <Check size={18} />}
+                </label>
+              ))}
+            </fieldset>
+            <p className="fine">
+              Saved on this browser. This controls the store, not effects inside
+              games.
+            </p>
+          </Modal>
+        )}
+        {dialog === "controls" && game && (
+          <Modal title="Game controls" onClose={() => setDialog(null)}>
+            <div className="modal-icon">
+              <Gamepad2 />
+            </div>
+            <div className="eyebrow">{game.title}</div>
+            <h2>Get into your groove.</h2>
+            <p>{game.controls}</p>
+            <div className="control-note">
+              <p>{gameMeta[game.id]?.note}</p>
+              <p>
+                Escape exits fullscreen. Online rounds continue while you view
+                this menu.
+              </p>
+            </div>
+            <button
+              className="primary full"
+              onClick={() => {
+                setDialog(null);
+                requestAnimationFrame(() => frameRef.current?.focus());
+              }}
+            >
+              Back to the game <ArrowRight size={16} />
+            </button>
+          </Modal>
+        )}
+        {dialog === "reload" && game && (
+          <Modal title="Reload game" onClose={() => setDialog(null)}>
+            <div className="modal-icon">
+              <RefreshCw />
+            </div>
+            <h2>Reload {game.title}?</h2>
+            <p>
+              Your saved progress stays. Reloading interrupts your controls; a
+              live online round will keep running.
+            </p>
+            <div className="dialog-actions">
+              <button className="outline" onClick={() => setDialog(null)}>
+                Keep playing
+              </button>
+              <button
+                className="primary"
+                onClick={() => {
+                  setFrameKey((k) => k + 1);
+                  setDialog(null);
+                }}
+              >
+                Reload game <RefreshCw size={16} />
+              </button>
+            </div>
+          </Modal>
+        )}
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              className={"toast " + toast.type}
+              role={toast.type === "error" ? "alert" : "status"}
+              key={toast.id}
+              initial={{ opacity: 0, y: reduced ? 0 : 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: reduced ? 0 : 8 }}
+            >
+              {toast.type === "success" ? (
+                <CheckCircle2 size={18} />
+              ) : (
+                <WifiOff size={18} />
+              )}
+              <span>{toast.text}</span>
+              <button
+                className="icon-btn"
+                onClick={() => setToast(null)}
+                aria-label="Dismiss notification"
+              >
+                <X size={17} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </MotionConfig>
+  );
+}
+createRoot(document.getElementById("root")).render(<Root />);

@@ -9,10 +9,10 @@
     "cover": "/assets/openstrike-cover.svg",
     "version": "0.1.0",
     "controls": "WASD to move, mouse to aim, left click to fire, Shift to walk, R to reload. Click Enter arena to capture your mouse; Escape opens the menu. Free practice or a private 90-second duel. Desktop keyboard and mouse recommended.",
-    "players": "1\u20132 players online",
+    "players": "1–2 players online",
     "headline": "One arena.|One clean shot.",
     "heroDescription": "Find your angle in Neon Divide. A quick first-person duel, with every round ready to replay.",
-    "caption": "OPENSTRIKE \u00b7 NEON DIVIDE"
+    "caption": "OPENSTRIKE · NEON DIVIDE"
   },
   {
     "id": "teeworlds",
@@ -24,10 +24,10 @@
     "cover": "/assets/teeworlds-cover.svg",
     "version": "0.1.0",
     "controls": "A/D to move, Space to double jump, mouse to aim, left click to fire, right click to hook. Create a private duel or practice against a bot.",
-    "players": "1\u20132 players online",
+    "players": "1–2 players online",
     "headline": "Hook in.|Let it fly.",
     "heroDescription": "Little feet. Long reach. Grab a friend for a minute of movement and mayhem.",
-    "caption": "TEEWORLDS \u00b7 GRASSLAND ARENA"
+    "caption": "TEEWORLDS · GRASSLAND ARENA"
   },
   {
     "id": "sling",
@@ -36,13 +36,13 @@
     "genre": "Arcade",
     "mode": "Single-player",
     "description": "Meet Pip. Pull back, take aim, and send the garden sprites home across three floating islands.",
-    "cover": "/assets/sling-cover.png",
+    "cover": "/assets/sling-cover.webp",
     "version": "1.0.0",
     "controls": "Drag Pip back from the slingshot and release. You can also use the angle and power sliders.",
     "players": "1 player",
     "headline": "A little pull.|A big adventure.",
     "heroDescription": "Floating islands. Mischievous sprites. One very determined little adventurer.",
-    "caption": "SKYWARD \u00b7 THE FLOATING GARDENS"
+    "caption": "SKYWARD · THE FLOATING GARDENS"
   },
   {
     "id": "chess",
@@ -51,12 +51,12 @@
     "genre": "Strategy",
     "mode": "Local two-player",
     "description": "A thoughtful game of chess. Share a board, find your next move, and replay every brilliant idea.",
-    "cover": "/assets/chess-cover.png",
+    "cover": "/assets/chess-cover.webp",
     "version": "1.0.0",
     "controls": "Click or tap a piece, then a highlighted square. Two people play on the same device.",
     "players": "2 on one device",
     "headline": "Your next|brilliant move.",
     "heroDescription": "Slow down. Think ahead. Share a beautiful board with a worthy rival.",
-    "caption": "THE QUIET BOARD \u00b7 CHESS CLUB"
+    "caption": "THE QUIET BOARD · CHESS CLUB"
   }
 ]
