@@ -1,0 +1,50 @@
+# UTXOPlay
+
+A deployed browser game store at https://store.utxoplay.io. The launch collection contains The Quiet Board (same-device two-player chess) and Skyward (single-player slingshot).
+
+## Shipped in this release
+
+- Responsive game store, search, genre filters, embedded play, fullscreen and library.
+- Isolated guest saves and persistent wallet-linked saves. Guest and wallet libraries are separate.
+- CCC mainnet wallet discovery for native CKB, Bitcoin ECDSA and JoyID Passkey accounts. Server verifies a browser-bound one-use challenge and binds the signature to the CKB lock.
+- JoyID credential-to-address binding uses the fixed JoyID credential API and fails closed. Temporary JoyID session keys are not supported.
+- Rust Myelin runtimes with per-account storage, bounded open-session caches, signed records, replay and export.
+- Developer workspace with private project drafts, a same-origin JavaScript API helper, integration guide and manifest validator.
+
+Public third-party publishing, cross-origin game grants, remote chess rooms and CKB settlement are not implemented. The games run on server-side Rust; wallet login does not submit blockchain transactions.
+
+## Local development
+
+Requires Node 22.23+ and the Rust game binaries. Install with `npm ci`, build with `npm run build`. Build each game's manifest with Rust and Clang/protoc, or use the Podman builder in `deploy/Builder.Containerfile` (its base is the local pre-existing compiler image). Game sources retain their exact Myelin dependency revision. The standard reproducible compiler recipe is in `deploy/PortableBuilder.Containerfile`.
+
+Set a random `RUNTIME_TOKEN` shared only by the platform and game processes. Run each game with its own `DATA_DIR`, ports 8781 and 8782, and `BIND=127.0.0.1`. Run `npm start` on port 8790. The default `PUBLIC_ORIGIN` is http://127.0.0.1:8790. Vite development requires `PUBLIC_ORIGIN=http://127.0.0.1:5173` on the API service.
+
+```sh
+npm test
+node tests/live-smoke.mjs
+node tests/live-auth.mjs
+node tests/restart-smoke.mjs
+node tools/utxoplay.mjs check game.manifest.json
+```
+
+The live smoke uses two disposable guest accounts and runs both games through the real gateway. Set `STORE_URL` to run against the public deployment. It creates test gameplay records but does not publish projects or transfer funds.
+
+## Release verification
+
+The initial deployment passed six Node tests, nine Rust game tests, public gameplay smoke tests for both games, and public cryptographic CKB login/logout/relogin tests. Both real runtimes recovered their exact saved state and verified replay after a forced process restart in disposable local directories. Production health and all game/frontend assets returned successfully over HTTPS.
+
+Browser interaction checks covered the local storefront, mobile layout, chess moves, slingshot play and replay, and the wallet chooser. The embedded browser timed out navigating the public domain, although direct HTTPS and public API checks passed. Actual JoyID Passkey prompts and each installed wallet extension still require device-level acceptance testing; synthetic signature tests do not establish every wallet/browser combination.
+
+## Deployment
+
+The server deployment is under `/data/utxoplay`. `deploy/compose.yml` uses the existing external `stack-network` HTTPS proxy and a private game network. No game runtime port is exposed publicly. The proxy discovers the store through `VIRTUAL_HOST` and manages certificates for store.utxoplay.io, utxoplay.io and www.utxoplay.io. The latter two redirect to the canonical store origin.
+
+Build the game binaries on Debian Bookworm and copy them into `deploy/bin`. Build the frontend locally, then build the server image with `docker build -f deploy/Dockerfile -t utxoplay:0.1.0 .`. The server-side runtime secret is generated on the server, stored in `shared/runtime.env` with mode 0600, and never committed. Persistent platform and game directories must be writable by container UID 1000. Services restart automatically and have memory, CPU, process, privilege and log-size limits.
+
+For upgrades, preserve `shared/` and record the existing image tag before recreation. Changing game rules or Myelin's pinned revision can invalidate existing exports: preserve matching runtime images and do not replace game state indiscriminately. A release pointer does not migrate old sessions.
+
+Back up platform SQLite with its backup API and game stores while their writers are stopped, together with runtime images and authority key files. Treat backups as private. Backups are not yet scheduled by this release.
+
+## Source provenance
+
+Game snapshots are based on Myelin Chess `321c4bfc35a1560d0b4eebc1a011a876c1bb263a` and Myelin Sling `c3dbd83380ae11499b71c0fd3fdb87f34f7cf126`. Platform adapters replace their single shared HTTP session with account isolation. Original rules and session formats are retained. Their MIT licenses, asset provenance and music attribution are included under `games/` and inside the game credits.

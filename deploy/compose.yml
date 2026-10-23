@@ -1,0 +1,72 @@
+services:
+  store:
+    image: utxoplay:0.1.0
+    container_name: utxoplay-store
+    restart: unless-stopped
+    init: true
+    environment:
+      PUBLIC_ORIGIN: https://store.utxoplay.io
+      VIRTUAL_HOST: store.utxoplay.io,utxoplay.io,www.utxoplay.io
+      VIRTUAL_PORT: '8790'
+      CHESS_URL: http://utxoplay-chess:8781
+      SLING_URL: http://utxoplay-sling:8782
+    env_file: /data/utxoplay/shared/runtime.env
+    volumes:
+      - /data/utxoplay/shared/platform:/app/data
+    networks:
+      - edge
+      - games
+    mem_limit: 384m
+    cpus: '0.75'
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp:size=32m]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8790/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  chess:
+    image: utxoplay:0.1.0
+    container_name: utxoplay-chess
+    restart: unless-stopped
+    init: true
+    command: [/app/bin/myelin-chess]
+    environment: {PORT: '8781', BIND: 0.0.0.0}
+    env_file: /data/utxoplay/shared/runtime.env
+    volumes:
+      - /data/utxoplay/shared/chess:/app/data
+    networks: [games]
+    mem_limit: 384m
+    cpus: '0.75'
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp:size=64m]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+  sling:
+    image: utxoplay:0.1.0
+    container_name: utxoplay-sling
+    restart: unless-stopped
+    init: true
+    command: [/app/bin/myelin-sling]
+    environment: {PORT: '8782', BIND: 0.0.0.0}
+    env_file: /data/utxoplay/shared/runtime.env
+    volumes:
+      - /data/utxoplay/shared/sling:/app/data
+    networks: [games]
+    mem_limit: 384m
+    cpus: '0.75'
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp:size=64m]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+networks:
+  edge: {external: true, name: stack-network}
+  games: {internal: true}

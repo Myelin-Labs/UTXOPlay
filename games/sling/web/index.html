@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#eff3df" />
+    <title>Skyward · UTXOPlay</title>
+    <link rel="stylesheet" href="/games/sling/style.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/" target="_top"
+        ><span class="brand-icon">↗</span
+        ><span>skyward<small>A UTXOPLAY ADVENTURE</small></span></a
+      >
+      <nav>
+        <span class="tag">A LITTLE PLAY GOES A LONG WAY</span
+        ><button id="sound" aria-pressed="false">♫ Sound off</button
+        ><button id="credits-open" aria-label="Art and music credits">ⓘ</button>
+      </nav>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <span class="eyebrow">THE FLOATING GARDENS</span>
+          <h1>A little pull. A big adventure.</h1>
+        </div>
+        <p>
+          Meet Pip. Aim high, topple the towers,<br />and send the garden
+          sprites home.
+        </p>
+      </section>
+      <section class="game-shell" aria-label="Slingshot game">
+        <div class="hud">
+          <div class="level-badge">
+            <span class="level-icon">✦</span>
+            <div>
+              <small>CHAPTER <span id="level">01</span> / 03</small
+              ><strong id="level-name">First flight</strong>
+            </div>
+          </div>
+          <div class="scores">
+            <div><small>SCORE</small><strong id="score">0000</strong></div>
+            <div>
+              <small>FLIGHTS LEFT</small><strong id="shots">● ● ● ●</strong>
+            </div>
+          </div>
+        </div>
+        <canvas
+          id="world"
+          width="1100"
+          height="560"
+          tabindex="0"
+          aria-label="Drag Pip back from the slingshot, then release. Or use the angle and power controls below."
+        ></canvas>
+        <div id="level-result" hidden>
+          <div>
+            <span class="eyebrow" id="result-kicker">BEAUTIFULLY FLOWN</span>
+            <h2 id="result-title">Garden cleared!</h2>
+            <p id="result-copy">A new island is waiting on the horizon.</p>
+            <button id="continue" class="primary">Next island →</button>
+          </div>
+        </div>
+        <div class="stage-footer">
+          <span id="instruction"
+            ><span class="mouse-icon">↙</span> Pull Pip back. Release to
+            fly.</span
+          ><span class="wind">✧ NO WIND · ALL POSSIBILITY</span
+          ><button id="replay-shot">↻ Last flight</button>
+        </div>
+      </section>
+      <div class="under-game">
+        <div class="aim-controls">
+          <label
+            >Angle
+            <input id="angle" type="range" min="0" max="65" value="27" /><output
+              id="angle-value"
+              >27°</output
+            ></label
+          ><label
+            >Power
+            <input
+              id="power"
+              type="range"
+              min="20"
+              max="100"
+              value="85"
+            /><output id="power-value">85%</output></label
+          ><button id="launch" class="primary">Launch Pip ↗</button>
+        </div>
+        <button id="new">Start a new adventure</button>
+      </div>
+      <div class="bottom-grid">
+        <section class="field-notes">
+          <span class="eyebrow">A NOTE FROM THE GARDEN</span>
+          <h2>Good things take a little practice.</h2>
+          <p>
+            Four flights per island. Break wooden supports, nudge the sprites,
+            and find your perfect arc. Stone takes two hits. Every spare flight
+            earns a bonus.
+          </p>
+        </section>
+        <section class="memory">
+          <div>
+            <span class="eyebrow">YOUR ADVENTURE, REMEMBERED</span>
+            <h3>Small flights. Lasting stories.</h3>
+            <p>Your session saves after every launch.</p>
+          </div>
+          <div class="memory-actions">
+            <button id="verify">✓ Verify replay</button
+            ><a
+              class="button"
+              href="/games/sling/api/export"
+              download="skyward-session.json"
+              >↓ Save adventure</a
+            >
+          </div>
+          <p id="verification" role="status"></p>
+        </section>
+      </div>
+      <details class="evidence">
+        <summary>Session details <span id="session-short"></span></summary>
+        <dl id="session-info"></dl>
+        <p>
+          Fixed-step integer physics. Authority-signed Myelin session,
+          with host replay. No CKB settlement or on-chain adjudication.
+        </p>
+      </details>
+      <footer>
+        <span>UTXOPLAY <b>✦</b> MADE FOR THE JOY OF PLAY</span
+        ><span>Take the scenic route.</span>
+      </footer>
+    </main>
+    <div id="toast" role="alert" hidden></div>
+    <dialog id="credits">
+      <button id="credits-close" class="close" aria-label="Close credits">
+        ×</button
+      ><span class="eyebrow">BEHIND THE LITTLE ADVENTURE</span>
+      <h2>Art & sound</h2>
+      <p>
+        Original floating-island environment and character sprites generated
+        with OpenAI ImageGen. UI, fixed-step game physics and interaction sounds
+        by Myelin Labs.
+      </p>
+      <p>
+        “Carefree” by <a href="https://incompetech.com/">Kevin MacLeod</a>,
+        licensed under
+        <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+        Unmodified recording.
+      </p>
+      <p>
+        Interaction references:
+        <a
+          href="https://github.com/liabru/matter-js/blob/master/examples/slingshot.js"
+          >Matter.js slingshot</a
+        >
+        and
+        <a href="https://github.com/crystal-bit/angry-aliens">Angry Aliens</a>.
+        This game uses its own code and artwork.
+      </p>
+      <label
+        >Music volume
+        <input id="volume" type="range" min="0" max="100" value="30"
+      /></label>
+    </dialog>
+    <script type="module" src="/games/sling/app.js"></script>
+  </body>
+</html>

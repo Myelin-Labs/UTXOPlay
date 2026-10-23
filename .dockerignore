@@ -1,0 +1,6 @@
+node_modules
+target
+.git
+data
+games/*/src
+games/*/tests

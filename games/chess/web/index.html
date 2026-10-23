@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#142823" />
+    <title>The Quiet Board · UTXOPlay</title>
+    <link rel="stylesheet" href="/games/chess/style.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/" target="_top" aria-label="UTXOPlay Chess home"
+        ><span class="brand-mark">U</span
+        ><span>UTXOPlay <b>CHESS CLUB</b></span></a
+      >
+      <div class="top-actions">
+        <span class="live"><i></i> YOUR TABLE</span
+        ><button id="sound" aria-pressed="false">♫ Sound off</button
+        ><button id="credits-open" aria-label="Art and music credits">ⓘ</button>
+      </div>
+    </header>
+    <main>
+      <section class="intro">
+        <span class="eyebrow">MAKE YOUR NEXT MOVE</span>
+        <h1>The quiet board.</h1>
+        <p>A little strategy. A worthy rival. A game worth remembering.</p>
+      </section>
+      <div class="play-layout">
+        <section class="table" aria-label="Chess game">
+          <div class="player">
+            <div class="avatar dark">♚</div>
+            <div>
+              <strong>Black</strong
+              ><span id="black-state">Ready across the table</span>
+            </div>
+            <span class="player-label">PLAYER 02</span>
+          </div>
+          <div class="board-frame">
+            <div id="board" role="grid" aria-label="Chessboard"></div>
+          </div>
+          <div class="player">
+            <div class="avatar light">♔</div>
+            <div>
+              <strong>White</strong
+              ><span id="white-state">The first move is yours</span>
+            </div>
+            <span class="player-label">PLAYER 01</span>
+          </div>
+        </section>
+        <aside>
+          <div class="match-card">
+            <div class="card-heading">
+              <span class="eyebrow">AT THE TABLE</span
+              ><span class="small-dot"></span>
+            </div>
+            <h2 id="status">Setting the board…</h2>
+            <p id="hint">
+              Two players, one board. Select a piece to see its legal moves.
+            </p>
+            <button id="new" class="primary">
+              Start a new match <span>↗</span>
+            </button>
+            <div class="button-row">
+              <button id="flip">↻ Flip board</button
+              ><button id="resign">Resign</button>
+            </div>
+            <button id="draw" hidden>Claim a draw</button>
+            <div class="rule"></div>
+            <div class="card-heading">
+              <h3>Move journal</h3>
+              <span id="move-count">0 moves</span>
+            </div>
+            <div id="moves" class="move-journal">
+              <p class="empty">
+                Every great game starts<br />with a small move.
+              </p>
+            </div>
+          </div>
+          <div class="memory-card">
+            <span class="eyebrow">KEEP THE GAME</span>
+            <h3>Every move has a memory.</h3>
+            <p>
+              Your match is saved as you play. Return to the same table, or
+              replay it from the beginning.
+            </p>
+            <div class="button-row">
+              <button id="replay">▷ Replay & verify</button
+              ><a
+                class="button"
+                href="/games/chess/api/export"
+                download="chess-session.json"
+                >↓ Save match</a
+              >
+            </div>
+            <p id="verification" role="status"></p>
+          </div>
+        </aside>
+      </div>
+      <details class="evidence">
+        <summary>Session details <span id="session-short"></span></summary>
+        <dl id="session-info"></dl>
+        <p>
+          Authority-signed Myelin session. Game rules execute on the host;
+          this is not CKB settlement or a fraud proof.
+        </p>
+      </details>
+      <footer>
+        <span
+          >UTXOPLAY <span class="footer-dot">·</span> PLAY, REMEMBER,
+          REPLAY.</span
+        ><span>Made for thoughtful moves.</span>
+      </footer>
+    </main>
+    <div id="toast" role="alert" hidden></div>
+    <dialog id="promotion">
+      <h2>A new beginning.</h2>
+      <p>Choose your promotion piece.</p>
+      <div id="promotion-choices"></div>
+      <button id="promotion-cancel">Cancel</button>
+    </dialog>
+    <dialog id="credits">
+      <button class="close" id="credits-close" aria-label="Close credits">
+        ×</button
+      ><span class="eyebrow">THE PEOPLE & THE CRAFT</span>
+      <h2>Art & sound</h2>
+      <p>
+        Original study environment and chess set generated with OpenAI ImageGen.
+        Interface and sound effects by Myelin Labs.
+      </p>
+      <p>
+        “Evening Fall (Harp)” by
+        <a href="https://incompetech.com/" target="_blank" rel="noreferrer"
+          >Kevin MacLeod</a
+        >, licensed under
+        <a
+          href="https://creativecommons.org/licenses/by/4.0/"
+          target="_blank"
+          rel="noreferrer"
+          >CC BY 4.0</a
+        >. Unmodified recording.
+      </p>
+      <p>
+        Chess move generation: Jordan Bray’s MIT-licensed
+        <a href="https://github.com/jordanbray/chess">chess</a> library. Full
+        credits and source references are in the repository.
+      </p>
+      <label
+        >Music volume
+        <input id="volume" type="range" min="0" max="100" value="30"
+      /></label>
+    </dialog>
+    <script type="module" src="/games/chess/app.js"></script>
+  </body>
+</html>
