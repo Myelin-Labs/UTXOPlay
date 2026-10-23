@@ -1,6 +1,6 @@
 # UTXOPlay
 
-A deployed browser game store at https://store.utxoplay.io. The launch collection contains The Quiet Board (same-device two-player chess) , Skyward (single-player slingshot), and Teeworlds (online duels and practice).
+A deployed browser game store at https://store.utxoplay.io. The collection contains The Quiet Board (same-device two-player chess), Skyward (single-player slingshot), Teeworlds (online duels and practice), and OpenStrike (first-person online duels and practice).
 
 ## Shipped in this release
 
@@ -11,7 +11,7 @@ A deployed browser game store at https://store.utxoplay.io. The launch collectio
 - Rust Myelin runtimes with per-account storage, bounded open-session caches, signed records, replay and export.
 - Developer workspace with private project drafts, a same-origin JavaScript API helper, integration guide and manifest validator.
 
-Public third-party publishing, cross-origin game grants, remote chess rooms and CKB settlement are not implemented. Chess/Skyward run on server-side Rust; Teeworlds runs its original C++ simulation with Rust Myelin replay verification; wallet login does not submit blockchain transactions.
+Public third-party publishing, cross-origin game grants, remote chess rooms and CKB settlement are not implemented. Chess/Skyward run on server-side Rust; Teeworlds runs its original C++ simulation and OpenStrike its original Rust simulation, both with Myelin replay verification; wallet login does not submit blockchain transactions.
 
 ## Local development
 
@@ -39,7 +39,7 @@ Browser interaction checks covered the local storefront, mobile layout, chess mo
 
 The server deployment is under `/data/utxoplay`. `deploy/compose.yml` uses the existing external `stack-network` HTTPS proxy and a private game network. No game runtime port is exposed publicly. The proxy discovers the store through `VIRTUAL_HOST` and manages certificates for store.utxoplay.io, utxoplay.io and www.utxoplay.io. The latter two redirect to the canonical store origin.
 
-Build the game binaries on Debian Bookworm and copy them into `deploy/bin`. Build the frontend locally, then build the server image with `docker build -f deploy/Dockerfile -t utxoplay:0.1.0 .`. The server-side runtime secret is generated on the server, stored in `shared/runtime.env` with mode 0600, and never committed. Persistent platform and game directories must be writable by container UID 1000. Services restart automatically and have memory, CPU, process, privilege and log-size limits.
+Build the game binaries on Debian Bookworm and copy them into `deploy/bin`. Build the frontend locally, then build the server image with `docker build -f deploy/Dockerfile -t utxoplay:0.3.0 .`. The server-side runtime secret is generated on the server, stored in `shared/runtime.env` with mode 0600, and never committed. Persistent platform and game directories must be writable by container UID 1000. Services restart automatically and have memory, CPU, process, privilege and log-size limits.
 
 For upgrades, preserve `shared/` and record the existing image tag before recreation. Changing game rules or Myelin's pinned revision can invalidate existing exports: preserve matching runtime images and do not replace game state indiscriminately. A release pointer does not migrate old sessions.
 
