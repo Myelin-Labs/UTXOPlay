@@ -99,3 +99,14 @@ Automated tests cover integer splits/minimum capacity, SSRF target rejection, pr
 Browser tests use a localhost-only disposable database and cryptographic test login. Instance readiness is explicitly simulated there. They verify the actual Studio forms and public listing UX without publishing test games to the production catalog. Real wallet payment acceptance remains a separate mainnet check to be performed by the operator after supplying the Store receive address; no money is moved by this implementation workflow.
 
 Local acceptance also passed with a real Myelin Chess runtime through the reference vendor adapter: cryptographic wallet login, free publication, readiness probe, one-use launch redemption, authenticated e2e4 move, verified replay/export and protected static access. `tests/live-vendor.mjs` requires the local runtime token; it uses a disposable Store database and never creates a payment. The vendor HTTPS/DNS boundary is represented locally in this test, not deployed as a public vendor service.
+
+### Release acceptance — 23 October 2026
+
+- `npm test`: 30/30 passed, including marketplace and existing authentication/gateway tests.
+- `npm run build`: passed. Release image passed an isolated no-network boot/schema/catalog/guide/auth-boundary check.
+- Local browser: three-step free publication; paid price/minimum/split review; purchase receipt and unpaid cancellation; mobile 390 px layout; unsaved-draft protection; free-only filtering. No browser console errors observed in that test session. The browser fixture used simulated instance checks and no funds.
+- Real local vendor integration: Myelin Chess execution, signed replay/export and launch authorization passed through the reference adapter.
+- Local and public deployment: Chess/Skyward state isolation, legal actions, stale-action rejection, replay/export and wallet sign-in/sign-out/save recovery passed.
+- Production Store image `utxoplay:0.5.0` is healthy. Public HTTPS returned version 0.5.0, the four original catalog games and the new Studio/Purchases/guides/assets. Receipt and redemption APIs rejected unauthenticated requests. The in-app browser timed out opening the public Studio; browser interaction acceptance was local, while production validation used HTTPS/API requests.
+- Consistent platform backup created before rollout. All four game container image IDs and start times remained identical across deployment.
+- Production has no test listings or orders. `STORE_CKB_ADDRESS` remains unset: free publication is active; paid publication and checkout are deliberately unavailable pending the operator's public mainnet receive address. No mainnet transfer or funded wallet payment acceptance was performed.
