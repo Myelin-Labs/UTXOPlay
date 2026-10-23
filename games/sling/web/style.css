@@ -632,3 +632,11 @@ dialog label {
 body[data-region="1"]{background:#f7efd9}body[data-region="2"]{background:#ecedf7}body[data-region="3"]{background:#dce5ec}
 @media(max-width:700px){.item-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}.satchel-heading{align-items:flex-start;flex-direction:column;gap:4px}.tag{font-size:7px;margin-right:0}.tag img{width:18px;height:18px}.journey{gap:10px;font-size:10px}.satchel{padding:12px}.item-buttons button{min-height:64px;font-size:11px}.item-buttons small{font-size:9px}}
 @media(max-width:440px){nav{flex-wrap:wrap;justify-content:flex-end;max-width:150px}.tag{flex-basis:100%;justify-content:flex-end}}
+/* Keep the satchel and launch controls within a desktop fullscreen viewport. */
+html.immersive-game body:has(#world) main{max-width:min(1800px,max(650px,calc((100dvh - 360px)*1.96 + 48px)))}
+html.immersive-game .satchel{margin-top:8px;padding:8px}
+html.immersive-game .satchel-heading,html.immersive-game #item-hint{display:none}
+html.immersive-game .item-buttons button{min-height:48px;padding:7px 9px}
+html.immersive-game .under-game{margin-top:4px;padding-top:8px;padding-bottom:8px}
+html.immersive-game .journey{margin-bottom:8px}
+@media(max-width:760px){html.immersive-game body:has(#world) main{max-width:none}}
