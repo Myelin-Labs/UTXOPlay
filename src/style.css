@@ -22,3 +22,5 @@ body.playing-immersive{overflow:hidden}
 .play-tools button{display:inline-flex;align-items:center;gap:7px}.play-tools button span{font-size:12px}
 .play-tools button{width:auto;min-width:34px;padding:8px}.play-heading>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:600px){.play-tools button span{display:none}.play-heading{gap:10px}}
+
+.game-frame.openstrike{height:760px;background:#071522}.hero.openstrike .hero-shade{background:linear-gradient(90deg,#071720f5,#09202baa 43%,#07152200 80%)}

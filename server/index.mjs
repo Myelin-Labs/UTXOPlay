@@ -37,7 +37,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   next();
  });
  app.use(express.json({limit:'24kb'}));
- app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.2.4'}));
+ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.3.0'}));
  app.get('/api/games',(_req,res)=>res.json({games}));
  app.get('/api/me',(req,res)=>res.json({user:userView(account(req))}));
  app.post('/api/guest',(req,res)=>{
@@ -84,13 +84,13 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   if(!games.some(g=>g.id===req.params.game))return res.status(404).json({error:'Unknown game'});
   const endpoint=req.path;
   if(!((req.method==='GET'&&['/state','/export'].includes(endpoint))||(req.method==='POST'&&['/new','/action','/replay'].includes(endpoint))))return res.status(404).json({error:'Unknown endpoint'});
-  if(req.params.game==='teeworlds'&&req.body?.type==='create'&&limited(req.account.id+':teeworlds:create',20,3600000))return res.status(429).json({error:'Match creation limit reached. Please return later.'});
-  if(req.method==='POST'&&limited(req.account.id+':'+req.params.game+':'+endpoint,req.params.game==='teeworlds'?1200:endpoint==='/new'?10:120,60000))return res.status(429).json({error:'Please wait before trying again.'});
+  if(['teeworlds','openstrike'].includes(req.params.game)&&req.body?.type==='create'&&limited(req.account.id+':'+req.params.game+':create',20,3600000))return res.status(429).json({error:'Match creation limit reached. Please return later.'});
+  if(req.method==='POST'&&limited(req.account.id+':'+req.params.game+':'+endpoint,['teeworlds','openstrike'].includes(req.params.game)?1200:endpoint==='/new'?10:120,60000))return res.status(429).json({error:'Please wait before trying again.'});
   try {
-   const base=req.params.game==='teeworlds'?(process.env.TEEWORLDS_URL||'http://127.0.0.1:8783'):req.params.game==='chess'?(process.env.CHESS_URL||'http://127.0.0.1:8781'):(process.env.SLING_URL||'http://127.0.0.1:8782');
+   const base=req.params.game==='openstrike'?(process.env.OPENSTRIKE_URL||'http://127.0.0.1:8784'):req.params.game==='teeworlds'?(process.env.TEEWORLDS_URL||'http://127.0.0.1:8783'):req.params.game==='chess'?(process.env.CHESS_URL||'http://127.0.0.1:8781'):(process.env.SLING_URL||'http://127.0.0.1:8782');
    const result=await runtimeFetch(base+'/api'+endpoint,{method:req.method,headers:{'Content-Type':'application/json','X-Runtime-Token':process.env.RUNTIME_TOKEN||'','X-UTXOPlay-Account':req.account.id},body:req.method==='POST'?JSON.stringify(req.body||{}):undefined,signal:AbortSignal.timeout(20000)});
    const content=await result.text();
-   if(result.ok && (req.params.game!=='teeworlds'||req.method==='POST'&&['create','join'].includes(req.body?.type)))db.prepare('INSERT INTO plays VALUES(?,?,?) ON CONFLICT(account,game) DO UPDATE SET updated=excluded.updated').run(req.account.id,req.params.game,Date.now());
+   if(result.ok && (!['teeworlds','openstrike'].includes(req.params.game)||req.method==='POST'&&['create','join'].includes(req.body?.type)))db.prepare('INSERT INTO plays VALUES(?,?,?) ON CONFLICT(account,game) DO UPDATE SET updated=excluded.updated').run(req.account.id,req.params.game,Date.now());
    if(endpoint==='/export')res.set('Content-Disposition',`attachment; filename="utxoplay-${req.params.game}-session.json"`);
    res.status(result.status).type('json').send(content);
   }catch(e){console.error('runtime request failed',req.params.game,e.name);res.status(503).json({error:'The game is waking up. Please retry in a moment; your saved progress is safe.'});}

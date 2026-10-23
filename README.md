@@ -57,6 +57,13 @@ The gateway injects the authenticated account, enforces same-origin writes, and 
 
 ### Local platform
 
-Build with `npm run build`, then run `npm run dev:platform` to start the store and all three game runtimes together. Stop any existing processes on ports 8781–8783 and 8790 first. The launcher requires the Chess/Skyward binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
+Build with `npm run build`, then run `npm run dev:platform` to start the store and all four game runtimes together. Stop any existing processes on ports 8781–8784 and 8790 first. The launcher requires the Chess/Skyward binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`), plus a built sibling `myelin-openstrike` checkout (`OPENSTRIKE_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
 
 Games enter immersive mode on a Play/Start click and request browser fullscreen in that user gesture. Browsers that reject fullscreen retain the immersive page layout. Exit or Escape restores the store. The shared first-party game shell validates the sender and origin of frame messages.
+
+
+## OpenStrike release
+
+`myelin-openstrike:0.1.0` adds the fourth game with an original browser renderer and the upstream native OpenStrike simulation. The source, English architecture, API guide and verifier are published at https://github.com/Myelin-Labs/myelin-openstrike. Store 0.3.0 adds catalog entry, static assets and account-authenticated HTTP/WebSocket routing to port 8784. Preserve `/data/utxoplay/shared/openstrike`. The existing three runtimes keep their images and data.
+
+Public play is free. Fiber is retained only in the upstream native developer testnet path. `node tests/live-openstrike.mjs` exercises disposable CKB sign-ins, a two-account duel and verified export without transactions; set `STORE_URL` to test a deployment. The export must be verified using its matching native binary pair.

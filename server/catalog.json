@@ -1,5 +1,20 @@
 [
   {
+    "id": "openstrike",
+    "title": "OpenStrike",
+    "subtitle": "One arena. One clean shot.",
+    "genre": "Action",
+    "mode": "Online duel + practice",
+    "description": "A neon first-person arena. Find an angle, work the cover, and take the round. Original OpenStrike rules with native Myelin replay verification.",
+    "cover": "/assets/openstrike-cover.svg",
+    "version": "0.1.0",
+    "controls": "WASD to move, mouse to aim, left click to fire, Shift to walk, R to reload. Click Enter arena to capture your mouse; Escape opens the menu. Free practice or a private 90-second duel. Desktop keyboard and mouse recommended.",
+    "players": "1\u20132 players online",
+    "headline": "One arena.|One clean shot.",
+    "heroDescription": "Find your angle in Neon Divide. A quick first-person duel, with every round ready to replay.",
+    "caption": "OPENSTRIKE \u00b7 NEON DIVIDE"
+  },
+  {
     "id": "teeworlds",
     "title": "Teeworlds",
     "subtitle": "Hook in. Let it fly.",

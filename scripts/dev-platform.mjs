@@ -1,14 +1,16 @@
-// Run the local store and all three runtimes together; never leave an empty game iframe.
+// Run the local store and all four runtimes together; never leave an empty game iframe.
 import {spawn} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 import {existsSync, mkdirSync} from 'node:fs';
 import {createServer} from 'node:net';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
+const strike=process.env.OPENSTRIKE_ROOT||path.resolve(root,'../myelin-openstrike');
 const tee=process.env.TEEWORLDS_ROOT||path.resolve(root,'../myelin-teeworlds');
 const specs=[
  ['chess',8781,path.join(root,'deploy/bin/myelin-chess'),[]],
  ['sling',8782,path.join(root,'deploy/bin/myelin-sling'),[]],
+ ['openstrike',8784,process.execPath,[path.join(strike,'service/server.mjs')]],
  ['teeworlds',8783,process.execPath,[path.join(tee,'service/server.mjs')]],
  ['store',8790,process.execPath,[path.join(root,'server/index.mjs')]],
 ];
@@ -24,4 +26,4 @@ for(const [name,port,cmd,args] of specs){
  children.push(child);child.on('error',error=>{console.error(`${name}: ${error.message}`);stop(1);});child.on('exit',code=>{if(!stopping){console.error(`${name} exited (${code}); stopping the local platform.`);stop(code||1);}});
 }
 process.on('SIGINT',()=>stop());process.on('SIGTERM',()=>stop());
-console.log('Local UTXOPlay: http://127.0.0.1:8790 — Ctrl+C stops all four services.');
+console.log('Local UTXOPlay: http://127.0.0.1:8790 — Ctrl+C stops all five services.');

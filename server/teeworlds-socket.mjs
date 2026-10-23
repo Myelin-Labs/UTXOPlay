@@ -9,13 +9,14 @@ export function teeworldsSockets({account,origin,limited}) {
  function upgrade(req,socket,head){
   socket.on('error',()=>socket.destroy());
   if(wss.clients.size>=128)return reject(socket,'503 Service Unavailable');
-  if(req.url!=='/games/teeworlds/api/socket')return reject(socket,'404 Not Found');
+  const game=req.url==='/games/teeworlds/api/socket'?'teeworlds':req.url==='/games/openstrike/api/socket'?'openstrike':null;
+  if(!game)return reject(socket,'404 Not Found');
   if(req.headers.origin!==origin)return reject(socket,'403 Forbidden');
   const user=account(req);if(!user)return reject(socket,'401 Unauthorized');
   if((peers.get(user.id)?.size||0)>=3||limited(user.id+':socket',30,60000))return reject(socket,'429 Too Many Requests');
   wss.handleUpgrade(req,socket,head,client=>{
    const group=peers.get(user.id)||new Set();group.add(client);peers.set(user.id,group);
-   const url=new URL('/api/socket',process.env.TEEWORLDS_URL||'http://127.0.0.1:8783');url.protocol=url.protocol==='https:'?'wss:':'ws:';
+   const url=new URL('/api/socket',game==='openstrike'?(process.env.OPENSTRIKE_URL||'http://127.0.0.1:8784'):(process.env.TEEWORLDS_URL||'http://127.0.0.1:8783'));url.protocol=url.protocol==='https:'?'wss:':'ws:';
    const upstream=new WebSocket(url,{headers:{'X-Runtime-Token':process.env.RUNTIME_TOKEN||'','X-UTXOPlay-Account':user.id},maxPayload:65536,perMessageDeflate:false,handshakeTimeout:5000});
    let windowStart=Date.now(),messages=0;client.alive=true;
    const valid=()=>account(req)?.id===user.id;
