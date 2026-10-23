@@ -204,7 +204,7 @@ function App({ walletApi }) {
   const [query, setQuery] = useState(""),
     [genre, setGenre] = useState("All games"),
     [mode, setMode] = useState("all"),
-    [featured, setFeatured] = useState("openstrike");
+    [featured, setFeatured] = useState("prism-breaker");
   const [toast, setToast] = useState(null),
     [dialog, setDialog] = useState(null),
     [details, setDetails] = useState(null),
@@ -827,7 +827,7 @@ function App({ walletApi }) {
                     <div className="hero-content">
                       <span className="pill">
                         <Sparkles size={12} />
-                        {hero.id === "openstrike"
+                        {hero.runtime === "arcade"
                           ? "NEW ON THE PLAYGROUND"
                           : "IN THE SPOTLIGHT"}
                       </span>
@@ -888,6 +888,7 @@ function App({ walletApi }) {
                     <div className="hero-bottom">
                       <span className="hero-caption">
                         {gameMeta[hero.id]?.tag}
+                        {hero.myelin?.based && <span className="myelin-badge"><img src="/assets/myelin-logo.png" alt="" />MYELIN BASED</span>}
                       </span>
                       <span className="hero-index">
                         0{featuredGames.findIndex((g) => g.id === hero.id) + 1}

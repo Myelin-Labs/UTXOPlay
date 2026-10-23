@@ -3221,3 +3221,5 @@ html[data-motion="reduced"] .cover-button:hover img {
   .filter-row { flex-wrap: wrap; }
   .free-filter { margin-left: auto; }
 }
+
+.myelin-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 9px 5px 5px;border:1px solid #b6a5ff44;background:#080b19eb;border-radius:8px;color:#e2ddff;font-size:9px;font-weight:800;letter-spacing:.1em;white-space:nowrap}.myelin-badge img{width:22px!important;height:22px!important;object-fit:contain!important;border-radius:5px;position:static!important}.cover-button>.myelin-badge{position:absolute;top:14px;right:14px;z-index:2}.detail-copy>.myelin-badge{margin:0 0 14px}.hero-myelin{margin:12px 0}.game-card .cover-button>.myelin-badge img{transform:none}

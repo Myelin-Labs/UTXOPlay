@@ -1,6 +1,6 @@
 # UTXOPlay
 
-A deployed browser game store at https://store.utxoplay.io. The collection contains The Quiet Board (same-device two-player chess), Skyward (single-player slingshot), Teeworlds (online duels and practice), and OpenStrike (first-person online duels and practice).
+A deployed browser game store at https://store.utxoplay.io. The collection adds four Myelin arcade games—Prism Breaker, Neon Coil, Starfall and Drift Run—alongside The Quiet Board (same-device two-player chess), Skyward (single-player slingshot), Teeworlds (online duels and practice), and OpenStrike (first-person online duels and practice).
 
 ## Shipped in this release
 
@@ -58,7 +58,7 @@ The gateway injects the authenticated account, enforces same-origin writes, and 
 
 ### Local platform
 
-Build with `npm run build`, then run `npm run dev:platform` to start the store and all four game runtimes together. Stop any existing processes on ports 8781–8784 and 8790 first. The launcher requires the Chess/Skyward binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`), plus a built sibling `myelin-openstrike` checkout (`OPENSTRIKE_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
+Build with `npm run build`, then run `npm run dev:platform` to start the store and all five game runtimes together. Stop any existing processes on ports 8781–8785 and 8790 first. The launcher requires the Chess/Skyward binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`), plus a built sibling `myelin-openstrike` checkout (`OPENSTRIKE_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
 
 Games enter immersive mode on a Play/Start click and request browser fullscreen in that user gesture. Browsers that reject fullscreen retain the immersive page layout. Exit or Escape restores the store. The shared first-party game shell validates the sender and origin of frame messages.
 
@@ -86,3 +86,9 @@ Run `npm test` and `npm run build`. `node tests/marketplace-browser.mjs` starts 
 ## Store 0.6.0 performance
 
 Wallet and commerce tools load on demand. First-party games share visibility-aware rendering/polling; Teeworlds caches terrain, OpenStrike batches static geometry, and the chess board preserves square elements. Display preferences offer adaptive, high-detail and performance graphics. Static delivery uses prebuilt Brotli/gzip and immutable hashed bundles. Native simulation, replay formats and marketplace settlement rules remain unchanged. See [performance audit](docs/performance-audit.md) for measurements and validation.
+
+## Store 0.7.0 arcade collection
+
+Four free arcade games run on a dedicated Myelin v0.31.0 Rust service: Prism Breaker, Neon Coil, Starfall and Drift Run. They include keyboard/touch controls, pause/resume, account-isolated saves, verified replay and signed export. All bundled games carry the supplied Myelin logo and tag. Evidence remains off-chain host replay, with no CKB settlement claim.
+
+See [the arcade release record](docs/arcade-release.md) for architecture, provenance, build commands, tests, acceptance limits and rollback. The server image advances to `utxoplay:0.7.0`; existing four game runtimes retain their images and data. Build the new native binary with `deploy/ArcadeBuilder.Containerfile` and place it at `deploy/bin/myelin-arcade`. `ARCADE_URL` defaults to `http://127.0.0.1:8785` locally.

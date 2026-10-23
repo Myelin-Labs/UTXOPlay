@@ -120,6 +120,9 @@ export function Skeletons() {
     </div>
   );
 }
+export function MyelinBadge({ game }) {
+  return game.myelin?.based ? <span className="myelin-badge" title="Myelin host replay. Off-chain; no CKB settlement."><img src="/assets/myelin-logo.png" alt="" />MYELIN BASED</span> : null;
+}
 export function GameCard({ g, onPlay, onDetails, launching, updated }) {
   const meta = gameMeta[g.id] || { accent: "#8bf4b9", length: "Vendor hosted" };
   return (
@@ -138,6 +141,7 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
       >
         <img src={g.cover} alt="" loading="lazy" />
         <span className="card-badge">{g.genre}</span>
+        <MyelinBadge game={g} />
         <span className="card-explore">
           Explore game <ArrowUpRight size={17} />
         </span>
@@ -229,6 +233,7 @@ export function GameDetails({ game, onClose, onPlay, launching }) {
             : "FREE TO PLAY"}
         </div>
         <h2>{game.title}</h2>
+        <MyelinBadge game={game} />
         <p>{game.description}</p>
         <div className="detail-facts">
           <span>

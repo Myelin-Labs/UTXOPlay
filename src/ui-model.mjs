@@ -25,7 +25,7 @@ export function selectGames(
             ? ["Single player", "Solo + multiplayer"].includes(g.mode)
             : g.id !== "chess")) ||
         (mode === "friends" &&
-          (g.vendor ? g.mode !== "Single player" : g.id !== "sling"))),
+          (g.vendor ? g.mode !== "Single player" : g.mode !== "Single-player"))),
   );
 }
 export function accountLabel(user) {
@@ -43,6 +43,10 @@ export function apiError(error) {
   return error?.message || "Something went wrong. Please try again.";
 }
 export const gameMeta = {
+  "prism-breaker": {"accent": "#b7a2ff", "tag": "REFRACTION LAB", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Find the angle. Break the spectrum.", "repo": "UTXOPlay"},
+  "neon-coil": {"accent": "#84efba", "tag": "LIVING CIRCUIT", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "A little hunger. A longer circuit.", "repo": "UTXOPlay"},
+  "starfall": {"accent": "#7edaff", "tag": "ORBITAL DEFENCE", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Hold the line. Light up the night.", "repo": "UTXOPlay"},
+  "drift-run": {"accent": "#ffbc83", "tag": "AFTER HOURS", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Three lanes. One way forward.", "repo": "UTXOPlay"},
   openstrike: {
     accent: "#68c8ed",
     tag: "NEON DIVIDE",

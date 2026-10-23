@@ -1,5 +1,93 @@
 [
   {
+    "id": "prism-breaker",
+    "title": "Prism Breaker",
+    "subtitle": "Find the angle. Break the spectrum.",
+    "genre": "Arcade",
+    "mode": "Single-player",
+    "description": "Clear luminous brick walls, build a hit combo, and keep the ball alive through faster waves.",
+    "cover": "/assets/prism-breaker-cover.svg",
+    "version": "0.1.0",
+    "controls": "Move with A/D or Left/Right. Drag on the board or hold the touch arrows.",
+    "players": "1 player",
+    "headline": "Find the angle.|Break the spectrum.",
+    "heroDescription": "Clear luminous brick walls, build a hit combo, and keep the ball alive through faster waves.",
+    "caption": "PRISM BREAKER \u00b7 REFRACTION LAB",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    },
+    "runtime": "arcade"
+  },
+  {
+    "id": "neon-coil",
+    "title": "Neon Coil",
+    "subtitle": "A little hunger. A longer circuit.",
+    "genre": "Arcade",
+    "mode": "Single-player",
+    "description": "Trace a growing neon circuit through a midnight grid. Collect glowing nodes, plan your turns, and keep clear of your own trail.",
+    "cover": "/assets/neon-coil-cover.svg",
+    "version": "0.1.0",
+    "controls": "Turn with WASD or arrow keys. Swipe on the board or use the direction buttons.",
+    "players": "1 player",
+    "headline": "A little hunger.|A longer circuit.",
+    "heroDescription": "Trace a growing neon circuit through a midnight grid. Collect glowing nodes, plan your turns, and keep clear of your own trail.",
+    "caption": "NEON COIL \u00b7 LIVING CIRCUIT",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    },
+    "runtime": "arcade"
+  },
+  {
+    "id": "starfall",
+    "title": "Starfall",
+    "subtitle": "Hold the line. Light up the night.",
+    "genre": "Arcade",
+    "mode": "Single-player",
+    "description": "Pilot a tiny interceptor against descending formations. Dodge return fire, find a gap, and light up the next wave.",
+    "cover": "/assets/starfall-cover.svg",
+    "version": "0.1.0",
+    "controls": "A/D or Left/Right to steer, hold Space to fire. Drag to steer and fire on touch, or use the buttons.",
+    "players": "1 player",
+    "headline": "Hold the line.|Light up the night.",
+    "heroDescription": "Pilot a tiny interceptor against descending formations. Dodge return fire, find a gap, and light up the next wave.",
+    "caption": "STARFALL \u00b7 ORBITAL DEFENCE",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    },
+    "runtime": "arcade"
+  },
+  {
+    "id": "drift-run",
+    "title": "Drift Run",
+    "subtitle": "Three lanes. One way forward.",
+    "genre": "Arcade",
+    "mode": "Single-player",
+    "description": "An after-hours sprint through an endless neon city. Slip between barriers and collect energy rings as the road gathers speed.",
+    "cover": "/assets/drift-run-cover.svg",
+    "version": "0.1.0",
+    "controls": "A/D or Left/Right to change lanes. Swipe sideways or use the touch arrows.",
+    "players": "1 player",
+    "headline": "Three lanes.|One way forward.",
+    "heroDescription": "An after-hours sprint through an endless neon city. Slip between barriers and collect energy rings as the road gathers speed.",
+    "caption": "DRIFT RUN \u00b7 AFTER HOURS",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    },
+    "runtime": "arcade"
+  },
+  {
     "id": "openstrike",
     "title": "OpenStrike",
     "subtitle": "One arena. One clean shot.",
@@ -9,10 +97,15 @@
     "cover": "/assets/openstrike-cover.svg",
     "version": "0.1.0",
     "controls": "WASD to move, mouse to aim, left click to fire, Shift to walk, R to reload. Click Enter arena to capture your mouse; Escape opens the menu. Free practice or a private 90-second duel. Desktop keyboard and mouse recommended.",
-    "players": "1–2 players online",
+    "players": "1\u20132 players online",
     "headline": "One arena.|One clean shot.",
     "heroDescription": "Find your angle in Neon Divide. A quick first-person duel, with every round ready to replay.",
-    "caption": "OPENSTRIKE · NEON DIVIDE"
+    "caption": "OPENSTRIKE \u00b7 NEON DIVIDE",
+    "myelin": {
+      "based": true,
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    }
   },
   {
     "id": "teeworlds",
@@ -24,10 +117,15 @@
     "cover": "/assets/teeworlds-cover.svg",
     "version": "0.1.0",
     "controls": "A/D to move, Space to double jump, mouse to aim, left click to fire, right click to hook. Create a private duel or practice against a bot.",
-    "players": "1–2 players online",
+    "players": "1\u20132 players online",
     "headline": "Hook in.|Let it fly.",
     "heroDescription": "Little feet. Long reach. Grab a friend for a minute of movement and mayhem.",
-    "caption": "TEEWORLDS · GRASSLAND ARENA"
+    "caption": "TEEWORLDS \u00b7 GRASSLAND ARENA",
+    "myelin": {
+      "based": true,
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    }
   },
   {
     "id": "sling",
@@ -42,7 +140,12 @@
     "players": "1 player",
     "headline": "A little pull.|A big adventure.",
     "heroDescription": "Floating islands. Mischievous sprites. One very determined little adventurer.",
-    "caption": "SKYWARD · THE FLOATING GARDENS"
+    "caption": "SKYWARD \u00b7 THE FLOATING GARDENS",
+    "myelin": {
+      "based": true,
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    }
   },
   {
     "id": "chess",
@@ -57,6 +160,11 @@
     "players": "2 on one device",
     "headline": "Your next|brilliant move.",
     "heroDescription": "Slow down. Think ahead. Share a beautiful board with a worthy rival.",
-    "caption": "THE QUIET BOARD · CHESS CLUB"
+    "caption": "THE QUIET BOARD \u00b7 CHESS CLUB",
+    "myelin": {
+      "based": true,
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png"
+    }
   }
 ]
