@@ -7,6 +7,42 @@ export const roadPoint = (lane, y) => {
 };
 const direction = {4: 0, 2: 1, 8: 2, 1: 3};
 
+// A drag steers relative to its starting position, so a finger never teleports
+// the target. Only the owner pointer can change it; each swipe commits once.
+export class BoardGesture {
+  constructor(kind) { this.kind = kind; this.clear(); }
+  clear() { this.owner = null; this.target = null; this.start = null; this.committed = false; }
+  begin(pointer, x, y, playerX) {
+    if (this.owner !== null) return false;
+    this.owner = pointer; this.start = {x, y, playerX}; this.target = playerX; this.committed = false;
+    return true;
+  }
+  move(pointer, x, y) {
+    if (pointer !== this.owner || !this.start) return 0;
+    const dx = x - this.start.x, dy = y - this.start.y;
+    if (this.kind === 'prism-breaker' || this.kind === 'starfall') {
+      this.target = clamp(this.start.playerX + dx, 0, 1000); return 0;
+    }
+    if (this.committed || Math.max(Math.abs(dx),Math.abs(dy)) < 45) return 0;
+    // Vertical scrolling-like gestures must never change a racing lane.
+    if (this.kind === 'drift-run' && Math.abs(dy) >= Math.abs(dx)) { this.committed = true; return 0; }
+    this.committed = true;
+    return Math.abs(dx) > Math.abs(dy) ? dx > 0 ? 2 : 1 : dy > 0 ? 8 : 4;
+  }
+  end(pointer) { if (pointer === this.owner) this.clear(); }
+}
+
+export function runSummary(game, previousBest) {
+  const duration = `${Math.floor(game.tick / 1800)}:${String(Math.floor(game.tick / 30) % 60).padStart(2,'0')}`;
+  const tips = {
+    'prism-breaker': 'Aim with the paddle edges to reach the remaining crystals.',
+    'neon-coil': 'Plan two turns ahead and leave space for your tail.',
+    starfall: 'Keep moving between gaps. Auto fire lets you focus on dodging.',
+    'drift-run': 'One swipe changes one lane. Line up early for the next opening.'
+  };
+  return {title: game.tick >= 18000 ? 'Ten minutes complete!' : game.score > previousBest ? 'New device best!' : 'One more run?', duration, tip: tips[game.kind]};
+}
+
 export class InputBuffer {
   constructor(kind) { this.kind = kind; this.held = new Map(); this.queue = []; }
   press(source, bit, game) {

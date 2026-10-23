@@ -73,3 +73,19 @@ Validation on 2026-10-23:
 - A temporary jsdom + native Canvas harness executes the actual frontend module for each game against that runtime: boot, countdown, keyboard events, save, pause, resume, replay and window blur pass without script errors. This is not browser layout validation.
 - Actual Canvas renders were inspected in normal mode and exercised in low-power/reduced-motion modes. Contact sheet: `artifacts/arcade-polish/gameplay-contact.png` (local verification artifact, not shipped).
 - The browser attachment timed out, so browser screenshots, physical touch gestures and subjective audio/animation checks remain unverified.
+
+## Store 0.8.1 play-flow update
+
+This update focuses on playing, pausing and trying again. Inputs held during the countdown carry into the first tick. Mouse movement aims the paddle/interceptor; touch dragging steers relative to its initial position without jumping toward the finger. One swipe commits one turn or lane change, and a second finger cannot take over the board gesture. Neon Coil has a spatial D-pad with keyboard-operable buttons. Starfall offers a persistent Auto fire switch (enabled initially); this emits the same ordinary fire inputs, with the native rules and cooldown unchanged.
+
+New-run confirmation now stays inside the game, with a Keep playing action. P toggles pause/resume, R opens the confirmation and Enter activates play from the board. End-of-run score, duration and device best appear immediately while the final save is pending; the replay button becomes available after confirmation. Ties no longer claim a new record. Action buttons lock during async operations, duplicate starts cannot create duplicate sessions, and blur/hidden state invalidates a delayed resume. A failed action plus failed recovery read can reconnect and start with a single click. Routine runtime evidence remains unchanged.
+
+Verification: 49 standard tests pass, including long-swipe, pointer ownership, relative drag, cancellation and result-summary regressions. `tests/arcade-flow.mjs` exercises the actual frontend module with a DOM harness and a real isolated native runtime: countdown inputs, paused-state stability, signed replay, cancel restart, duplicate confirmation, delayed network responses during blur, failed-save recovery, reconnect and slow final-save results. It also verifies Starfall can turn automatic fire off. Install the optional harness dependency outside the production tree and point it at the isolated local store:
+
+```sh
+npm install --prefix /tmp/arcade-test --no-audit --no-fund jsdom
+ARCADE_TEST_MODULES=/tmp/arcade-test/node_modules STORE_URL=http://127.0.0.1:19090 node tests/arcade-flow.mjs starfall
+# Repeat for prism-breaker, neon-coil, drift-run.
+```
+
+Browser attachment still times out; the DOM harness does not establish physical touch feel, browser layout or audio quality. Only the store image changes to `utxoplay:0.8.1`; the native image and persisted profiles stay on the existing runtime. Deploy/revert only the store, preserving game data and the supplied logo.

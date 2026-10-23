@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame,step,kinds} from '../games/arcade/web/engine.mjs';
-import {InputBuffer,feedback,EffectPool,lerp} from '../games/arcade/web/presentation.mjs';
+import {InputBuffer,BoardGesture,feedback,EffectPool,lerp,runSummary} from '../games/arcade/web/presentation.mjs';
 
 test('rapid snake turns survive key release and execute on separate movement ticks',()=>{
  const game=createGame('neon-coil'),input=new InputBuffer(game.kind);
@@ -43,4 +43,31 @@ test('effects have bounded memory and identical travel/lifetime at 30 and 120 Hz
 test('feedback and interpolation cannot alter deterministic state or emit on a resync',()=>{
  for(const kind of kinds){const game=createGame(kind),before=structuredClone(game);step(game,16);const snapshot=JSON.stringify(game);feedback(before,game);assert.equal(JSON.stringify(game),snapshot);assert.deepEqual(feedback(before,{...game,tick:game.tick+10}),[]);}
  assert.equal(lerp(100,130,.5),115);assert.equal(lerp(100,130,2),130);
+});
+
+test('long racing swipe changes only one lane until the next gesture',()=>{
+ const gesture=new BoardGesture('drift-run');gesture.begin(1,100,100,1);
+ assert.equal(gesture.move(1,140,100),0);assert.equal(gesture.move(1,150,100),2);
+ assert.equal(gesture.move(1,400,100),0);assert.equal(gesture.move(1,20,100),0);
+ gesture.end(1);gesture.begin(2,400,100,2);assert.equal(gesture.move(2,300,100),1);
+});
+test('vertical racing swipe and diagonal jitter cannot switch a lane',()=>{
+ const gesture=new BoardGesture('drift-run');gesture.begin(1,100,100,1);
+ assert.equal(gesture.move(1,120,160),0);assert.equal(gesture.move(1,400,200),0);
+});
+test('touch drag has no initial steering jump and another finger cannot steal it',()=>{
+ const gesture=new BoardGesture('prism-breaker');assert.equal(gesture.begin(1,100,900,500),true);assert.equal(gesture.target,500);
+ assert.equal(gesture.begin(2,800,900,500),false);gesture.move(2,900,900);gesture.end(2);assert.equal(gesture.owner,1);assert.equal(gesture.target,500);
+ gesture.move(1,150,900);assert.equal(gesture.target,550);gesture.move(1,900,900);assert.equal(gesture.target,1000);
+ gesture.end(1);assert.equal(gesture.owner,null);assert.equal(gesture.target,null);
+});
+test('snake swipe commits one turn; cancellation clears the owner',()=>{
+ const gesture=new BoardGesture('neon-coil');gesture.begin(3,100,200,0);
+ assert.equal(gesture.move(3,105,140),4);assert.equal(gesture.move(3,300,140),0);
+ gesture.clear();assert.equal(gesture.move(3,105,280),0);assert.equal(gesture.target,null);
+});
+test('run summary distinguishes ties, records and time-limit completion',()=>{
+ const game={...createGame('starfall'),score:120,tick:1870,over:true};
+ assert.equal(runSummary(game,120).title,'One more run?');assert.equal(runSummary(game,100).title,'New device best!');assert.equal(runSummary(game,120).duration,'1:02');
+ assert.equal(runSummary({...game,tick:18000},120).title,'Ten minutes complete!');
 });
