@@ -96,3 +96,7 @@ See [the arcade release record](docs/arcade-release.md) for architecture, proven
 ## Skyward expanded gardens
 
 Store 0.9.0 expands Skyward to twelve islands, three consumable items per island, and gesture-started music with remembered settings. See [release and saved-record notes](docs/skyward-release.md). The expanded campaign begins a new adventure while the original campaign records remain archived.
+
+## In-game items and coins
+
+Store 0.11.0 adds Skyward's in-game Item Store. Earn coins through play, buy extra supplies, equip flight powers and use owned items inside the game. Rewards, balances, purchases and inventory consumption are part of the authority-signed Myelin game state and deterministic host replay. There is no real-money payment. The eight bundled games keep controls in their own viewports, with flat menu sections and keyboard isolation. See [coin campaign rules and archive/rollback details](docs/skyward-coins.md).

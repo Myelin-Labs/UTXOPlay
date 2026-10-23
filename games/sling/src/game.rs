@@ -8,6 +8,38 @@ pub const LEVELS: u32 = 12;
 const SCALE: i64 = 1000;
 const GROUND: i64 = 480 * SCALE;
 const RADIUS: i64 = 16 * SCALE;
+const STOCK_LIMIT: u32 = 3;
+const EXTRA_LIMIT: u32 = 3;
+#[derive(Clone, Copy, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Item {
+    Burst,
+    Pierce,
+    Extra,
+}
+impl Item {
+    fn index(self) -> usize {
+        match self {
+            Self::Burst => 0,
+            Self::Pierce => 1,
+            Self::Extra => 2,
+        }
+    }
+    fn price(self) -> u32 {
+        match self {
+            Self::Burst => 12,
+            Self::Pierce => 10,
+            Self::Extra => 8,
+        }
+    }
+    fn id(self) -> &'static str {
+        match self {
+            Self::Burst => "burst",
+            Self::Pierce => "pierce",
+            Self::Extra => "extra",
+        }
+    }
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -33,6 +65,9 @@ enum Action {
     Next {},
     Retry {},
     Extra {},
+    Buy {
+        item: Item,
+    },
     Launch {
         dx: i64,
         dy: i64,
@@ -53,6 +88,11 @@ pub struct Game {
     pub world_trace: Vec<Vec<i64>>,
     pub inventory: [u32; 3],
     pub last_power: Power,
+    pub coins: u32,
+    pub coins_earned: u32,
+    pub coins_spent: u32,
+    pub extra_used: u32,
+    pub rewarded_targets: Vec<bool>,
 }
 impl Default for Game {
     fn default() -> Self {
@@ -119,12 +159,17 @@ impl Game {
             shots: 4,
             score,
             level_start_score: score,
+            rewarded_targets: vec![false; targets.len()],
             targets,
             trace: vec![],
             hits: vec![],
             world_trace: vec![],
             inventory: [1, 1, 1],
             last_power: Power::Normal,
+            coins: 0,
+            coins_earned: 0,
+            coins_spent: 0,
+            extra_used: 0,
         }
     }
     fn remaining(&self) -> usize {
@@ -133,19 +178,62 @@ impl Game {
             .filter(|t| t.kind == "sprite" && t.hp > 0)
             .count()
     }
+    fn enter_level(&mut self, level: u32, score: u32, retry: bool) {
+        let mut next = Self::level(level, score);
+        next.coins = self.coins;
+        next.coins_earned = self.coins_earned;
+        next.coins_spent = self.coins_spent;
+        next.inventory = self.inventory.map(|count| count.max(1));
+        if retry {
+            next.rewarded_targets.clone_from(&self.rewarded_targets);
+        }
+        *self = next;
+    }
+    fn buy_error(&self, item: Item) -> Option<&'static str> {
+        if self.remaining() == 0 {
+            return Some("Continue to the next island first");
+        }
+        if self.shots == 0 && item.index() != 2 {
+            return Some("Retry this island before equipping a flight power");
+        }
+        if item.index() == 2 && self.extra_used >= EXTRA_LIMIT {
+            return Some("Extra-flight limit reached on this attempt");
+        }
+        if self.inventory[item.index()] >= STOCK_LIMIT {
+            return Some("Satchel slot is full");
+        }
+        if self.coins < item.price() {
+            return Some("Play to earn more coins");
+        }
+        None
+    }
     pub fn apply(&mut self, a: &Value) -> Result<(), String> {
         let action: Action = serde_json::from_value(a.clone()).map_err(|e| e.to_string())?;
         let (dx, dy, power) = match action {
             Action::Next {} if self.remaining() == 0 && self.level < LEVELS => {
-                *self = Self::level(self.level + 1, self.score);
+                self.enter_level(self.level + 1, self.score, false);
                 return Ok(());
             }
             Action::Retry {} if self.shots == 0 && self.remaining() > 0 => {
-                *self = Self::level(self.level, self.level_start_score);
+                self.enter_level(self.level, self.level_start_score, true);
                 return Ok(());
             }
-            Action::Extra {} if self.inventory[2] > 0 && self.remaining() > 0 => {
+            Action::Buy { item } => {
+                if let Some(reason) = self.buy_error(item) {
+                    return Err(reason.into());
+                }
+                self.coins -= item.price();
+                self.coins_spent += item.price();
+                self.inventory[item.index()] += 1;
+                return Ok(());
+            }
+            Action::Extra {}
+                if self.inventory[2] > 0
+                    && self.remaining() > 0
+                    && self.extra_used < EXTRA_LIMIT =>
+            {
                 self.inventory[2] -= 1;
+                self.extra_used += 1;
                 self.shots += 1;
                 return Ok(());
             }
@@ -255,18 +343,42 @@ impl Game {
                 break;
             }
         }
+        let mut earned = 0;
+        for (target, rewarded) in self.targets.iter().zip(&mut self.rewarded_targets) {
+            if target.hp == 0 && !*rewarded {
+                earned += if target.kind == "sprite" { 5 } else { 1 };
+                *rewarded = true;
+            }
+        }
         if self.remaining() == 0 {
             self.score += self.shots * 250;
+            earned += 10;
         }
+        self.coins += earned;
+        self.coins_earned += earned;
         Ok(())
     }
     pub fn view(&self) -> Value {
-        json!({"level":self.level,"total_levels":LEVELS,"level_name":LEVEL_NAMES[(self.level-1) as usize],"region":REGIONS[((self.level-1)/3) as usize],"inventory":{"burst":self.inventory[0],"pierce":self.inventory[1],"extra":self.inventory[2]},"last_power":self.last_power,"shots":self.shots,"score":self.score,"targets":self.targets,"trace":self.trace,"hits":self.hits,"world_trace":self.world_trace,"remaining":self.remaining(),"won":self.remaining()==0,"lost":self.shots==0&&self.remaining()>0,"scale":SCALE})
+        let items: Vec<Value> = [Item::Burst, Item::Pierce, Item::Extra].into_iter().map(|item| {
+            let (name, description) = match item {
+                Item::Burst => ("Bloom bomb", "Explodes on impact, clearing nearby targets."),
+                Item::Pierce => ("Star feather", "Pierces stone and wood with two-hit strength."),
+                Item::Extra => ("Extra flight", "Adds one flight. Use up to three per island attempt."),
+            };
+            json!({"id":item.id(),"name":name,"description":description,"price":item.price(),"owned":self.inventory[item.index()],"can_buy":self.buy_error(item).is_none(),"unavailable":self.buy_error(item)})
+        }).collect();
+        json!({"coins":self.coins,"coins_earned":self.coins_earned,"coins_spent":self.coins_spent,"extra_used":self.extra_used,"extra_limit":EXTRA_LIMIT,"shop":{"stock_limit":STOCK_LIMIT,"items":items},"level":self.level,"total_levels":LEVELS,"level_name":LEVEL_NAMES[(self.level-1) as usize],"region":REGIONS[((self.level-1)/3) as usize],"inventory":{"burst":self.inventory[0],"pierce":self.inventory[1],"extra":self.inventory[2]},"last_power":self.last_power,"shots":self.shots,"score":self.score,"targets":self.targets,"trace":self.trace,"hits":self.hits,"world_trace":self.world_trace,"remaining":self.remaining(),"won":self.remaining()==0,"lost":self.shots==0&&self.remaining()>0,"scale":SCALE})
     }
     pub fn validate(&self) -> Result<(), String> {
         if !(1..=LEVELS).contains(&self.level)
-            || self.shots > 5
-            || self.inventory.iter().any(|v| *v > 1)
+            || self.shots > 4 + EXTRA_LIMIT
+            || self.inventory.iter().any(|v| *v > STOCK_LIMIT)
+            || self.extra_used > EXTRA_LIMIT
+            || self.shots > 4 + self.extra_used
+            || self.coins_earned > 10_000
+            || self.coins_spent > self.coins_earned
+            || self.coins != self.coins_earned - self.coins_spent
+            || self.rewarded_targets.len() != self.targets.len()
             || self.trace.len() > 600
             || self.world_trace.len() != self.trace.len()
         {
@@ -299,6 +411,105 @@ const REGIONS: [&str; 4] = [
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shop_rejects_forged_price_and_unfunded_purchase_atomically() {
+        let mut g = Game::default();
+        let before = g.view();
+        for action in [
+            json!({"type":"buy","item":"burst"}),
+            json!({"type":"buy","item":"burst","price":0}),
+            json!({"type":"buy","item":"coins"}),
+            json!({"type":"buy","item":"extra","quantity":100}),
+        ] {
+            assert!(g.apply(&action).is_err());
+            assert_eq!(g.view(), before);
+        }
+        g.apply(&json!({"type":"launch","dx":-116,"dy":16}))
+            .unwrap();
+        assert_eq!(g.remaining(), 0);
+        assert!(g.coins >= 12);
+        assert_eq!(g.coins, g.coins_earned);
+        g.apply(&json!({"type":"next"})).unwrap();
+        let balance = g.coins;
+        g.apply(&json!({"type":"buy","item":"burst"})).unwrap();
+        assert_eq!(g.coins, balance - 12);
+        assert_eq!(g.coins_spent, 12);
+        assert_eq!(g.inventory[0], 2);
+        g.validate().unwrap();
+        let mut replay: Game = serde_json::from_slice(&serde_json::to_vec(&g).unwrap()).unwrap();
+        for game in [&mut g, &mut replay] {
+            game.apply(&json!({"type":"launch","dx":-8,"dy":0,"power":"burst"}))
+                .unwrap();
+        }
+        assert_eq!(g.view(), replay.view());
+    }
+    #[test]
+    fn retry_cannot_farm_coins_and_preserves_unspent_stock() {
+        let mut g = Game::default();
+        let mut chosen = None;
+        for dx in (-116..=-28).step_by(4) {
+            for dy in (-16..=96).step_by(4) {
+                let mut candidate = g.clone();
+                if candidate
+                    .apply(&json!({"type":"launch","dx":dx,"dy":dy}))
+                    .is_ok()
+                    && candidate.coins > 0
+                    && candidate.remaining() > 0
+                {
+                    chosen = Some((dx, dy, candidate));
+                    break;
+                }
+            }
+            if chosen.is_some() {
+                break;
+            }
+        }
+        let (dx, dy, next) = chosen.expect("partial target hit");
+        g = next;
+        let earned = g.coins_earned;
+        while g.shots > 0 {
+            g.apply(&json!({"type":"launch","dx":-8,"dy":0})).unwrap();
+        }
+        g.apply(&json!({"type":"retry"})).unwrap();
+        g.apply(&json!({"type":"launch","dx":dx,"dy":dy})).unwrap();
+        assert_eq!(
+            g.coins_earned, earned,
+            "same targets cannot pay twice after retry"
+        );
+        g.inventory[0] = 3;
+        g.shots = 0;
+        g.apply(&json!({"type":"retry"})).unwrap();
+        assert_eq!(g.inventory[0], 3);
+        g.validate().unwrap();
+    }
+    #[test]
+    fn stock_and_extra_flight_limits_fail_without_deducting_coins() {
+        let mut g = Game {
+            coins: 100,
+            coins_earned: 100,
+            ..Game::default()
+        };
+        for _ in 0..2 {
+            g.apply(&json!({"type":"buy","item":"extra"})).unwrap();
+        }
+        let full = g.view();
+        assert!(g.apply(&json!({"type":"buy","item":"extra"})).is_err());
+        assert_eq!(full, g.view());
+        for _ in 0..3 {
+            g.apply(&json!({"type":"extra"})).unwrap();
+        }
+        assert_eq!(g.shots, 7);
+        let capped = g.view();
+        assert!(g.apply(&json!({"type":"buy","item":"extra"})).is_err());
+        assert_eq!(capped, g.view());
+        g.validate().unwrap();
+        let mut invalid = g.clone();
+        invalid.coins += 1;
+        assert!(invalid.validate().is_err());
+        invalid = g.clone();
+        invalid.rewarded_targets.pop();
+        assert!(invalid.validate().is_err());
+    }
     #[test]
     fn deterministic_and_bounded() {
         let mut a = Game::default();
@@ -425,6 +636,7 @@ mod tests {
                         hp: 1,
                     },
                 ],
+                rewarded_targets: vec![false; 2],
                 ..Game::default()
             };
             let mut normal = g.clone();

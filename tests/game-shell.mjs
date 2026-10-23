@@ -27,6 +27,9 @@ for (const {id} of games) {
   if(id!=='openstrike'){
     const toggle=d.querySelector('.game-menu-toggle'),menu=d.querySelector('#game-menu');
     toggle.focus();toggle.click();assert.equal(menu.open,true);assert.equal(blurs,1);
+    menu.querySelector('[data-view="settings"]').click();assert.equal(menu.dataset.view,'settings');
+    assert.equal(menu.querySelector('[data-menu-view="game"]').hidden,true);
+    assert.equal(menu.querySelector('[data-menu-view="settings"]').hidden,false);
     menu.querySelector('button').dispatchEvent(new w.KeyboardEvent('keydown',{key:'r',code:'KeyR',bubbles:true}));
     assert.equal(gameKeys,0,'menu keys must not restart/fire/move the game');
     menu.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
@@ -35,6 +38,13 @@ for (const {id} of games) {
     const help=menu.querySelector('#credits-open,#help');
     if(help){help.click();assert.equal(menu.open,false,'close menu before opening another dialog');}
     else {menu.querySelector('#restart').click();assert.equal(menu.open,false,'show restart confirmation in the actual game');}
+    const native=surface.querySelector('dialog:not(#game-menu)');
+    if(native){native.showModal();const before=gameKeys;native.dispatchEvent(new w.KeyboardEvent('keydown',{key:' ',code:'Space',bubbles:true}));assert.equal(gameKeys,before,'help/credits must not fire or jump behind the dialog');native.close();}
+    if(id==='sling'){
+      d.dispatchEvent(new w.CustomEvent('utxoplay:open-menu',{detail:{view:'items'}}));
+      assert.equal(menu.open,true);assert.equal(menu.dataset.view,'items');assert.equal(d.querySelector('#item-store').hidden,false);
+      d.dispatchEvent(new w.CustomEvent('utxoplay:close-menu'));assert.equal(menu.open,false);
+    }
   }else assert.equal(d.querySelectorAll('.game-menu-toggle').length,0,'reuse the existing FPS menu');
   console.log(`${id}: all controls in viewport, IDs retained, menu/input checks passed`);
   dom.window.close();

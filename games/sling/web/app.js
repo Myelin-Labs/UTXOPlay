@@ -3,7 +3,7 @@ import { toggleSound, volume, sound, startSound, audioState } from "./audio.js?v
 const $ = (s) => document.querySelector(s),
   canvas = $("#world"),
   ctx = canvas.getContext("2d");
-let selectedPower = "normal";
+let selectedPower = "normal", lastCoins = 0, shopMessage = "", confirmingNew = false, needsSync = false;
 let data,
   busy = false,
   drag = null,
@@ -87,6 +87,7 @@ function beginFlight(replay = false) {
     fired: new Set(),
     speed: replay ? +$("#replay-speed").value : 1,
     replay,
+    coins: replay ? 0 : lastCoins,
     score: data.game.score - earned,
   };
   effects = [];
@@ -172,22 +173,44 @@ function ui() {
   if (selectedPower !== "normal" && !g.inventory[selectedPower]) selectedPower = "normal";
   for (const button of document.querySelectorAll("[data-power]")) {
     const kind = button.dataset.power;
-    button.disabled = busy || !!flight || g.won || g.lost || (kind !== "normal" && !g.inventory[kind]);
+    button.disabled = busy || needsSync || !!flight || g.won || g.lost || (kind !== "normal" && !g.inventory[kind]);
     button.setAttribute("aria-pressed", String(kind === selectedPower));
     const count = button.querySelector(".item-count");
     if (count) count.textContent = g.inventory[kind];
   }
-  $("#extra-flight").disabled = busy || !!flight || g.won || !g.inventory.extra;
+  $("#extra-flight").disabled = busy || needsSync || !!flight || g.won || !g.inventory.extra || g.extra_used >= g.extra_limit;
   $("#extra-count").textContent = g.inventory.extra;
-  $("#rescue-flight").hidden = !g.lost || !g.inventory.extra;
-  $("#rescue-flight").disabled = busy || !!flight;
-  $("#item-hint").textContent = selectedPower === "burst" ? "Bloom bomb · bursts on first impact, clearing nearby targets." : selectedPower === "pierce" ? "Star feather · breaks stone in one hit and keeps its speed." : "Choose a boost before launching. Each item refills on the next island or retry.";
+  $("#rescue-flight").hidden = !g.lost || !g.inventory.extra || g.extra_used >= g.extra_limit;
+  $("#rescue-shop").hidden = !g.lost || g.extra_used >= g.extra_limit;
+  $("#shop-open").disabled = busy;
+  $("#shop-reconnect").hidden = !needsSync;
+  $("#shop-reconnect").disabled = busy;
+  setText("coins", g.coins);
+  setText("shop-coins", g.coins);
+  setText("shop-feedback", shopMessage || "Earn coins by playing. Buying adds to your satchel; equip or use an owned item below.");
+  for (const item of g.shop.items) {
+    const card = document.querySelector(`[data-item="${item.id}"]`);
+    card.querySelector('.item-description').textContent = item.description;
+    card.querySelector('[data-stock]').textContent = item.owned;
+    card.querySelector('.stock-limit').textContent = g.shop.stock_limit;
+    const buy = card.querySelector('[data-buy]');
+    buy.textContent = `Buy · ${item.price} coins`;
+    buy.disabled = busy || needsSync || !!flight || !item.can_buy;
+    card.querySelector('[data-buy-reason]').textContent = busy ? "Saving…" : flight ? "Wait for the flight to finish" : item.unavailable || "Adds one to your satchel";
+    const equip = card.querySelector('[data-equip]');
+    if (equip) equip.textContent = item.id === selectedPower ? "Equipped · return to play" : item.owned ? "Equip owned item" : "None owned";
+  }
+  $("#rescue-flight").disabled = busy || needsSync || !!flight;
+  $("#continue").disabled = busy || needsSync || !!flight;
+  $("#rescue-shop").disabled = busy || !!flight;
+  $("#item-hint").textContent = selectedPower === "burst" ? "Bloom bomb · bursts on first impact, clearing nearby targets." : selectedPower === "pierce" ? "Star feather · breaks stone in one hit and keeps its speed." : "Classic flight equipped · no item consumed.";
   document.body.dataset.region = String(Math.floor((g.level - 1) / 3));
   $("#score").textContent = String(flight?.score ?? g.score).padStart(4, "0");
   $("#shots").textContent = "● ".repeat(g.shots) + "○ ".repeat(Math.max(0, 4 - g.shots));
   $("#level-result").hidden = !!flight || (!g.won && !g.lost);
-  $("#launch").disabled = busy || !!flight || g.won || g.lost;
-  $("#new").disabled = busy || !!flight;
+  $("#launch").disabled = busy || needsSync || !!flight || g.won || g.lost;
+  $("#new").disabled = busy || needsSync || !!flight;
+  $("#cancel-new").disabled = busy;
   for (const id of ["angle", "power", "replay-speed"])
     $("#" + id).disabled = busy || !!flight;
   $("#continue").textContent = g.won
@@ -308,7 +331,7 @@ function render(now, elapsed) {
       }
     }
     if (step === g.trace.length - 1) {
-      const replay = flight.replay;
+      const replay = flight.replay, earnedCoins = flight.coins;
       flight = null;
       ui();
       $("#score").classList.remove("score-pop");
@@ -329,7 +352,8 @@ function render(now, elapsed) {
           for (let i = 0; i < 7; i++)
             burst(280 + i * 100, 120 + Math.random() * 100);
       }
-      if (replay) feedback("Replay finished · no flights spent");
+      if (replay) feedback("Replay finished · no flights or coins spent");
+      else if (earnedCoins) feedback(`${$("#flight-status").textContent} · +${earnedCoins} coins`);
     }
   }
   for (const [targetIndex, target] of targets.entries()) {
@@ -526,7 +550,7 @@ function pull(p) {
   return { dx, dy };
 }
 canvas.onpointerdown = (e) => {
-  if (!data || busy || flight || data.game.won || data.game.lost) return;
+  if (!data || busy || needsSync || flight || data.game.won || data.game.lost) return;
   const p = point(e);
   canvas.focus({ preventScroll: true });
   if (Math.hypot(p.x - 180, p.y - 360) > 65) {
@@ -583,10 +607,12 @@ canvas.onpointerleave = () => {
   hovered = -1;
 };
 async function act(action, animate = false) {
-  if (!data || busy || flight) return;
+  if (!data || busy || needsSync || flight) return;
   if (action.type === "launch") { action.power = selectedPower; void startSound(); }
   busy = true;
-  feedback(action.type === "extra" ? "One more flight…" : "Preparing your flight…");
+  const before = data;
+  if (action.type === "buy") shopMessage = "Saving your purchase…";
+  feedback(action.type === "buy" ? "Restocking your satchel…" : action.type === "extra" ? "One more flight…" : "Preparing your flight…");
   ui();
   try {
     data = await api("/games/sling/api/action", {
@@ -594,23 +620,55 @@ async function act(action, animate = false) {
       expected_block: data.session.block_hash,
       session_id: data.session.id,
     });
-    if (action.type !== "extra") selectedPower = "normal";
-    else { sound("move"); feedback("Extra flight ready. Find your arc!"); }
+    lastCoins = Math.max(0, data.game.coins_earned - before.game.coins_earned);
+    if (action.type === "buy") {
+      const item = data.game.shop.items.find(item => item.id === action.item);
+      shopMessage = `${item.name} added · ${item.price} coins spent · ${item.owned} owned. Equip or use it when ready.`;
+      sound("move");
+    } else if (action.type === "extra") {
+      sound("move");feedback("Extra flight ready. Find your arc!");
+      document.dispatchEvent(new CustomEvent('utxoplay:close-menu'));
+    } else {selectedPower = "normal";shopMessage = "";}
     if (animate) {
       beginFlight();
       sound("launch");
     }
     ui();
   } catch (e) {
-    toast(e.message);
+    let recovered = false;
+    try {
+      const current = await api("/games/sling/api/state");
+      recovered = current.session.block_hash !== before.session.block_hash || current.session.id !== before.session.id;
+      data = current;needsSync = false;
+      if (recovered) selectedPower = "normal";
+    } catch {needsSync = true;}
+    shopMessage = needsSync ? "Could not confirm the save. Reconnect to check your balance before buying or playing again." : recovered ? "Connection interrupted after saving. Latest balance and inventory restored; check your satchel before buying again." : e.message;
+    setText("shop-feedback", shopMessage);
+    feedback(shopMessage);
+    toast(shopMessage);
   } finally {
     busy = false;
     ui();
   }
 }
 for (const button of document.querySelectorAll("[data-power]")) {
-  button.onclick = () => { selectedPower = button.dataset.power; ui(); sound("move"); };
+  button.onclick = () => {
+    if (!data || busy || flight || button.disabled) return;
+    selectedPower = button.dataset.power;ui();sound("move");
+    feedback($("#item-hint").textContent);
+    if(button.closest('#item-store'))document.dispatchEvent(new CustomEvent('utxoplay:close-menu'));
+    canvas.focus({preventScroll:true});
+  };
 }
+$("#shop-reconnect").onclick = async () => {
+  if (busy) return;
+  busy = true;ui();
+  try {data = await api("/games/sling/api/state");needsSync = false;shopMessage = "Latest balance and inventory restored.";}
+  catch (e) {shopMessage = e.message;}
+  finally {busy = false;ui();}
+};
+$("#shop-open").onclick = $("#rescue-shop").onclick = () => document.dispatchEvent(new CustomEvent('utxoplay:open-menu',{detail:{view:'items'}}));
+for (const button of document.querySelectorAll('[data-buy]'))button.onclick = () => {if(!button.disabled)return act({type:'buy',item:button.dataset.buy});};
 $("#extra-flight").onclick = $("#rescue-flight").onclick = () => act({type:"extra"});
 $("#launch").onclick = () =>
   act({ type: "launch", ...aimFromControls() }, true);
@@ -623,11 +681,12 @@ for (const name of ["angle", "power"])
     );
   };
 async function newGame() {
-  if (busy || flight) return;
-  busy = true;
+  if (busy || needsSync || flight) return;
+  busy = true;ui();
   try {
     data = await api("/games/sling/api/new", {});
-    selectedPower = "normal";
+    selectedPower = "normal";shopMessage = "";lastCoins = 0;cancelNew();
+    document.dispatchEvent(new CustomEvent('utxoplay:close-menu'));
     $("#verification").textContent = "";
     particles = [];
     effects = [];
@@ -635,16 +694,33 @@ async function newGame() {
     feedback("A fresh garden. Find your arc.");
     ui();
   } catch (e) {
-    toast(e.message);
+    try {data = await api("/games/sling/api/state");needsSync = false;cancelNew();}
+    catch {needsSync = true;}
+    shopMessage = e.message + (needsSync ? " Reconnect in Item Store before continuing." : " Latest adventure restored.");
+    $("#new-warning").textContent = shopMessage;$("#new-warning").hidden = false;
+    feedback(shopMessage);toast(shopMessage);
   } finally {
     busy = false;
     ui();
   }
 }
-$("#new").onclick = newGame;
+function cancelNew() {
+  confirmingNew = false;
+  $("#new").textContent = "Start a new adventure";
+  $("#cancel-new").hidden = true;$("#new-warning").hidden = true;
+}
+$("#cancel-new").onclick = cancelNew;
+$("#new").onclick = () => {
+  if (busy || flight) return;
+  if (confirmingNew) return newGame();
+  confirmingNew = true;
+  $("#new-warning").textContent = "Starting over resets this adventure’s coins and progress. Export your current adventure first if you want a copy.";
+  $("#new").textContent = "Reset coins & start over";
+  $("#cancel-new").hidden = false;$("#new-warning").hidden = false;
+};
 $("#continue").onclick = () => {
-  if (data.game.won && data.game.level === data.game.total_levels) newGame();
-  else act({ type: data.game.won ? "next" : "retry" });
+  if (data.game.won && data.game.level === data.game.total_levels) return newGame();
+  return act({ type: data.game.won ? "next" : "retry" });
 };
 $("#verify").onclick = async () => {
   if (busy || flight) return;
@@ -693,9 +769,10 @@ document.addEventListener("keydown", (e) => {
 });
 document.addEventListener("utxoplay:menu", (e) => {
   if (e.detail.open && drag) {drag = null;feedback("Pull cancelled.");}
+  if (!e.detail.open) {cancelNew();canvas.focus({preventScroll:true});}
 });
 canvas.onkeydown = (e) => {
-  if (busy || flight) return;
+  if (busy || needsSync || flight) return;
   if (e.code === "Space") {
     e.preventDefault();
     $("#launch").click();
@@ -735,10 +812,12 @@ startPolling(
       const d = await api("/games/sling/api/state");
       if (busy || flight || drag || data !== before || document.hidden) return;
       if (
-        d.session.block_hash !== data?.session.block_hash ||
+        needsSync || d.session.block_hash !== data?.session.block_hash ||
         d.session.id !== data?.session.id
       ) {
         data = d;
+        if (needsSync) shopMessage = "Latest balance and inventory restored.";
+        needsSync = false;
         ui();
       }
     } catch {}

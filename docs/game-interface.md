@@ -17,3 +17,7 @@ The menu releases held input through the existing blur handlers, pauses solo arc
 - Responsive CSS preserves canvas aspect ratios and reserves HUD/touch space in portrait and landscape. Browser preview connection timed out; these checks do not establish pixel-level layout or physical-device touch behavior.
 
 Only the store image advances to `utxoplay:0.10.0`. Game engines, native binaries, application profiles and data volumes remain unchanged. The previous release is retained for rollback. Myelin remains an off-chain authority-signed runtime with host replay, without a CKB settlement claim.
+
+## 0.11.0 follow-up
+
+The long combined menu is now divided into flat Game, Settings and Help views; Skyward also has an Item Store view in the same dialog. Opening native help/credits blocks global game hotkeys as well, and closing them restores focus to the game menu button. The Skyward hotbar keeps the equipped-item description visible; spending and extra-flight use are deliberate actions inside the store. See [coin campaign rules](skyward-coins.md) for purchase safety, validation and the new archive boundary.

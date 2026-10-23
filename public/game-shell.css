@@ -107,3 +107,37 @@ html.game-only body>.game-surface{position:relative;display:block;width:100vw!im
  :root[data-game="neon-coil"] .game-surface>.touch{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px)}
  :root[data-game="neon-coil"] .game-surface>.touch button{height:44px}
 }
+/* Flat in-game sections: one dialog, one active view, no stacked store window. */
+.game-menu-sections{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.game-menu-sections button[aria-pressed="true"]{background:#d7c28c;color:#18292c;border-color:#f6e5b6}
+.game-menu .game-menu-heading{position:sticky;top:-24px;background:#101622;padding:12px 0;z-index:2}
+.game-menu .item-store-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.game-menu .item-store-heading h2{margin:6px 0;font-size:30px}
+.coin-balance{color:#ffe3a0;white-space:nowrap;font:700 20px system-ui}
+.game-menu .item-store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.game-menu .item-card{display:flex;flex-direction:column;gap:10px;background:#1d2c35;border:1px solid #65808266;border-radius:14px;padding:18px;min-width:0}
+.game-menu .item-card h3{margin:0;font-size:18px}
+.game-menu .item-card p{margin:0;min-height:72px;font-size:13px}
+.game-menu .item-card .item-symbol{font-size:34px;color:#f3ce80}
+.game-menu .item-card button{width:100%;margin:0;min-height:44px}
+.game-menu .item-card button[data-buy]{background:#e9c886;color:#1d302c;font-weight:800}
+.game-menu .item-card button:disabled{opacity:.5;cursor:not-allowed}
+.game-menu .item-card [data-buy-reason]{min-height:40px;color:#bcced3;line-height:1.5}
+.game-menu .item-card [data-equip][aria-pressed="true"]{border-color:#d7c28c}
+.game-menu .item-card #extra-flight{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px}
+.game-menu .item-card #extra-flight small{display:none}
+.game-menu #shop-feedback{min-height:48px;padding:12px 14px;border-left:3px solid #dfc27e;background:#1c2b34;color:#eef4ec}
+.game-menu .campaign-notice{font-size:12px;color:#b3c1c9}
+.game-surface .game-shop-toggle{position:absolute;top:var(--hud-top);right:max(110px,calc(env(safe-area-inset-right) + 98px));z-index:34;min-height:40px;padding:8px 12px;border:1px solid #d9b768;border-radius:10px;background:#29392a;color:#ffe1a0;font:700 13px system-ui}
+.game-surface[data-surface="sling"] #item-hint{position:static;width:auto;height:auto;clip-path:none;overflow:visible;margin:6px 0 0;text-align:center;color:#e7efe6;font-size:11px;line-height:1.4}
+.game-surface[data-surface="sling"]>#flight-status{bottom:calc(var(--hud-bottom) + 96px)}
+.game-surface[data-surface="sling"]>#world{width:min(100vw,calc((100dvh - 230px)*1.9642857));top:calc(50% - 7px)}
+.game-menu .new-adventure-actions{display:flex;flex-wrap:wrap;gap:10px}
+.game-menu .new-adventure-actions p{flex-basis:100%;color:#ffe0aa;margin:0}
+@media(max-width:620px){.game-menu .item-store-grid{grid-template-columns:1fr}.game-menu .item-card p{min-height:0}.game-menu .item-card [data-buy-reason]{min-height:0}.game-menu .item-store-heading{align-items:flex-start}.coin-balance{font-size:17px}.game-menu .item-store-heading h2{font-size:26px}}
+@media(max-width:380px){.game-surface[data-surface="sling"]>.game-myelin-badge>span{font-size:0}.game-surface[data-surface="sling"]>.game-myelin-badge>span::after{content:"MYELIN";font-size:8px}}
+@media(max-height:500px) and (orientation:landscape){
+ .game-surface[data-surface="sling"]>#world{width:min(calc(100vw - 260px),calc((100dvh - 24px)*1.9642857));top:50%}
+ .game-surface[data-surface="sling"]>#flight-status{bottom:6px}
+ .game-surface[data-surface="sling"] #item-hint{font-size:9px;max-height:64px;overflow:auto}
+}

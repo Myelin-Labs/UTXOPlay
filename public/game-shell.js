@@ -37,30 +37,35 @@
     opener.setAttribute('aria-haspopup', 'dialog');
     opener.setAttribute('aria-controls', menu.id);
     surface.append(opener);
-    const openMenu = () => {
+    const openMenu = (view = 'game') => {
       if (menu.open || $('dialog[open]')) return;
       previousFocus = document.activeElement;
       // Use the games' existing blur handlers to clear held inputs and pause solo runs.
       window.dispatchEvent(new Event('blur'));
       document.dispatchEvent(new CustomEvent('utxoplay:menu', {detail:{open:true}}));
+      document.dispatchEvent(new CustomEvent('utxoplay:menu-view', {detail:{view}}));
       menu.showModal();
       menu.querySelector('.game-menu-close').focus();
     };
-    opener.onclick = openMenu;
+    opener.onclick = () => openMenu();
+    document.addEventListener('utxoplay:open-menu', event => openMenu(event.detail?.view || 'game'));
+    document.addEventListener('utxoplay:close-menu', closeMenu);
     menu.querySelector('.game-menu-close').onclick = closeMenu;
     menu.addEventListener('cancel', event => {event.preventDefault();closeMenu();});
     window.addEventListener('keydown', event => {
-      if (!menu.open) return;
+      const activeDialog = $('dialog[open]');
+      if (!activeDialog) return;
+      if (activeDialog !== menu) {event.stopImmediatePropagation();return;}
       if (event.key === 'Escape') {event.preventDefault();closeMenu();}
       // Native dialog handles Tab/Enter; game-wide hotkeys must not receive menu input.
       event.stopImmediatePropagation();
     }, true);
-    window.addEventListener('keyup', event => {if(menu.open)event.stopImmediatePropagation();}, true);
+    window.addEventListener('keyup', event => {if($('dialog[open]'))event.stopImmediatePropagation();}, true);
     window.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !$('dialog[open]')) {event.preventDefault();openMenu();}
     });
     menu.addEventListener('click', event => {
-      if(event.target.closest('#new,#launch,#pause,#restart,#replay-shot,#help-open,#credits-open,#help'))closeMenu();
+      if(event.target.closest('#launch,#pause,#restart,#replay-shot,#help-open,#credits-open,#help') || (kind !== 'sling' && event.target.closest('#new')))closeMenu();
     }, true);
     const settings = menu.querySelector('.game-menu-settings');
     move('body > header button, body > .topbar button', settings);
@@ -70,6 +75,8 @@
     } else if (kind === 'sling') {
       move('.satchel', surface);
       move('#launch', $('.item-buttons'));
+      move('#extra-flight', $('#extra-use-slot'));
+      move('#item-store', menu.querySelector('.game-menu-content'));
       move('#flight-status', surface);
       move('#targets-left', $('.hud'));
       move('#region,.stage-footer,.flight-feedback,.journey,.under-game,.bottom-grid,.evidence', settings);
@@ -104,6 +111,37 @@
     };
     quality.append(select);
     (menu.querySelector('.game-menu-settings') || menu).append(quality);
+  }
+  if(kind !== 'openstrike') {
+    const content = menu.querySelector('.game-menu-content');
+    const gameView = menu.querySelector('.game-menu-settings');
+    gameView.dataset.menuView = 'game';
+    const views = {game:gameView};
+    for (const name of ['settings','help']) {
+      const view = document.createElement('section');view.className = 'game-menu-settings';view.dataset.menuView = name;view.hidden = true;
+      content.append(view);views[name] = view;
+    }
+    const moveControl = (selector, target) => document.querySelectorAll(selector).forEach(node => target.append(node));
+    moveControl('#sound,.game-quality,.quality-label,.flight-feedback', views.settings);
+    moveControl('#credits-open,.field-notes,.evidence,#help-open', views.help);
+    if(kind === 'arcade')moveControl('.panel',views.help);
+    if(kind === 'teeworlds')moveControl('#help,.below,.footnote',views.help);
+    if(kind === 'sling') {views.items = $('#item-store');views.items.dataset.menuView = 'items';}
+    const navigation = document.createElement('nav');navigation.className = 'game-menu-sections';navigation.setAttribute('aria-label','Game menu sections');
+    const names = {game:'Game',items:'Item Store',settings:'Settings',help:'Help & credits'};
+    function selectView(name) {
+      if(!views[name])name='game';
+      for(const [key,view] of Object.entries(views))view.hidden=key!==name;
+      for(const button of navigation.children)button.setAttribute('aria-pressed',String(button.dataset.view===name));
+      menu.dataset.view=name;
+    }
+    for(const name of ['game','items','settings','help'])if(views[name]){
+      const button=document.createElement('button');button.type='button';button.textContent=names[name];button.dataset.view=name;button.onclick=()=>selectView(name);navigation.append(button);
+    }
+    menu.querySelector('.game-menu-heading').after(navigation);
+    document.addEventListener('utxoplay:menu-view',event=>selectView(event.detail.view));
+    selectView('game');
+    for(const dialog of surface.querySelectorAll('dialog'))if(dialog!==menu)dialog.addEventListener('close',()=>opener.focus());
   }
   const actions = document.createElement('div');
   actions.className = 'game-system-actions';

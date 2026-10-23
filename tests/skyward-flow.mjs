@@ -28,10 +28,12 @@ globalThis.window=window;globalThis.matchMedia=()=>({matches:false});globalThis.
 // Audio lifecycle is checked independently; this test keeps the player's saved mute.
 localStorage.setItem('skyward:audio',JSON.stringify({enabled:false,volume:0.3}));
 globalThis.Audio=class extends EventTarget{play(){return Promise.resolve();}pause(){}};
-let failed=false,hold=false,release;
+let failed=false,hold=false,release,dropCommittedBuy=false,failRecovery=false;
 globalThis.fetch=async(url,options={})=>{
+ if(String(url).endsWith('/state')&&failRecovery){failRecovery=false;throw Error('Recovery offline');}
  if(String(url).endsWith('/action')&&failed){failed=false;throw Error('Test interrupted connection');}
  const response=await realFetch(new URL(url,base),{...options,headers:{...options.headers,Origin:base,Cookie:cookie}});
+ if(String(url).endsWith('/action')&&dropCommittedBuy&&JSON.parse(options.body).action.type==='buy'){dropCommittedBuy=false;throw Error('Lost purchase response');}
  if(String(url).endsWith('/action')&&hold)await new Promise(r=>release=r);
  return response;
 };
@@ -65,8 +67,37 @@ assert.equal($('[data-power="normal"]').getAttribute('aria-pressed'),'true');
 await $('#replay-shot').onclick();await pump(600);assert.equal((await state()).session.block_hash,saved.session.block_hash);
 await $('#verify').onclick();assert.match($('#verification').textContent,/Every state root matches/);
 if(saved.game.won){await $('#continue').onclick();assert.equal($('#level-name').textContent,'Stone & sky');assert.equal((await state()).game.level,2);}
+// Earn coins through real play, then buy inside the same game menu.
+await $('#new').onclick();$('#cancel-new').click();assert.equal((await state()).session.id,saved.session.id,'cancel new campaign preserves save');
+await $('#new').onclick();await $('#new').onclick();
+$('#shop-open').click();assert.equal($('#game-menu').dataset.view,'items');
+assert.equal($('[data-buy="burst"]').disabled,true,'zero balance cannot buy');
+$('#game-menu .game-menu-close').click();
+// Use the authored solution through the authoritative API, then let polling/UI refresh on a normal action.
+let seed=await state();
+await globalThis.fetch('/games/sling/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:seed.session.id,expected_block:seed.session.block_hash,action:{type:'launch',dx:-116,dy:16}})});
+// A stale action must recover the saved state without consuming another item.
+await $('#launch').onclick();assert.equal($('#continue').textContent,'Next island →');
+await $('#continue').onclick();assert.ok((await state()).game.coins>=12);
+$('#shop-open').click();assert.equal($('#game-menu').open,true);assert.equal($('#item-store').hidden,false);
+const walletBefore=await state();release=undefined;hold=true;
+const buying=$('[data-buy="burst"]').onclick();for(let i=0;i<100&&!release;i++)await sleep(10);
+await $('[data-buy="burst"]').onclick();hold=false;release();await buying;
+const bought=await state();assert.equal(bought.game.coins,walletBefore.game.coins-12);assert.equal(bought.game.inventory.burst,2);assert.equal(bought.session.actions,walletBefore.session.actions+1);
+assert.match($('#shop-feedback').textContent,/added/);assert.equal($('#game-menu').open,true);
+// Response loss after a committed purchase recovers from the signed state, never retries the debit.
+dropCommittedBuy=true;failRecovery=true;await $('[data-buy="extra"]').onclick();
+assert.equal($('#shop-reconnect').hidden,false);assert.equal($('#launch').disabled,true);assert.equal($('[data-buy="burst"]').disabled,true);
+await $('#shop-reconnect').onclick();assert.equal($('#shop-reconnect').hidden,true);
+let recovered=await state();assert.equal(recovered.game.coins,bought.game.coins-8);assert.equal(recovered.game.inventory.extra,2);assert.match($('#shop-feedback').textContent,/restored/);
+$('[data-equip="burst"]').click();assert.equal($('#game-menu').open,false);
+assert.equal($('[data-equip="burst"]').getAttribute('aria-pressed'),'true');
+await $('#launch').onclick();await pump(600);assert.equal((await state()).game.inventory.burst,1);
+$('#shop-open').click();await $('#verify').onclick();assert.match($('#verification').textContent,/Every state root matches/);
+$('#game-menu .game-menu-close').click();
+
 // Fourth miss offers a rescue; one click adds exactly one shot and returns to play.
-await $('#new').onclick();$('#angle').value='0';$('#power').value='20';
+await $('#new').onclick();await $('#new').onclick();$('#angle').value='0';$('#power').value='20';
 for(let i=0;i<4;i++){await $('#launch').onclick();await pump(600);}
 assert.equal($('#rescue-flight').hidden,false);assert.equal($('#level-result').hidden,false);
 await $('#rescue-flight').onclick();assert.equal($('#level-result').hidden,true);assert.equal((await state()).game.shots,1);
@@ -75,5 +106,5 @@ await $('#continue').onclick();assert.deepEqual((await state()).game.inventory,{
 await pump(2);
 mkdirSync(root+'/artifacts/skyward',{recursive:true});writeFileSync(root+'/artifacts/skyward/first-island.png',$('#world').native.toBuffer('image/png'));
 assert.deepEqual(errors,[]);
-console.log('Skyward: real UI item selection, extra flight, failed request, double launch guard, flight replay, signed replay, next island, last-shot rescue and retry passed.');
+console.log('Skyward: earn/buy/equip, duplicate purchase guard, committed-response loss and reconnect, reset cancellation, item use, signed replay, next island and rescue passed.');
 window.close();process.exit(0);

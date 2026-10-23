@@ -375,10 +375,44 @@ mod tests {
         }
     }
     #[test]
+    fn earned_coins_and_purchases_survive_recovery_with_stale_purchase_rejected() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut app = App::open(dir.path()).unwrap();
+        for action in [
+            json!({"type":"launch","dx":-116,"dy":16}),
+            json!({"type":"next"}),
+        ] {
+            let before = app.view().unwrap();
+            app.action(json!({"action":action,"expected_block":before["session"]["block_hash"],"session_id":before["session"]["id"]}))
+                .unwrap();
+        }
+        let before = app.view().unwrap();
+        let request = json!({"action":{"type":"buy","item":"burst"},"expected_block":before["session"]["block_hash"],"session_id":before["session"]["id"]});
+        let after = app.action(request.clone()).unwrap();
+        assert_eq!(
+            after["game"]["coins"].as_u64().unwrap() + 12,
+            before["game"]["coins"].as_u64().unwrap()
+        );
+        assert_eq!(after["game"]["inventory"]["burst"], 2);
+        assert!(app.action(request).is_err());
+        assert_eq!(app.view().unwrap(), after);
+        assert_eq!(app.replay().unwrap()["frames"], 3);
+        assert_eq!(
+            verify_export(&app.export().unwrap()).unwrap()["verified"],
+            true
+        );
+        drop(app);
+        let restored = App::open(dir.path()).unwrap();
+        assert_eq!(restored.view().unwrap(), after);
+    }
+    #[test]
     fn item_usage_survives_signed_recovery_and_export() {
         let dir = tempfile::tempdir().unwrap();
         let mut app = App::open(dir.path()).unwrap();
-        for action in [json!({"type":"extra"}), json!({"type":"launch","dx":-96,"dy":48,"power":"burst"})] {
+        for action in [
+            json!({"type":"extra"}),
+            json!({"type":"launch","dx":-96,"dy":48,"power":"burst"}),
+        ] {
             let before = app.view().unwrap();
             app.action(json!({"action":action,"expected_block":before["session"]["block_hash"],"session_id":before["session"]["id"]}))
                 .unwrap();
@@ -387,7 +421,10 @@ mod tests {
         assert_eq!(after["game"]["inventory"]["burst"], 0);
         assert_eq!(after["game"]["inventory"]["extra"], 0);
         assert_eq!(app.replay().unwrap()["frames"], 2);
-        assert_eq!(verify_export(&app.export().unwrap()).unwrap()["verified"], true);
+        assert_eq!(
+            verify_export(&app.export().unwrap()).unwrap()["verified"],
+            true
+        );
         drop(app);
         let app = App::open(dir.path()).unwrap();
         assert_eq!(app.view().unwrap(), after);

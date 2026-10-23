@@ -59,4 +59,17 @@ for(const power of ['burst','pierce']){
 }
 await action({type:'launch',dx:-80,dy:20,power:'forged'},false);
 await verify('items');
-console.log('Skyward: twelve-island progression, final boundary, stale rejection, inventory limits, signed replay and export PASS');
+state=(await req(route+'/new',{})).data;
+await action({type:'buy',item:'burst'},false);
+await action({type:'launch',dx:-116,dy:16});
+const earned=state.game.coins;assert.ok(earned>=20);
+await action({type:'next'});assert.equal(state.game.coins,earned);
+await action({type:'buy',item:'burst',price:0},false);
+const purchase=await action({type:'buy',item:'burst'});
+assert.equal((await req(route+'/action',purchase)).status,400);
+assert.equal(state.game.coins,earned-12);assert.equal(state.game.inventory.burst,2);
+await action({type:'buy',item:'extra'});assert.equal(state.game.coins,earned-20);
+await action({type:'launch',dx:-8,dy:0,power:'burst'});assert.equal(state.game.inventory.burst,1);
+await action({type:'extra'});assert.equal(state.game.inventory.extra,1);
+await verify('coin-store');
+console.log('Skyward: twelve islands, earned coins, purchases, forged price/stale debit rejection, signed replay and export PASS');
