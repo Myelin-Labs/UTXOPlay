@@ -6,6 +6,7 @@ let data,
   busy = false,
   replaying = false,
   timer;
+let reviewIndex = null, positions = null, replayToken = 0;
 const pieceNames = {
     k: "king",
     q: "queen",
@@ -55,9 +56,10 @@ function board(fen = data.game.fen) {
       }
     });
   $("#board").replaceChildren();
-  const last = data.game.moves.at(-1) || "";
+  const index = reviewIndex ?? data.game.moves.length;
+  const last = data.game.moves[index - 1] || "";
   const legal = data.game.legal_moves.filter((m) =>
-    m.startsWith(selected || "!"),
+    reviewIndex === null && m.startsWith(selected || "!"),
   );
   for (let y = 0; y < 8; y++)
     for (let x = 0; x < 8; x++) {
@@ -72,6 +74,8 @@ function board(fen = data.game.fen) {
         (selected === sq ? " selected" : "") +
         ([last.slice(0, 2), last.slice(2, 4)].includes(sq) ? " last" : "");
       b.setAttribute("role", "gridcell");
+      if(reviewIndex === null && data.game.in_check && p === (data.game.turn === "white" ? "K" : "k")) b.classList.add("in-check");
+      b.setAttribute("aria-selected", String(selected === sq));
       b.dataset.square = sq;
       b.setAttribute(
         "aria-label",
@@ -108,7 +112,7 @@ function board(fen = data.game.fen) {
     }
 }
 async function select(sq, p) {
-  if (busy || replaying || data.game.result) return;
+  if (!data || busy || replaying || reviewIndex !== null || data.game.result) return;
   if (selected) {
     const choices = data.game.legal_moves.filter(
       (m) => m.slice(0, 4) === selected + sq,
@@ -127,6 +131,7 @@ async function select(sq, p) {
   const ours = p && (p === p.toUpperCase()) === (data.game.turn === "white");
   selected = ours ? (selected === sq ? null : sq) : null;
   board();
+  $("#hint").textContent = selected ? `${pieceNames[p.toLowerCase()]} on ${sq}: choose a highlighted square.` : 'Select a piece to see legal moves.';
 }
 function promotion(choices) {
   return new Promise((resolve) => {
@@ -149,7 +154,10 @@ function promotion(choices) {
   });
 }
 function render() {
-  board();
+  $("#connection").hidden = true;
+  $("#resign").disabled = false;
+  if($("#auto-flip").checked) flipped = data.game.turn === 'black';
+  showBoard();
   const g = data.game;
   const side = g.turn === "white" ? "White" : "Black";
   $("#status").textContent = g.result
@@ -170,16 +178,16 @@ function render() {
       : "Waiting for the reply";
   $("#draw").hidden = !g.can_claim_draw || !!g.result;
   $("#resign").disabled = !!g.result;
-  $("#move-count").textContent = g.moves.length + " plies";
+  updateMaterial();
+  $("#move-count").textContent = g.moves.length + (g.moves.length === 1 ? " ply" : " plies");
   if (g.moves.length) {
     $("#moves").replaceChildren();
     for (let i = 0; i < g.moves.length; i += 2) {
       const row = document.createElement("div");
       row.className = "move-row";
-      for (const t of [i / 2 + 1 + ".", g.moves[i], g.moves[i + 1] || "—"]) {
-        const span = document.createElement("span");
-        span.textContent = t;
-        row.append(span);
+      const number = document.createElement('span');number.textContent = i / 2 + 1 + '.';row.append(number);
+      for(let j=i;j<i+2;j++){
+        const b=document.createElement('button');b.textContent=g.moves[j] ? g.moves[j].slice(0,2)+' → '+g.moves[j].slice(2) : '—';b.disabled=!g.moves[j];b.dataset.ply=j+1;b.onclick=()=>review(j+1);row.append(b);
       }
       $("#moves").append(row);
     }
@@ -187,6 +195,7 @@ function render() {
   } else
     $("#moves").innerHTML =
       '<p class="empty">Every great game starts<br>with a small move.</p>';
+  reviewControls();
   $("#session-short").textContent = data.session.id.slice(0, 12) + "…";
   $("#session-info").replaceChildren();
   for (const [k, v] of Object.entries(data.session)) {
@@ -198,29 +207,34 @@ function render() {
   }
 }
 async function act(action) {
-  if (busy || replaying) return;
+  if (!data || busy || replaying || reviewIndex !== null) return;
   busy = true;
+  $("#board").setAttribute("aria-busy","true");
   try {
     data = await api("/games/chess/api/action", {
       action,
       expected_block: data.session.block_hash,
       session_id: data.session.id,
     });
+    positions = null;
     sound(data.game.result ? "win" : "move");
     render();
   } catch (e) {
     toast(e.message);
-    data = await api("/games/chess/api/state");
-    render();
+    try { data = await api("/games/chess/api/state"); positions=null; render(); } catch { $("#connection").hidden=false; }
   } finally {
     busy = false;
+    if(data)reviewControls();
+    $("#board").setAttribute("aria-busy","false");
   }
 }
 $("#new").onclick = async () => {
   if (busy || replaying) return;
+  if(data?.game.moves.length && !data.game.result && !await confirmAction('Start a new match?', 'Your current match will be replaced. Save its export first if you want to keep it.')) return;
   busy = true;
   try {
     data = await api("/games/chess/api/new", {});
+    positions=null;reviewIndex=null;
     selected = null;
     $("#verification").textContent = "";
     render();
@@ -228,35 +242,68 @@ $("#new").onclick = async () => {
     toast(e.message);
   } finally {
     busy = false;
+    if(data)reviewControls();
   }
 };
 $("#flip").onclick = () => {
   flipped = !flipped;
-  board();
+  $("#auto-flip").checked=false;
+  showBoard();
 };
-$("#resign").onclick = () => act({ type: "resign" });
+$("#resign").onclick = async () => {if(data && await confirmAction('Resign this match?', 'Your opponent will win the match.'))act({type:'resign'});};
 $("#draw").onclick = () => act({ type: "claim_draw" });
 $("#replay").onclick = async () => {
-  if (busy || replaying) return;
-  replaying = true;
-  $("#replay").disabled = true;
+  if(!data || busy) return;
+  if(replaying){replayToken++;replaying=false;reviewIndex=null;render();$("#replay").textContent='▷ Replay & verify';return;}
+  replaying=true;const token=++replayToken;$("#replay").textContent='Stop replay';
   try {
-    const r = await api("/games/chess/api/replay", {});
-    $("#verification").textContent =
-      "✓ " + r.frames + " signed frames replayed. State matches.";
-    if (r.positions)
-      for (const fen of r.positions) {
-        board(fen);
-        await new Promise((r) => setTimeout(r, 550));
-      }
-    render();
-  } catch (e) {
-    toast(e.message);
-  } finally {
-    replaying = false;
-    $("#replay").disabled = false;
-  }
+    await loadPositions();
+    for(let i=0;i<positions.length&&token===replayToken;i++){
+      reviewIndex=i;selected=null;showBoard();await new Promise(r=>setTimeout(r,650));
+    }
+  }catch(e){toast(e.message);}finally{if(token===replayToken){replaying=false;reviewIndex=null;render();$("#replay").textContent='▷ Replay & verify';}}
 };
+function confirmAction(title,copy){return new Promise(resolve=>{const d=$("#confirm-action");$("#confirm-title").textContent=title;$("#confirm-copy").textContent=copy;const done=v=>{d.close();resolve(v);};$("#confirm-yes").onclick=()=>done(true);$("#confirm-cancel").onclick=()=>done(false);d.oncancel=()=>resolve(false);d.showModal();});}
+function reviewControls(){
+  const i=reviewIndex??data.game.moves.length;
+  $("#review-label").textContent=reviewIndex===null?'Live board':`Review ${i} / ${data.game.moves.length}`;
+  $("#review-first").disabled=$("#review-prev").disabled=!i||busy||replaying;
+  $("#review-next").disabled=reviewIndex===null||busy||replaying;
+  $("#review-live").disabled=reviewIndex===null||replaying;
+  $("#resign").disabled=!!data.game.result||reviewIndex!==null||replaying;
+  $("#draw").disabled=reviewIndex!==null||replaying;
+  document.body.classList.toggle('reviewing',reviewIndex!==null);
+  document.querySelectorAll('[data-ply]').forEach(b=>b.classList.toggle('current',Number(b.dataset.ply)===i));
+}
+function showBoard(){
+ if(!data)return;
+ const fen=reviewIndex===null?data.game.fen:positions?.[reviewIndex]||data.game.fen;
+ board(fen);reviewControls();updateMaterial();
+ $('.table').classList.toggle('flipped',flipped);
+ const side=data.game.turn==='white'?'White':'Black';
+ $('#status').textContent=reviewIndex===null?(data.game.result?data.game.result.replace(/([a-z])([A-Z])/g,'$1 $2'):side+' to move'+(data.game.in_check?' · check':'')):`Review · ply ${reviewIndex}`;
+ $('#hint').textContent=reviewIndex===null?'Select a piece to see its legal moves.':'Viewing a saved position. Return to Live to continue playing.';
+}
+async function loadPositions(){if(positions)return;const r=await api('/games/chess/api/replay',{});positions=r.positions;$("#verification").textContent=`✓ ${r.frames} signed frames replayed. State matches.`;}
+async function review(i){if(!data||busy||replaying)return;busy=true;try{await loadPositions();reviewIndex=Math.max(0,Math.min(i,positions.length-1));selected=null;showBoard();}catch(e){toast(e.message);}finally{busy=false;reviewControls();}}
+$("#review-first").onclick=()=>review(0);
+$("#review-prev").onclick=()=>review((reviewIndex??data?.game.moves.length)-1);
+$("#review-next").onclick=()=>{if(reviewIndex+1>=positions?.length-1){reviewIndex=null;showBoard();}else review(reviewIndex+1);};
+$("#review-live").onclick=()=>{reviewIndex=null;showBoard();};
+$("#auto-flip").onchange=()=>{if(data){flipped=data.game.turn==='black';showBoard();}};
+$("#copy-fen").onclick=async()=>{if(!data)return;try{await navigator.clipboard.writeText(reviewIndex===null?data.game.fen:positions[reviewIndex]);toast('Position copied as FEN.');}catch{toast('Clipboard unavailable in this browser.');}};
+$("#help-open").onclick=()=>$("#help").showModal();$("#help-close").onclick=()=>$("#help").close();
+function updateMaterial(){
+ const values={p:1,n:3,b:3,r:5,q:9,k:0};let balance=0;
+ for(const p of (reviewIndex===null?data.game.fen:positions[reviewIndex]).split(' ')[0])if(values[p.toLowerCase()]!==undefined)balance+=values[p.toLowerCase()]*(p===p.toUpperCase()?1:-1);
+ $("#material").textContent=balance===0?'Material is even':`${balance>0?'White':'Black'} +${Math.abs(balance)} material`;
+ // Reconstruct captures from authoritative UCI moves, including en passant and promotions.
+ const map={};'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'.split('/').forEach((row,y)=>{let x=0;for(const p of row){if(/[1-8]/.test(p))x+=+p;else map['abcdefgh'[x++]+(8-y)]=p;}});
+ const taken={white:[],black:[]},glyphs={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+ for(const m of data.game.moves.slice(0,reviewIndex??data.game.moves.length)){const from=m.slice(0,2),to=m.slice(2,4),p=map[from];if(!p)continue;const side=p===p.toUpperCase()?'white':'black';let captured=map[to];if(p.toLowerCase()==='p'&&from[0]!==to[0]&&!captured){const sq=to[0]+from[1];captured=map[sq];delete map[sq];}if(captured)taken[side].push(glyphs[captured.toLowerCase()]);delete map[from];map[to]=m[4]?(side==='white'?m[4].toUpperCase():m[4]):p;if(p.toLowerCase()==='k'&&Math.abs(to.charCodeAt(0)-from.charCodeAt(0))===2){const rook=(to[0]==='g'?'h':'a')+from[1],dest=(to[0]==='g'?'f':'d')+from[1];map[dest]=map[rook];delete map[rook];}}
+ for(const side of ['white','black'])$('#'+side+'-captures').textContent=taken[side].join(' ')||'—';
+}
+document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea')||document.querySelector('dialog[open]'))return;if(e.key==='f'||e.key==='F')$('#flip').click();if(e.key==='Escape'){selected=null;showBoard();}if(e.key==='ArrowLeft'){e.preventDefault();$('#review-prev').click();}if(e.key==='ArrowRight'){e.preventDefault();$('#review-next').click();}});
 $("#sound").onclick = async () => {
   const on = await toggleSound();
   $("#sound").textContent = on ? "♫ Sound on" : "♫ Sound off";
@@ -265,15 +312,16 @@ $("#sound").onclick = async () => {
 $("#volume").oninput = (e) => volume(+e.target.value / 100);
 $("#credits-open").onclick = () => $("#credits").showModal();
 $("#credits-close").onclick = () => $("#credits").close();
-try {
-  data = await api("/games/chess/api/state");
-  render();
-} catch (e) {
-  toast(e.message);
-  $("#status").textContent = "Table unavailable";
+async function refresh(){
+ $('#retry').disabled=true;
+ try{data=await api('/games/chess/api/state');positions=null;reviewIndex=null;render();}
+ catch(e){toast(e.message);$('#status').textContent='Table unavailable';$('#connection').hidden=false;$('#resign').disabled=true;}
+ finally{$('#retry').disabled=false;}
 }
+$('#retry').onclick=refresh;
+await refresh();
 setInterval(async () => {
-  if (busy || replaying || selected || document.hidden) return;
+  if (busy || replaying || reviewIndex !== null || selected || document.hidden) return;
   try {
     const next = await api("/games/chess/api/state");
     if (
@@ -281,6 +329,7 @@ setInterval(async () => {
       next.session.id !== data?.session.id
     ) {
       data = next;
+      positions=null;
       render();
     }
   } catch {}

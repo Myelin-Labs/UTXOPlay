@@ -619,3 +619,8 @@ dialog label {
 /* UTXOPlay platform mark, shared with the store. */
 .utxoplay-mark{display:block;width:44px;height:44px;object-fit:contain;flex-shrink:0}
 @media(max-width:600px){.utxoplay-mark{width:34px;height:34px}}
+
+.flight-feedback{display:flex;align-items:center;gap:18px;padding:12px 4px;font-size:12px;color:#526a5a;flex-wrap:wrap}.flight-feedback>span{margin-right:auto;font-weight:600}.flight-feedback label{display:flex;align-items:center;gap:6px}.flight-feedback input{accent-color:#397451}.flight-feedback select{background:#edf1df;border:1px solid #a8bc9d;border-radius:5px;color:#375744;padding:3px}
+#world{touch-action:none;cursor:grab}#world:active{cursor:grabbing}#world:focus-visible{outline:3px solid #dca848;outline-offset:-3px}.scores strong{font-variant-numeric:tabular-nums}.score-pop{animation:score-pop .35s ease-out}@keyframes score-pop{50%{transform:scale(1.16);color:#bc7b21}}
+@media(max-width:600px){.flight-feedback{gap:10px}.flight-feedback>span{width:100%}}
+@media(prefers-reduced-motion:reduce){.score-pop{animation:none}}

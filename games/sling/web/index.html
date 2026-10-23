@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Skyward · UTXOPlay</title>
     <link rel="stylesheet" href="/games/sling/style.css" />
-  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/></head>
+  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/><link rel="stylesheet" href="/game-shell.css?v=0.2.3"/></head>
   <body>
     <header>
       <a class="brand" href="/" target="_top"
@@ -61,12 +61,12 @@
         </div>
         <div class="stage-footer">
           <span id="instruction"
-            ><span class="mouse-icon">↙</span> Pull Pip back. Release to
-            fly.</span
-          ><span class="wind">✧ NO WIND · ALL POSSIBILITY</span
+            ><span class="mouse-icon">↙</span> Pull Pip back. Release to fly.</span
+          ><span class="wind" id="targets-left">✧ NO WIND · ALL POSSIBILITY</span
           ><button id="replay-shot">↻ Last flight</button>
         </div>
       </section>
+      <div class="flight-feedback"><span id="flight-status" role="status">Ready when you are</span><label><input id="aim-guide" type="checkbox" checked/> Aim guide</label><label><input id="gentle-effects" type="checkbox"/> Gentle effects</label><label>Replay speed <select id="replay-speed"><option value="1">1×</option><option value="0.5">½×</option></select></label></div>
       <div class="under-game">
         <div class="aim-controls">
           <label
@@ -94,7 +94,7 @@
           <h2>Good things take a little practice.</h2>
           <p>
             Four flights per island. Break wooden supports, nudge the sprites,
-            and find your perfect arc. Stone takes two hits. Every spare flight
+            and find your perfect arc. Stone takes two hits. Click a target to inspect it. Use ← / → to aim, ↑ / ↓ for power, and Space to launch. Escape cancels a pull. Every spare flight
             earns a bonus.
           </p>
         </section>
@@ -162,5 +162,5 @@
       /></label>
     </dialog>
     <script type="module" src="/games/sling/app.js"></script>
-  </body>
+  <script type="module" src="/game-shell.js?v=0.2.3"></script></body>
 </html>

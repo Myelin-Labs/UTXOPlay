@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>The Quiet Board · UTXOPlay</title>
     <link rel="stylesheet" href="/games/chess/style.css" />
-  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/></head>
+  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/><link rel="stylesheet" href="/game-shell.css?v=0.2.3"/></head>
   <body>
     <header>
       <a class="brand" href="/" target="_top" aria-label="UTXOPlay Chess home"
@@ -25,7 +25,7 @@
       </section>
       <div class="play-layout">
         <section class="table" aria-label="Chess game">
-          <div class="player">
+          <div class="player black-player">
             <div class="avatar dark">♚</div>
             <div>
               <strong>Black</strong
@@ -33,10 +33,11 @@
             </div>
             <span class="player-label">PLAYER 02</span>
           </div>
+          <div id="connection" role="status" hidden>Unable to load your table. <button id="retry">Try again</button></div>
           <div class="board-frame">
             <div id="board" role="grid" aria-label="Chessboard"></div>
           </div>
-          <div class="player">
+          <div class="player white-player">
             <div class="avatar light">♔</div>
             <div>
               <strong>White</strong
@@ -58,16 +59,21 @@
             <button id="new" class="primary">
               Start a new match <span>↗</span>
             </button>
+            <label class="option"><input type="checkbox" id="auto-flip"/> Auto-flip after each turn</label>
             <div class="button-row">
               <button id="flip">↻ Flip board</button
               ><button id="resign">Resign</button>
             </div>
             <button id="draw" hidden>Claim a draw</button>
+            <div class="material" id="material" aria-live="polite"></div>
+            <div class="captures"><span>White captured <b id="white-captures">—</b></span><span>Black captured <b id="black-captures">—</b></span></div>
+            <div class="button-row"><button id="copy-fen">Copy FEN</button><button id="help-open">How to play</button></div>
             <div class="rule"></div>
             <div class="card-heading">
               <h3>Move journal</h3>
               <span id="move-count">0 moves</span>
             </div>
+            <div class="review-controls" aria-label="Review moves"><button id="review-first" aria-label="Initial position">|‹</button><button id="review-prev" aria-label="Previous move">‹</button><span id="review-label">Live board</span><button id="review-next" aria-label="Next move">›</button><button id="review-live">Live</button></div>
             <div id="moves" class="move-journal">
               <p class="empty">
                 Every great game starts<br />with a small move.
@@ -116,6 +122,8 @@
       <div id="promotion-choices"></div>
       <button id="promotion-cancel">Cancel</button>
     </dialog>
+    <dialog id="help"><h2>Your table, your move.</h2><p>Two players share this device. White moves first. Select a piece to reveal legal destinations; rings mark captures.</p><p>Castling: select the king and move it two squares. En passant and promotion appear automatically when legal. A red square marks a king in check.</p><p>Use the move journal or ‹ / › to review. Return to Live to continue playing. Review never changes your saved match.</p><p>F flips the board. Escape clears your selection and exits immersive mode. Tab and Enter also work on every square.</p><button id="help-close">Back to the board</button></dialog>
+    <dialog id="confirm-action"><h2 id="confirm-title"></h2><p id="confirm-copy"></p><div class="button-row"><button id="confirm-cancel">Keep playing</button><button id="confirm-yes" class="primary">Confirm</button></div></dialog>
     <dialog id="credits">
       <button class="close" id="credits-close" aria-label="Close credits">
         ×</button
@@ -148,5 +156,5 @@
       /></label>
     </dialog>
     <script type="module" src="/games/chess/app.js"></script>
-  </body>
+  <script type="module" src="/game-shell.js?v=0.2.3"></script></body>
 </html>

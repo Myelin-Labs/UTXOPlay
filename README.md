@@ -54,3 +54,9 @@ Game snapshots are based on Myelin Chess `321c4bfc35a1560d0b4eebc1a011a876c1bb26
 The third game is maintained in https://github.com/Myelin-Labs/myelin-teeworlds, derived from xxuejie’s fixed-point CKB fork. `games/teeworlds/web` is its static browser client; the dedicated `myelin-teeworlds:0.1.0` image runs private room/engine/replay services. Only the store image advances to `utxoplay:0.2.0`; existing chess and sling services retain their original image and data. Preserve `/data/utxoplay/shared/teeworlds` across releases.
 
 The gateway injects the authenticated account, enforces same-origin writes, and caps room creation at 20/hour/account. The private room service caps concurrent arenas at eight. Each 60-second round is replayed and sealed in Myelin; this is native replay, not CKB settlement. A finished match survives restart; an unfinished match is marked interrupted. See the game repository for matching engine/verifier artifacts and independent verification instructions.
+
+### Local platform
+
+Build with `npm run build`, then run `npm run dev:platform` to start the store and all three game runtimes together. Stop any existing processes on ports 8781–8783 and 8790 first. The launcher requires the Chess/Skyward binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
+
+Games enter immersive mode on a Play/Start click and request browser fullscreen in that user gesture. Browsers that reject fullscreen retain the immersive page layout. Exit or Escape restores the store. The shared first-party game shell validates the sender and origin of frame messages.

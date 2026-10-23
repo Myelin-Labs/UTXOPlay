@@ -10,6 +10,28 @@ let data,
   toastTimer,
   lastFrame = 0,
   frameHandle;
+let effects=[],shake=0,aim=null,hovered=-1,hiddenAt=0;
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+$('#gentle-effects').checked=reducedMotion.matches;
+const gentle=()=>$('#gentle-effects').checked;
+function aimFromControls(){const angle=+$('#angle').value*Math.PI/180,power=+$('#power').value*1.18;return {dx:-Math.max(8,Math.round(Math.cos(angle)*power)),dy:Math.round(Math.sin(angle)*power)};}
+function feedback(t){$('#flight-status').textContent=t;}
+function impact(x,y,kind,hp){
+ const colors=kind==='wood'?['#ad7138','#e6bd76','#735133']:kind==='stone'?['#73868b','#d7e3d8','#485a63']:['#ffe899','#ffffdc','#99d6a1'];
+ const n=gentle()?6:24;
+ for(let i=0;i<n;i++){const angle=i*Math.PI*2/n;particles.push({x,y,vx:Math.cos(angle)*(2+Math.random()*4),vy:Math.sin(angle)*4-2,life:40+Math.random()*15,color:colors[i%3],size:kind==='sprite'?3:3+Math.random()*5,fragment:kind!=='sprite',rotation:Math.random()*6});}
+ effects.push({x,y,life:45,kind:'ring',color:colors[1]});
+ effects.push({x,y:y-22,life:70,kind:'text',text:hp>0?'CRACK!':kind==='sprite'?'+500 · FREED!':'+100',color:kind==='sprite'?'#fff7bb':'#ffffff'});
+ shake=gentle()?0:8;
+ feedback(hp>0?'Stone cracked — one more hit!':kind==='sprite'?'Sprite freed! +500':`${kind==='wood'?'Wood':'Stone'} cleared! +100`);
+}
+function beginFlight(replay=false){
+ if(!data.game.trace.length)return;
+ const earned=data.game.hits.reduce((n,h)=>n+(h[2]<=0?(data.game.targets[h[1]].kind==='sprite'?500:100):0),0)+(data.game.won?data.game.shots*250:0);
+ flight={start:performance.now(),fired:new Set(),speed:replay?+$('#replay-speed').value:1,replay,score:data.game.score-earned};
+ effects=[];particles=[];feedback(replay?'Replaying your last flight':'Pip is away!');
+}
+addEventListener('visibilitychange',()=>{if(document.hidden)hiddenAt=performance.now();else if(flight&&hiddenAt){flight.start+=performance.now()-hiddenAt;hiddenAt=0;}});
 const bg = new Image();
 bg.src = "/games/sling/assets/islands.png";
 const sprites = new Image();
@@ -57,18 +79,22 @@ function sprite(col, row, x, y, w, h, angle = 0) {
   ctx.restore();
 }
 function ui() {
+  if(!data)return;
   const g = data.game;
+  $("#targets-left").textContent=`${g.remaining} sprite${g.remaining===1?'':'s'} to free`;
+  $("#replay-shot").disabled=busy||!!flight||!g.trace.length;
   $("#level").textContent = String(g.level).padStart(2, "0");
   $("#level-name").textContent = [
     "First flight",
     "Stone & sky",
     "The high garden",
   ][g.level - 1];
-  $("#score").textContent = String(g.score).padStart(4, "0");
+  $("#score").textContent = String(flight?.score??g.score).padStart(4, "0");
   $("#shots").textContent = "● ".repeat(g.shots) + "○ ".repeat(4 - g.shots);
   $("#level-result").hidden = !!flight || (!g.won && !g.lost);
   $("#launch").disabled = busy || !!flight || g.won || g.lost;
   $("#new").disabled = busy || !!flight;
+  for(const id of ["angle","power","replay-speed"]) $("#"+id).disabled=busy||!!flight;
   $("#continue").textContent = g.won
     ? g.level === 3
       ? "A new adventure ↗"
@@ -122,13 +148,17 @@ function render(now) {
     ctx.fillRect(0, 0, 1100, 560);
   }
   if (!data) return;
+  ctx.save();
+  if(shake>0){ctx.translate(Math.sin(now*.15)*shake,Math.cos(now*.12)*shake*.5);shake=Math.max(0,shake-delta*.8);}
+  // Drifting motes keep the garden alive without altering simulation state.
+  if(!gentle())for(let i=0;i<10;i++){const x=(now*.009+i*117)%1100,y=140+Math.sin(now*.0008+i*3)*65+i*17;ctx.fillStyle='#fff8cf66';ctx.beginPath();ctx.arc(x,y,2,0,7);ctx.fill();}
   const g = data.game;
   let targets = g.targets,
     step = -1;
   if (flight) {
     step = Math.min(
       g.trace.length - 1,
-      Math.floor((now - flight.start) / 8.333),
+      Math.floor((now - flight.start) * flight.speed / 8.333),
     );
     const world = g.world_trace[step];
     targets = g.targets.map((target, i) => ({
@@ -142,28 +172,31 @@ function render(now) {
         if (!flight.fired.has(hit[1])) {
           flight.fired.add(hit[1]);
           const target = targets[hit[1]];
-          burst(
-            (target.x + target.w / 2) / 1000,
-            (target.y + target.h / 2) / 1000,
-          );
+          impact((target.x+target.w/2)/1000,(target.y+target.h/2)/1000,target.kind,hit[2]);
+          if(hit[2]<=0){flight.score+=target.kind==='sprite'?500:100;$('#score').textContent=String(flight.score).padStart(4,'0');}
           sound("hit");
         }
       }
     }
     if (step === g.trace.length - 1) {
+      const replay=flight.replay;
       flight = null;
       ui();
-      if (g.won) sound("win");
+      $('#score').classList.remove('score-pop');void $('#score').offsetWidth;$('#score').classList.add('score-pop');
+      feedback(g.won?`Garden cleared! ${g.shots} spare flights · +${g.shots*250} bonus`:g.lost?'No flights left — try a new angle.':g.hits.length?'Nice hit! Line up your next flight.':'A little further? Adjust your angle and power.');
+      if(g.won){sound('win');if(!gentle())for(let i=0;i<7;i++)burst(280+i*100,120+Math.random()*100);}
+      if(replay)feedback('Replay finished · no flights spent');
     }
   }
-  for (const target of targets) {
+  for (const [targetIndex,target] of targets.entries()) {
     if (target.hp <= 0) continue;
     const x = target.x / 1000,
       y = target.y / 1000,
       w = target.w / 1000,
       h = target.h / 1000;
+    if(targetIndex===hovered&&!flight){ctx.strokeStyle='#fff5b7';ctx.lineWidth=3;ctx.strokeRect(x-5,y-5,w+10,h+10);}
     if (target.kind === "sprite") {
-      sprite(1, 0, x - 9, y - 7, w + 18, h + 11);
+      sprite(1, 0, x - 9, y - 7, w + 18, h + 11, gentle()||flight?0:Math.sin(now*.002+targetIndex)*.045);
     } else if (w > h) {
       sprite(
         2,
@@ -176,6 +209,7 @@ function render(now) {
       );
     } else {
       sprite(target.kind === "stone" ? 3 : 2, 0, x - 8, y - 4, w + 16, h + 8);
+      if(target.kind==='stone'&&target.hp===1){ctx.strokeStyle='#344951';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+w*.6,y);ctx.lineTo(x+w*.3,y+h*.4);ctx.lineTo(x+w*.7,y+h*.6);ctx.lineTo(x+w*.35,y+h);ctx.stroke();}
     }
   }
   // Warm ground shadows, sling frame, and a subtle elastic attachment.
@@ -202,11 +236,12 @@ function render(now) {
     ctx.lineTo(200, 365);
     ctx.stroke();
   }
-  if (drag) {
+  aim=drag||aimFromControls();
+  if ($('#aim-guide').checked && !flight && step<0 && !g.won&&!g.lost) {
     let x = 180000,
       y = 360000,
-      vx = -drag.dx * 135,
-      vy = -drag.dy * 135;
+      vx = -aim.dx * 135,
+      vy = -aim.dy * 135;
     for (let i = 0; i < 130; i++) {
       vy += 110;
       x += Math.trunc(vx / 2);
@@ -220,6 +255,11 @@ function render(now) {
       }
     }
   }
+  if(step>=0&&!gentle()){
+    ctx.lineCap='round';
+    for(let i=Math.max(1,step-22);i<=step;i++){ctx.strokeStyle=`rgba(255,244,180,${(i-step+22)/35})`;ctx.lineWidth=2+(i-step+22)*.22;ctx.beginPath();ctx.moveTo(g.trace[i-1][0]/1000,g.trace[i-1][1]/1000);ctx.lineTo(g.trace[i][0]/1000,g.trace[i][1]/1000);ctx.stroke();}
+  }
+  if(drag){const power=Math.min(1,Math.hypot(drag.dx,drag.dy)/119);ctx.lineWidth=6;ctx.strokeStyle='#ffffff70';ctx.beginPath();ctx.arc(px,py,38,Math.PI*.75,Math.PI*2.25);ctx.stroke();ctx.strokeStyle=power>.85?'#ffd279':'#eaffdf';ctx.beginPath();ctx.arc(px,py,38,Math.PI*.75,Math.PI*.75+Math.PI*1.5*power);ctx.stroke();}
   if (step >= 0 || (!g.won && !g.lost))
     sprite(
       0,
@@ -239,12 +279,15 @@ function render(now) {
     p.life -= delta;
     ctx.globalAlpha = Math.max(0, p.life / 38);
     ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 3, 0, 7);
-    ctx.fill();
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate((p.rotation||0)+p.life*.08);
+    if(p.fragment)ctx.fillRect(-(p.size||3)/2,-2,p.size||3,(p.size||3)*.6);
+    else {ctx.beginPath();ctx.arc(0,0,p.size||3,0,7);ctx.fill();}
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
   particles = particles.filter((p) => p.life > 0);
+  for(const e of effects){e.life-=delta;ctx.globalAlpha=Math.min(1,Math.max(0,e.life/22));if(e.kind==='ring'){ctx.strokeStyle=e.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,10+(45-e.life)*1.25,0,7);ctx.stroke();}else{ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.fillStyle=e.color;ctx.strokeStyle='#355743';ctx.lineWidth=4;const y=e.y-(70-e.life)*.6;ctx.strokeText(e.text,e.x,y);ctx.fillText(e.text,e.x,y);}}
+  effects=effects.filter(e=>e.life>0);ctx.globalAlpha=1;ctx.restore();
 }
 function point(e) {
   const r = canvas.getBoundingClientRect();
@@ -266,25 +309,35 @@ function pull(p) {
 canvas.onpointerdown = (e) => {
   if (!data || busy || flight || data.game.won || data.game.lost) return;
   const p = point(e);
-  if (Math.hypot(p.x - 180, p.y - 360) > 65) return;
+  canvas.focus({preventScroll:true});
+  if (Math.hypot(p.x - 180, p.y - 360) > 65) {
+    const t=data.game.targets.find(t=>t.hp>0&&p.x>=t.x/1000-8&&p.x<=(t.x+t.w)/1000+8&&p.y>=t.y/1000-8&&p.y<=(t.y+t.h)/1000+8);
+    if(t)feedback(t.kind==='sprite'?'Garden sprite · free it with one hit · +500':`${t.kind==='stone'?'Stone':'Wood'} support · ${t.hp} hit${t.hp===1?'':'s'} remaining · +100`);
+    return;
+  }
   canvas.setPointerCapture(e.pointerId);
   drag = pull(p);
 };
 canvas.onpointermove = (e) => {
-  if (drag) drag = pull(point(e));
+  const p=point(e);
+  if(drag){drag=pull(p);feedback(`Pull power ${Math.round(Math.hypot(drag.dx,drag.dy)/1.19)}% · release to fly · Esc to cancel`);}
+  else if(data&&!flight)hovered=data.game.targets.findIndex(t=>t.hp>0&&p.x>=t.x/1000&&p.x<=(t.x+t.w)/1000&&p.y>=t.y/1000&&p.y<=(t.y+t.h)/1000);
 };
 canvas.onpointerup = async (e) => {
   if (!drag) return;
+  document.dispatchEvent(new Event("utxoplay:game-start"));
   const a = drag;
   drag = null;
   if (canvas.hasPointerCapture(e.pointerId))
     canvas.releasePointerCapture(e.pointerId);
   await act({ type: "launch", ...a }, true);
 };
-canvas.onpointercancel = () => (drag = null);
+canvas.onpointercancel = () => {drag=null;feedback("Pull cancelled. Ready when you are.");};
+canvas.onpointerleave=()=>{hovered=-1;};
 async function act(action, animate = false) {
-  if (busy || flight) return;
+  if (!data || busy || flight) return;
   busy = true;
+  feedback("Preparing your flight…");
   ui();
   try {
     data = await api("/games/sling/api/action", {
@@ -293,7 +346,7 @@ async function act(action, animate = false) {
       session_id: data.session.id,
     });
     if (animate) {
-      flight = { start: performance.now(), fired: new Set() };
+      beginFlight();
       sound("launch");
     }
     ui();
@@ -304,29 +357,19 @@ async function act(action, animate = false) {
     ui();
   }
 }
-$("#launch").onclick = () => {
-  const angle = (+$("#angle").value * Math.PI) / 180,
-    power = +$("#power").value * 1.18;
-  act(
-    {
-      type: "launch",
-      dx: -Math.max(8, Math.round(Math.cos(angle) * power)),
-      dy: Math.round(Math.sin(angle) * power),
-    },
-    true,
-  );
-};
+$("#launch").onclick = () => act({type:'launch',...aimFromControls()},true);
 for (const name of ["angle", "power"])
-  $("#" + name).oninput = (e) =>
-    ($("#" + name + "-value").textContent =
-      e.target.value + (name === "angle" ? "°" : "%"));
+  $("#" + name).oninput = (e) => {
+    $("#" + name + "-value").textContent=e.target.value + (name === "angle" ? "°" : "%");
+    feedback(`Aim ${$('#angle').value}° · power ${$('#power').value}% · Space to launch`);
+  };
 async function newGame() {
   if (busy || flight) return;
   busy = true;
   try {
     data = await api("/games/sling/api/new", {});
     $("#verification").textContent = "";
-    particles = [];
+    particles = [];effects=[];shake=0;feedback("A fresh garden. Find your arc.");
     ui();
   } catch (e) {
     toast(e.message);
@@ -355,11 +398,11 @@ $("#verify").onclick = async () => {
 };
 $("#replay-shot").onclick = () => {
   if (busy || flight) return;
-  if (!data.game.trace.length) {
+  if (!data || !data.game.trace.length) {
     toast("Take your first flight to replay it.");
     return;
   }
-  flight = { start: performance.now(), fired: new Set() };
+  beginFlight(true);
   ui();
 };
 $("#sound").onclick = async () => {
@@ -370,11 +413,12 @@ $("#sound").onclick = async () => {
 $("#volume").oninput = (e) => volume(+e.target.value / 100);
 $("#credits-open").onclick = () => $("#credits").showModal();
 $("#credits-close").onclick = () => $("#credits").close();
-canvas.onkeydown = (e) => {
-  if (e.code === "Space") {
-    e.preventDefault();
-    $("#launch").click();
-  }
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&drag){drag=null;feedback('Pull cancelled.');}});
+canvas.onkeydown=e=>{
+ if(busy||flight)return;
+ if(e.code==='Space'){e.preventDefault();$('#launch').click();}
+ const key={ArrowLeft:['angle',-1],ArrowRight:['angle',1],ArrowUp:['power',1],ArrowDown:['power',-1]}[e.key];
+ if(key){e.preventDefault();const input=$('#'+key[0]);input.value=Math.max(+input.min,Math.min(+input.max,+input.value+key[1]*(e.shiftKey?5:1)));input.dispatchEvent(new Event('input'));}
 };
 try {
   data = await api("/games/sling/api/state");

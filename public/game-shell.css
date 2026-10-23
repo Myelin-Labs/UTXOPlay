@@ -1,0 +1,17 @@
+.standalone-fullscreen{position:fixed;right:14px;bottom:14px;z-index:30;background:#171e18;color:#fff;padding:10px;border:1px solid #658966;border-radius:8px}
+.immersive-game .intro,.immersive-game main>footer,.immersive-game .evidence,.immersive-game .bottom-grid{display:none}
+.immersive-game main{margin:0 auto;padding:18px 24px;max-width:1400px}
+.immersive-game .play-layout{justify-content:center;gap:28px;grid-template-columns:minmax(260px,min(65vw,calc(100dvh - 205px))) minmax(250px,330px)}
+.immersive-game .memory-card{margin-top:16px}.immersive-game .player{padding:8px 0;min-height:48px}.immersive-game .move-journal{max-height:160px}
+.immersive-game body:has(#world) main{max-width:min(1800px,calc((100dvh - 240px)*1.96 + 48px));padding-top:12px}
+.immersive-game .under-game{margin-top:12px}.immersive-game .hud{padding-top:10px;padding-bottom:10px}
+@media(max-width:760px){.immersive-game main{padding:12px}.immersive-game .play-layout{grid-template-columns:1fr;gap:16px}.immersive-game body:has(#world) main{max-width:none}.immersive-game .stage-footer .wind{display:none}}
+
+.immersive-game body:has(#board)>header,.immersive-game body:has(#world)>header{display:flex;justify-content:flex-end;height:36px;padding:0 24px;border:0;background:transparent;max-width:1400px;margin:auto}
+.immersive-game body:has(#board)>header .brand,.immersive-game body:has(#world)>header .brand,.immersive-game header .live,.immersive-game header .tag{display:none}
+.immersive-game header button{padding:4px 10px;font-size:12px}
+
+.immersive-game body:has(#world){min-height:100dvh;display:flex;flex-direction:column;justify-content:center}
+.immersive-game body:has(#world) main{width:100%;box-sizing:border-box}
+.immersive-game body:has(#world)>header{width:100%;box-sizing:border-box;margin:0 auto;flex-shrink:0}
+@media(max-width:760px){.immersive-game body:has(#world){justify-content:flex-start}.immersive-game body:has(#world) main{max-width:none}}

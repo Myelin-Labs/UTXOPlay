@@ -11,3 +11,14 @@
 .eyebrow .studio-mark,.studio-brand .utxoplay-mark{width:30px;height:30px}.studio-brand{margin-bottom:20px}
 @media(max-width:380px){.topbar{padding-inline:12px;gap:8px}.topbar .brand{font-size:18px;gap:6px}.topbar .brand img{width:30px;height:30px}.wallet-button{padding:10px 8px;font-size:9px}}
 @media(max-width:380px){.filter-row{flex-wrap:wrap;gap:8px}.filter-row .results{width:100%;text-align:right}}
+
+/* Keep one stable iframe while entering or leaving the distraction-free player. */
+body.playing-immersive{overflow:hidden}
+.immersive .topbar,.immersive .sidebar,.immersive .play-title,.immersive .play-info,.immersive .footer{display:none}
+.immersive .shell{display:block;margin:0;max-width:none}
+.immersive .main{padding:0!important;margin:0!important;max-width:none;width:100%;height:100dvh;display:flex;flex-direction:column}
+.immersive .play-heading{height:46px;min-height:46px;box-sizing:border-box;margin:0;padding:0 18px;background:#141714;border-bottom:1px solid #ffffff14}
+.immersive .game-frame{display:block;flex:1;width:100%;height:calc(100dvh - 46px)!important;min-height:0!important;border:0;border-radius:0;margin:0}
+.play-tools button{display:inline-flex;align-items:center;gap:7px}.play-tools button span{font-size:12px}
+.play-tools button{width:auto;min-width:34px;padding:8px}.play-heading>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:600px){.play-tools button span{display:none}.play-heading{gap:10px}}

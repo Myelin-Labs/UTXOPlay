@@ -602,3 +602,20 @@ input {
 /* UTXOPlay platform mark, shared with the store. */
 .utxoplay-mark{display:block;width:44px;height:44px;object-fit:contain;flex-shrink:0}
 @media(max-width:600px){.utxoplay-mark{width:34px;height:34px}}
+
+/* Percentage width on an intrinsic grid item collapsed the sprite to zero. */
+#board{grid-template-rows:repeat(8,minmax(0,1fr))}
+.square .piece{position:absolute;inset:2.5%;width:auto;height:auto;background-repeat:no-repeat;transition:transform .16s}
+.square.selected .piece{transform:translateY(-3%) scale(1.05)}
+.square.in-check{background:#b95042;box-shadow:inset 0 0 0 3px #ffc6aa}
+.square:focus-visible{outline:3px solid #ffd680;outline-offset:-3px;z-index:4}
+.option{display:flex;align-items:center;gap:8px;margin:14px 0;color:#d7d4bd;font-size:12px}.option input{accent-color:#ddb66b}
+.material{margin:15px 0 8px;font-size:12px;color:#e6c58b}.captures{display:grid;gap:6px;font-size:11px;color:#b9c8b9;margin-bottom:14px}.captures b{font-size:20px;letter-spacing:2px;color:#f3dfaf;font-weight:400}
+.review-controls{display:flex;gap:5px;align-items:center;margin:12px 0}.review-controls button{padding:7px 10px}.review-controls span{flex:1;font-size:11px;text-align:center;color:#d9cba9}
+.move-row button{padding:6px 8px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;border-radius:4px}.move-row button.current{background:#b18d4344;color:#ffe1a3}
+#connection{padding:16px;border:1px solid #b88f55;background:#302820;margin-bottom:12px}#connection[hidden]{display:none}
+#board:empty:before{content:'Loading your saved board…';grid-column:1/-1;align-self:center;text-align:center;color:#ead6a7}
+#board[aria-busy=true]{opacity:.7}.reviewing .square{cursor:default}
+@media(prefers-reduced-motion:reduce){.square .piece{transition:none}}
+
+.table{display:flex;flex-direction:column}.table .board-frame{order:1}.table .white-player{order:2}.table #connection{order:-1}.table.flipped .black-player{order:2}.table.flipped .white-player{order:0}
