@@ -28,7 +28,8 @@ Date: 23 October 2026. Scope: storefront discovery, account entry, library, deve
 - Live local CKB cryptographic challenge, replay rejection, logout revocation, fresh sign-in and persisted chess move recovery pass with a disposable test key. No funds or transactions.
 - Browser checks: wallet Escape/focus restoration; CCC Tab focus enters the JoyID button and background is inert; cancelling returns to account UI; search and zero-result recovery; friends filter; details and launch; library ordering; Studio sign-in entry and manifest-copy feedback; mobile navigation and preferences; reduced motion disables animated backgrounds and persists across reload.
 - Browser game checks: Skyward launch enters immersive mode, control dialog and reload cancellation work; chess board and pieces render with readiness acknowledged; Teeworlds restores its previous result and a fresh practice match enters immersive mode.
-- Public deployment and endpoint checks are recorded in the release commit and deployment verification output.
+- Public `https://store.utxoplay.io` deployment reports 0.4.0 and is healthy. Served HTML, JS, CSS, shared shell, licenses and WebP assets match the built files by SHA-256; all four game shells carry the current cache key.
+- Public cryptographic login/logout/relogin and save recovery pass. A two-account OpenStrike duel passes authenticated WebSocket input, verified export, invalid-input rejection and outsider isolation (90 received updates). Existing game runtime containers were not recreated.
 
 ## Practical limits
 
