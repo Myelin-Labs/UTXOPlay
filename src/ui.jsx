@@ -121,7 +121,7 @@ export function Skeletons() {
   );
 }
 export function GameCard({ g, onPlay, onDetails, launching, updated }) {
-  const meta = gameMeta[g.id] || {};
+  const meta = gameMeta[g.id] || { accent: "#8bf4b9", length: "Vendor hosted" };
   return (
     <motion.article
       layout
@@ -149,7 +149,9 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
           </button>
           <p>{g.subtitle}</p>
         </div>
-        <span className="price">FREE</span>
+        <span className="price">
+          {g.pricing === "paid" ? g.priceCkb + " CKB" : "FREE"}
+        </span>
       </div>
       <div className="card-meta">
         <span>
@@ -176,7 +178,9 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
             ? "Opening…"
             : updated
               ? "Play again"
-              : "Play now"}
+              : g.pricing === "paid"
+                ? "View & buy"
+                : "Play now"}
           <ArrowUpRight size={15} />
         </button>
         <button
@@ -201,7 +205,12 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
   );
 }
 export function GameDetails({ game, onClose, onPlay, launching }) {
-  const meta = gameMeta[game.id] || {};
+  const meta = gameMeta[game.id] || {
+    tag: "INDEPENDENT / MYELIN",
+    length: "Vendor hosted",
+    input: "See controls",
+    note: "Opens on the creator’s website: " + game.host,
+  };
   return (
     <Modal
       title={game.title + " details"}
@@ -214,7 +223,10 @@ export function GameDetails({ game, onClose, onPlay, launching }) {
       </div>
       <div className="detail-copy">
         <div className="eyebrow">
-          {game.genre} <span>·</span> FREE TO PLAY
+          {game.genre} <span>·</span>{" "}
+          {game.pricing === "paid"
+            ? game.priceCkb + " CKB · BUY ONCE"
+            : "FREE TO PLAY"}
         </div>
         <h2>{game.title}</h2>
         <p>{game.description}</p>
@@ -251,7 +263,9 @@ export function GameDetails({ game, onClose, onPlay, launching }) {
           <ArrowUpRight size={17} />
         </button>
         <p className="fine centered">
-          No download. No deposit. A guest session is all you need.
+          {game.pricing === "paid"
+            ? "Wallet purchase required. Review price and vendor details before paying."
+            : "No download. No deposit. A guest session is all you need."}
         </p>
       </div>
     </Modal>

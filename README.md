@@ -9,9 +9,10 @@ A deployed browser game store at https://store.utxoplay.io. The collection conta
 - CCC mainnet wallet discovery for native CKB, Bitcoin ECDSA and JoyID Passkey accounts. Server verifies a browser-bound one-use challenge and binds the signature to the CKB lock.
 - JoyID credential-to-address binding uses the fixed JoyID credential API and fails closed. Temporary JoyID session keys are not supported.
 - Rust Myelin runtimes with per-account storage, bounded open-session caches, signed records, replay and export.
-- Developer workspace with private project drafts, a same-origin JavaScript API helper, integration guide and manifest validator.
+- Self-service vendor publication with private/live drafts, vendor-hosted Myelin instance checks and a server-side launch adapter. Free publication is the recommended default.
+- CKB mainnet one-time purchases with no scheduled access expiry, direct Store 20% / vendor 80% outputs, saved receipts and confirmed revenue reporting. Paid publication/checkout require the operator’s actual `STORE_CKB_ADDRESS`.
 
-Public third-party publishing, cross-origin game grants, remote chess rooms and CKB settlement are not implemented. Chess/Skyward run on server-side Rust; Teeworlds runs its original C++ simulation and OpenStrike its original Rust simulation, both with Myelin replay verification; wallet login does not submit blockchain transactions.
+Vendor games open on their own HTTPS origins using scoped launch tickets. Remote chess rooms are not implemented. Chess/Skyward run on server-side Rust; Teeworlds runs its original C++ simulation and OpenStrike its original Rust simulation, both with Myelin replay verification; wallet login does not submit blockchain transactions.
 
 ## Local development
 
@@ -39,7 +40,7 @@ Browser interaction checks covered the local storefront, mobile layout, chess mo
 
 The server deployment is under `/data/utxoplay`. `deploy/compose.yml` uses the existing external `stack-network` HTTPS proxy and a private game network. No game runtime port is exposed publicly. The proxy discovers the store through `VIRTUAL_HOST` and manages certificates for store.utxoplay.io, utxoplay.io and www.utxoplay.io. The latter two redirect to the canonical store origin.
 
-Build the game binaries on Debian Bookworm and copy them into `deploy/bin`. Build the frontend locally, then build the server image with `docker build -f deploy/Dockerfile -t utxoplay:0.3.0 .`. The server-side runtime secret is generated on the server, stored in `shared/runtime.env` with mode 0600, and never committed. Persistent platform and game directories must be writable by container UID 1000. Services restart automatically and have memory, CPU, process, privilege and log-size limits.
+Build the game binaries on Debian Bookworm and copy them into `deploy/bin`. Build the frontend locally, then build the server image with `docker build -f deploy/Dockerfile -t utxoplay:0.5.0 .`. The server-side runtime secret is generated on the server, stored in `shared/runtime.env` with mode 0600, and never committed. Persistent platform and game directories must be writable by container UID 1000. Services restart automatically and have memory, CPU, process, privilege and log-size limits.
 
 For upgrades, preserve `shared/` and record the existing image tag before recreation. Changing game rules or Myelin's pinned revision can invalidate existing exports: preserve matching runtime images and do not replace game state indiscriminately. A release pointer does not migrate old sessions.
 
@@ -73,3 +74,11 @@ Public play is free. Fiber is retained only in the upstream native developer tes
 A redesigned dark storefront adds game details, play-style filters, recent play, clearer loading/retry states, accessible dialogs and a mobile drawer. The developer studio includes manifest copying, reference links and persistent in-page draft fields. Motion is bundled locally, follows reduced-motion preferences and can be disabled in Display preferences. Cover WebP variants reduce their combined transfer size by 89%.
 
 Game entry waits for a same-origin ready signal and offers a retry if loading stalls. Actual game starts request fullscreen, with an immersive layout fallback; controls and reload confirmation remain available. Only the store image advances to `utxoplay:0.4.0`; game runtime images and persistent data remain unchanged. See [the interaction audit](docs/interaction-audit.md) for findings, verification and device limits.
+
+## Store 0.5.0 marketplace
+
+See the [English architecture and business-flow audit](docs/marketplace-architecture.md), [vendor hosting guide](vendor/README.md), and [environment template](vendor/vendor.env.example). The browser guide is served at `/publishing.html`. Studio supports connection checks, live publication, price changes, unlisting and sales; players get clear host/price information, Purchases and retained library access.
+
+Set `STORE_CKB_ADDRESS` to the actual Store mainnet public receive address in the existing server-only environment file. Do not set a sample address. Until configured, the site explicitly keeps paid publication and checkout unavailable while free publication works. The Store does not hold wallet keys or take custody of revenue. No live mainnet payment was made by the automated test suite.
+
+Run `npm test` and `npm run build`. `node tests/marketplace-browser.mjs` starts a disposable localhost-only browser fixture at port 8795; its test login and simulated network checks must never be deployed. Mainnet payment acceptance across supported wallets still requires a funded, user-approved device test.

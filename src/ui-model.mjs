@@ -1,19 +1,31 @@
-export const genres = ["All games", "Action", "Arcade", "Strategy"];
+export const genres = [
+  "All games",
+  "Action",
+  "Arcade",
+  "Strategy",
+  "Puzzle",
+  "Other",
+];
 export function selectGames(
   games,
-  { query = "", genre = "All games", mode = "all" } = {},
+  { query = "", genre = "All games", mode = "all", freeOnly = false } = {},
 ) {
   const q = query.trim().toLocaleLowerCase();
   return games.filter(
     (g) =>
+      (!freeOnly || g.pricing !== "paid") &&
       (genre === "All games" || g.genre === genre) &&
       (!q ||
         `${g.title} ${g.description} ${g.genre} ${g.mode}`
           .toLocaleLowerCase()
           .includes(q)) &&
       (mode === "all" ||
-        (mode === "solo" && g.id !== "chess") ||
-        (mode === "friends" && g.id !== "sling")),
+        (mode === "solo" &&
+          (g.vendor
+            ? ["Single player", "Solo + multiplayer"].includes(g.mode)
+            : g.id !== "chess")) ||
+        (mode === "friends" &&
+          (g.vendor ? g.mode !== "Single player" : g.id !== "sling"))),
   );
 }
 export function accountLabel(user) {

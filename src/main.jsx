@@ -62,6 +62,8 @@ import {
   apiError,
 } from "./ui-model.mjs";
 import "./style.css";
+import "./marketplace.css";
+import { Studio, VendorPlay, Purchases } from "./marketplace.jsx";
 import initialGames from "../server/catalog.json";
 async function api(url, body) {
   const r = await fetch(url, {
@@ -176,6 +178,9 @@ function useAccountResource(user, url, revision = 0) {
     : { data: [], loading: !!user, error: "" };
 }
 function App() {
+  const [remoteGame, setRemoteGame] = useState(null),
+    [vendorLoading, setVendorLoading] = useState(false),
+    [freeOnly, setFreeOnly] = useState(false);
   const [page, setPage] = useState(location.pathname),
     [games, setGames] = useState(initialGames),
     [user, setUser] = useState(null),
@@ -192,15 +197,8 @@ function App() {
     [walletPhase, setWalletPhase] = useState("idle"),
     [intent, setIntent] = useState(false),
     [walletError, setWalletError] = useState(""),
-    [launching, setLaunching] = useState(""),
-    [projectBusy, setProjectBusy] = useState(false),
-    [projectError, setProjectError] = useState("");
-  const [projectDraft, setProjectDraft] = useState({
-      title: "",
-      description: "",
-      url: "",
-    }),
-    [mobileNav, setMobileNav] = useState(false),
+    [launching, setLaunching] = useState("");
+  const [mobileNav, setMobileNav] = useState(false),
     [frameKey, setFrameKey] = useState(0),
     [immersive, setImmersive] = useState(false),
     [frameStatus, setFrameStatus] = useState("loading"),
@@ -222,18 +220,46 @@ function App() {
     cancelSignature = useRef(null);
   const reduceSystem = useReducedMotion(),
     reduced = motionSetting === "reduced" || !!reduceSystem;
-  const libraryState = useAccountResource(user, "/api/library", revision),
-    projectState = useAccountResource(
-      page === "/developers" && !user?.guest ? user : null,
-      "/api/developer/projects",
-      revision,
-    );
+  const libraryState = useAccountResource(user, "/api/library", revision);
   const libraryGames = libraryState.data
-    .map((p) => ({ ...games.find((g) => g.id === p.game), updated: p.updated }))
+    .map((p) => ({
+      ...(games.find((g) => g.id === p.game) || p.details),
+      updated: p.updated,
+    }))
     .filter((g) => g.id);
-  const game = games.find((g) => page === "/play/" + g.id),
-    hero = games.find((g) => g.id === featured) || games[0],
+  const featuredGames = games.filter((g) => !g.vendor);
+  const game =
+      games.find((g) => page === "/play/" + g.id) ||
+      libraryGames.find((g) => page === "/play/" + g.id) ||
+      (remoteGame && page === "/play/" + remoteGame.id ? remoteGame : null),
+    hero = featuredGames.find((g) => g.id === featured) || featuredGames[0],
     signedIn = !!user && !user.guest;
+  useEffect(() => {
+    let live = true;
+    setRemoteGame(null);
+    if (!page.startsWith("/play/vendor-")) {
+      setVendorLoading(false);
+      return;
+    }
+    setVendorLoading(true);
+    api("/api/games/" + page.slice(6))
+      .then((d) => {
+        if (live) setRemoteGame(d.game);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (live) setVendorLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [page, user?.id, revision]);
+  function refreshCatalog() {
+    api("/api/games")
+      .then((d) => setGames(d.games))
+      .catch((e) => notify(apiError(e), "error"));
+    setRevision((r) => r + 1);
+  }
   const notify = useCallback(
     (text, type = "success") => setToast({ text, type, id: Date.now() }),
     [],
@@ -298,10 +324,12 @@ function App() {
           ? "Your library"
           : page === "/developers"
             ? "Studio"
-            : "Good games. Yours to play.") + " · UTXOPlay";
+            : page === "/purchases"
+              ? "Purchases"
+              : "Good games. Yours to play.") + " · UTXOPlay";
     if (!page.startsWith("/play/")) exitImmersive();
     mainRef.current?.focus({ preventScroll: true });
-  }, [page]);
+  }, [page, game?.title]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(
@@ -471,7 +499,7 @@ function App() {
   useEffect(() => {
     setFrameStatus("loading");
     clearTimeout(frameTimer.current);
-    if (game && user)
+    if (game && user && !game.vendor)
       frameTimer.current = setTimeout(
         () => setFrameStatus((s) => (s === "loading" ? "slow" : s)),
         15000,
@@ -553,12 +581,14 @@ function App() {
     setQuery("");
     setGenre("All games");
     setMode("all");
+    setFreeOnly(false);
     searchRef.current?.focus();
   }
-  const filtered = selectGames(games, { query, genre, mode });
+  const filtered = selectGames(games, { query, genre, mode, freeOnly });
   const navItems = [
     ["/", "Discover", Grid2X2],
     ["/library", "My library", Library],
+    ["/purchases", "Purchases", Wallet],
     ["/developers", "Developer studio", Code2],
   ];
   const navContent = (
@@ -715,7 +745,7 @@ function App() {
                       Your next <em>good time.</em>
                     </>
                   }
-                  description="Four little worlds. No downloads. A lot of ‘one more round’."
+                  description="Independent worlds. No downloads. A lot of ‘one more round’."
                 >
                   <div className="edition">
                     <span>CURATED COLLECTION</span>
@@ -807,17 +837,18 @@ function App() {
                       {gameMeta[hero.id]?.tag}
                     </span>
                     <span className="hero-index">
-                      0{games.findIndex((g) => g.id === hero.id) + 1}
-                      <i> / 0{games.length}</i>
+                      0{featuredGames.findIndex((g) => g.id === hero.id) + 1}
+                      <i> / 0{featuredGames.length}</i>
                     </span>
                     <button
                       className="hero-next icon-btn"
                       aria-label="Next featured game"
                       onClick={() =>
                         setFeatured(
-                          games[
-                            (games.findIndex((g) => g.id === hero.id) + 1) %
-                              games.length
+                          featuredGames[
+                            (featuredGames.findIndex((g) => g.id === hero.id) +
+                              1) %
+                              featuredGames.length
                           ].id,
                         )
                       }
@@ -827,7 +858,7 @@ function App() {
                   </div>
                 </section>
                 <div className="feature-rail" aria-label="Choose featured game">
-                  {games.map((g, i) => (
+                  {featuredGames.map((g, i) => (
                     <button
                       key={g.id}
                       aria-pressed={hero.id === g.id}
@@ -938,6 +969,13 @@ function App() {
                         </button>
                       ))}
                     </div>
+                    <button
+                      className={"free-filter " + (freeOnly ? "active" : "")}
+                      aria-pressed={freeOnly}
+                      onClick={() => setFreeOnly((v) => !v)}
+                    >
+                      Free to play
+                    </button>
                     <label className="mode-select">
                       <Users size={15} />
                       <span className="sr-only">Play style</span>
@@ -1075,222 +1113,41 @@ function App() {
                 )}
               </>
             ) : page === "/developers" ? (
+              <Studio
+                key={user?.id || "anonymous"}
+                user={user}
+                onConnect={connect}
+                onCatalogChange={refreshCatalog}
+              />
+            ) : page === "/purchases" ? (
+              <Purchases
+                key={user?.id || "anonymous"}
+                user={user}
+                signer={signer}
+                onConnect={connect}
+                onPlay={launch}
+              />
+            ) : game?.vendor ? (
               <>
-                <PageHeading
-                  eyebrow="UTXOPLAY / STUDIO"
-                  title={
-                    <>
-                      Build something <em>worth playing.</em>
-                    </>
-                  }
-                  description="Wallet identity, replayable sessions, and room for your next idea."
+                <button className="back" onClick={() => go("/")}>
+                  <ArrowLeft size={16} />
+                  Store
+                </button>
+                <VendorPlay
+                  key={game.id + ":" + (user?.id || "anonymous")}
+                  game={game}
+                  user={user}
+                  signer={signer}
+                  onConnect={connect}
+                  onRefresh={() => setRevision((r) => r + 1)}
+                  onStartGuest={() => launch(game.id)}
                 />
-                <section className="developer-hero">
-                  <div>
-                    <span className="pill">
-                      <Code2 size={14} />
-                      FROM FIRST BUILD TO FIRST PLAYER
-                    </span>
-                    <h2>
-                      You build the fun.
-                      <br />
-                      <span>We bring the playground.</span>
-                    </h2>
-                    <p>
-                      Explore real game integrations and save your project in a
-                      private workspace. Publishing is curated for this release.
-                    </p>
-                    <div className="dev-hero-actions">
-                      <button
-                        className="primary"
-                        onClick={() =>
-                          signedIn ? setDialog("project") : connect()
-                        }
-                      >
-                        <Plus size={17} />
-                        Create a project
-                      </button>
-                      <a className="text-link" href="/integration.html">
-                        Read the guide <ArrowUpRight size={16} />
-                      </a>
-                    </div>
-                  </div>
-                  <div className="code-panel">
-                    <div className="code-title">
-                      <span />
-                      <span />
-                      <span />
-                      <b>utxoplay.manifest.json</b>
-                      <button
-                        className="icon-btn"
-                        aria-label="Copy example manifest"
-                        onClick={() =>
-                          copy(
-                            JSON.stringify(
-                              {
-                                name: "Your next great game",
-                                version: "1.0.0",
-                                entrypoint: "https://your.game",
-                                genre: "arcade",
-                                runtime: "browser",
-                              },
-                              null,
-                              2,
-                            ),
-                            "Example manifest copied.",
-                          )
-                        }
-                      >
-                        <Copy size={15} />
-                      </button>
-                    </div>
-                    <pre>
-                      <span className="code-comment">
-                        // Big ideas start small.
-                      </span>
-                      {"\n" +
-                        JSON.stringify(
-                          {
-                            name: "Your next great game",
-                            version: "1.0.0",
-                            entrypoint: "https://your.game",
-                            genre: "arcade",
-                            runtime: "browser",
-                          },
-                          null,
-                          2,
-                        )}
-                    </pre>
-                    <span className="code-footer">
-                      <CheckCircle2 size={14} />
-                      Start with the same tools as our games.
-                    </span>
-                  </div>
-                </section>
-                <div className="dev-features">
-                  <a href="/integration.html">
-                    <Wallet />
-                    <h3>Bring your players.</h3>
-                    <p>
-                      CKB-compatible identity, verified by the store. No private
-                      keys in your game.
-                    </p>
-                    <span>
-                      Explore identity <ArrowUpRight size={15} />
-                    </span>
-                  </a>
-                  <a
-                    href="https://github.com/Myelin-Labs/myelin-openstrike/blob/main/docs/DEVELOPERS.md"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <RefreshCw />
-                    <h3>Make it replayable.</h3>
-                    <p>
-                      Learn from real native game sessions, signed records and
-                      downloadable replays.
-                    </p>
-                    <span>
-                      View a working integration <ArrowUpRight size={15} />
-                    </span>
-                  </a>
-                  <a
-                    href="https://github.com/Myelin-Labs/UTXOPlay"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Terminal />
-                    <h3>Start in the open.</h3>
-                    <p>
-                      Clone the store, validate a manifest, and build on the
-                      launch games.
-                    </p>
-                    <span>
-                      Browse the source <ArrowUpRight size={15} />
-                    </span>
-                  </a>
-                </div>
-                <div className="section-head">
-                  <div>
-                    <span className="eyebrow">YOUR WORKSPACE</span>
-                    <h2>
-                      Projects{" "}
-                      <span className="heading-count">
-                        {signedIn ? projectState.data.length : 0}
-                      </span>
-                    </h2>
-                  </div>
-                  {signedIn && (
-                    <button
-                      className="outline"
-                      onClick={() => setDialog("project")}
-                    >
-                      <Plus size={16} />
-                      New project
-                    </button>
-                  )}
-                </div>
-                <p className="muted">
-                  Private drafts, just for you. Saving a project doesn’t publish
-                  it.
-                </p>
-                {!signedIn ? (
-                  <div className="empty compact">
-                    <Code2 size={30} />
-                    <h3>A home for your work in progress.</h3>
-                    <p>
-                      Sign in with a CKB-compatible wallet to create and manage
-                      your projects.
-                    </p>
-                    <button className="primary" onClick={connect}>
-                      <Wallet size={17} />
-                      Sign in to Studio
-                    </button>
-                  </div>
-                ) : projectState.error ? (
-                  <Notice onRetry={() => setRevision((r) => r + 1)}>
-                    {projectState.error}
-                  </Notice>
-                ) : projectState.loading ? (
-                  <Skeletons />
-                ) : projectState.data.length ? (
-                  <div className="projects">
-                    {projectState.data.map((p) => (
-                      <article key={p.id}>
-                        <div className="project-icon">
-                          <Code2 />
-                        </div>
-                        <div>
-                          <span className="eyebrow">PRIVATE DRAFT</span>
-                          <h3>{p.title}</h3>
-                          <p>{p.description}</p>
-                          <a href={p.url} target="_blank" rel="noreferrer">
-                            Open game <ExternalLink size={14} />
-                          </a>
-                        </div>
-                        <span className="project-date">
-                          {new Date(p.created).toLocaleDateString()}
-                        </span>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty compact">
-                    <Plus size={32} />
-                    <h3>Your next game starts here.</h3>
-                    <p>
-                      Save a title, a description and a playable URL. Come back
-                      whenever you’re ready.
-                    </p>
-                    <button
-                      className="outline"
-                      onClick={() => setDialog("project")}
-                    >
-                      Create your first project <ArrowRight size={16} />
-                    </button>
-                  </div>
-                )}
               </>
+            ) : vendorLoading ? (
+              <div className="empty" role="status">
+                <Spinner />
+                Opening game…
+              </div>
             ) : game ? (
               <>
                 <div className="play-heading">
@@ -1448,8 +1305,21 @@ function App() {
             ) : (
               <div className="empty">
                 <Gamepad2 size={38} />
-                <h1>This page took a wrong turn.</h1>
-                <p>There are better adventures in the store.</p>
+                <h1>
+                  {page.startsWith("/play/vendor-")
+                    ? "This game isn’t currently listed."
+                    : "This page took a wrong turn."}
+                </h1>
+                <p>
+                  {page.startsWith("/play/vendor-")
+                    ? "If you already own it, sign in with your purchasing wallet and open your library."
+                    : "There are better adventures in the store."}
+                </p>
+                {page.startsWith("/play/vendor-") && !signedIn && (
+                  <button className="outline" onClick={connect}>
+                    Connect purchasing wallet
+                  </button>
+                )}
                 <button className="primary" onClick={() => go("/")}>
                   Back to the playground <ArrowRight size={17} />
                 </button>
@@ -1620,99 +1490,6 @@ function App() {
               </>
             )}
             {walletError && <Notice>{walletError}</Notice>}
-          </Modal>
-        )}
-        {dialog === "project" && (
-          <Modal
-            title="Create a project"
-            onClose={() => setDialog(null)}
-            dismissible={!projectBusy}
-          >
-            <form
-              className="project-form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (projectBusy) return;
-                setProjectBusy(true);
-                setProjectError("");
-                try {
-                  await api("/api/developer/projects", projectDraft);
-                  setRevision((r) => r + 1);
-                  setDialog(null);
-                  setProjectDraft({ title: "", description: "", url: "" });
-                  notify("Project saved. Your draft is private to you.");
-                } catch (err) {
-                  setProjectError(apiError(err));
-                } finally {
-                  setProjectBusy(false);
-                }
-              }}
-            >
-              <div className="eyebrow">
-                <Code2 size={16} />
-                UTXOPLAY STUDIO
-              </div>
-              <h2>Something worth playing.</h2>
-              <p>Start with the essentials. Your draft stays private.</p>
-              <label>
-                Game title
-                <input
-                  autoFocus
-                  name="title"
-                  value={projectDraft.title}
-                  onChange={(e) =>
-                    setProjectDraft((d) => ({ ...d, title: e.target.value }))
-                  }
-                  required
-                  minLength={3}
-                  maxLength={80}
-                  placeholder="Your game’s name"
-                />
-              </label>
-              <label>
-                Description <span>{projectDraft.description.length}/2000</span>
-                <textarea
-                  name="description"
-                  value={projectDraft.description}
-                  onChange={(e) =>
-                    setProjectDraft((d) => ({
-                      ...d,
-                      description: e.target.value,
-                    }))
-                  }
-                  required
-                  maxLength={2000}
-                  placeholder="What makes it fun?"
-                />
-              </label>
-              <label>
-                Playable URL
-                <input
-                  name="url"
-                  type="url"
-                  value={projectDraft.url}
-                  onChange={(e) =>
-                    setProjectDraft((d) => ({ ...d, url: e.target.value }))
-                  }
-                  required
-                  maxLength={500}
-                  pattern="https://.*"
-                  placeholder="https://your.game"
-                  aria-describedby="url-help"
-                />
-              </label>
-              <p id="url-help" className="fine">
-                Use an HTTPS link. We won’t publish or run it when you save.
-              </p>
-              {projectError && <Notice>{projectError}</Notice>}
-              <button className="primary full" disabled={projectBusy}>
-                {projectBusy ? <Spinner /> : <Plus size={17} />}{" "}
-                {projectBusy ? "Saving your draft…" : "Save project"}
-              </button>
-              <p className="fine centered">
-                Close and reopen this form to keep editing your unsaved draft.
-              </p>
-            </form>
           </Modal>
         )}
         {dialog === "preferences" && (
