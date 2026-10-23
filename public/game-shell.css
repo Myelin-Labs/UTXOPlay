@@ -15,3 +15,7 @@
 .immersive-game body:has(#world) main{width:100%;box-sizing:border-box}
 .immersive-game body:has(#world)>header{width:100%;box-sizing:border-box;margin:0 auto;flex-shrink:0}
 @media(max-width:760px){.immersive-game body:has(#world){justify-content:flex-start}.immersive-game body:has(#world) main{max-width:none}}
+.immersive-game body:has(#arena)>header{height:42px;padding:0 18px}
+.immersive-game body:has(#arena) main{width:100%;max-width:none;padding:0}
+.immersive-game .arena-wrap{height:calc(100dvh - 42px)}
+.immersive-game .below,.immersive-game .footnote{display:none}
