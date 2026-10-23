@@ -3200,3 +3200,24 @@ html[data-motion="reduced"] .cover-button:hover img {
     bottom: 16px;
   }
 }
+
+/* Store filters must be available before the lazy publisher stylesheet. */
+.free-filter {
+  color: #a2b5a7;
+  font-size: 11px;
+  padding: 10px;
+  border: 1px solid #435749;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.free-filter.active {
+  color: #a4efb6;
+  border-color: #77d991;
+  background: #7fed9e13;
+}
+
+@media (max-width: 700px) {
+  .genre-filters { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .filter-row { flex-wrap: wrap; }
+  .free-filter { margin-left: auto; }
+}

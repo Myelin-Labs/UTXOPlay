@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { ccc } from "@ckb-ccc/connector-react";
+import "./marketplace.css";
+const loadCcc = () => import("@ckb-ccc/connector-react").then((m) => m.ccc);
 import {
   Plus,
   ArrowRight,
@@ -1265,8 +1266,10 @@ function Checkout({
     let live = true;
     setFee(null);
     if (order?.transaction && signer)
-      ccc.Transaction.from(order.transaction)
-        .getFee(signer.client)
+      loadCcc()
+        .then((ccc) =>
+          ccc.Transaction.from(order.transaction).getFee(signer.client),
+        )
         .then((value) => live && setFee(formatCkb(value)))
         .catch(
           () =>
@@ -1304,6 +1307,7 @@ function Checkout({
   }
   async function prepare() {
     await ensureWallet();
+    const ccc = await loadCcc();
     const tx = ccc.Transaction.from({
       outputs: order.outputs,
       outputsData: ["0x", "0x"],
@@ -1327,6 +1331,7 @@ function Checkout({
   }
   async function pay() {
     await ensureWallet();
+    const ccc = await loadCcc();
     const latest = await check();
     if (["confirmed", "confirming"].includes(latest.status)) return;
     if (latest.status === "rejected")

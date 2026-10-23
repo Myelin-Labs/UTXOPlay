@@ -2,7 +2,12 @@
 import assert from 'node:assert/strict';
 const base=process.env.STORE_URL||'http://127.0.0.1:8790';
 async function req(route,body,cookie='') {const response=await fetch(base+route,{method:body===undefined?'GET':'POST',headers:{Origin:base,'Content-Type':'application/json',Cookie:cookie},body:body===undefined?undefined:JSON.stringify(body)});const data=await response.json();return{status:response.status,data,cookie:response.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ')};}
-const a=await req('/api/guest',{}),b=await req('/api/guest',{});assert.equal(a.status,200);assert.equal(b.status,200);assert.notEqual(a.data.user.id,b.data.user.id);
+async function account(){
+ if(process.env.SMOKE_AUTH!=='wallet')return req('/api/guest',{});
+ const [{ccc},{randomBytes}]=await Promise.all([import('@ckb-ccc/shell'),import('node:crypto')]);const owner=ccc.ClientPublicMainnet.open();
+ try{const signer=new ccc.SignerCkbPrivateKey(owner.value,'0x'+randomBytes(32).toString('hex')),address=await signer.getRecommendedAddress();const challenge=await req('/api/auth/challenge',{address});assert.equal(challenge.status,200);return await req('/api/auth/verify',{id:challenge.data.id,proof:await signer.signMessage(challenge.data.message)},challenge.cookie);}finally{await owner.dispose();}
+}
+const a=await account(),b=await account();assert.equal(a.status,200);assert.equal(b.status,200);assert.notEqual(a.data.user.id,b.data.user.id);
 for (const name of ['chess','sling']) {
  const route='/games/'+name+'/api';const initial=await req(route+'/state',undefined,a.cookie);assert.equal(initial.status,200,JSON.stringify(initial.data));const separate=await req(route+'/state',undefined,b.cookie);assert.notEqual(initial.data.session.id,separate.data.session.id);
  const action=name==='chess'?{type:'move',uci:'e2e4'}:{type:'launch',dx:-90,dy:45};

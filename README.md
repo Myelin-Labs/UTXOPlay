@@ -40,7 +40,7 @@ Browser interaction checks covered the local storefront, mobile layout, chess mo
 
 The server deployment is under `/data/utxoplay`. `deploy/compose.yml` uses the existing external `stack-network` HTTPS proxy and a private game network. No game runtime port is exposed publicly. The proxy discovers the store through `VIRTUAL_HOST` and manages certificates for store.utxoplay.io, utxoplay.io and www.utxoplay.io. The latter two redirect to the canonical store origin.
 
-Build the game binaries on Debian Bookworm and copy them into `deploy/bin`. Build the frontend locally, then build the server image with `docker build -f deploy/Dockerfile -t utxoplay:0.5.0 .`. The server-side runtime secret is generated on the server, stored in `shared/runtime.env` with mode 0600, and never committed. Persistent platform and game directories must be writable by container UID 1000. Services restart automatically and have memory, CPU, process, privilege and log-size limits.
+Build the game binaries on Debian Bookworm and copy them into `deploy/bin`. Build the frontend locally, then build the server image with `docker build -f deploy/Dockerfile -t utxoplay:0.6.0 .`. The server-side runtime secret is generated on the server, stored in `shared/runtime.env` with mode 0600, and never committed. Persistent platform and game directories must be writable by container UID 1000. Services restart automatically and have memory, CPU, process, privilege and log-size limits.
 
 For upgrades, preserve `shared/` and record the existing image tag before recreation. Changing game rules or Myelin's pinned revision can invalidate existing exports: preserve matching runtime images and do not replace game state indiscriminately. A release pointer does not migrate old sessions.
 
@@ -82,3 +82,7 @@ See the [English architecture and business-flow audit](docs/marketplace-architec
 Set `STORE_CKB_ADDRESS` to the actual Store mainnet public receive address in the existing server-only environment file. Do not set a sample address. Until configured, the site explicitly keeps paid publication and checkout unavailable while free publication works. The Store does not hold wallet keys or take custody of revenue. No live mainnet payment was made by the automated test suite.
 
 Run `npm test` and `npm run build`. `node tests/marketplace-browser.mjs` starts a disposable localhost-only browser fixture at port 8795; its test login and simulated network checks must never be deployed. Mainnet payment acceptance across supported wallets still requires a funded, user-approved device test.
+
+## Store 0.6.0 performance
+
+Wallet and commerce tools load on demand. First-party games share visibility-aware rendering/polling; Teeworlds caches terrain, OpenStrike batches static geometry, and the chess board preserves square elements. Display preferences offer adaptive, high-detail and performance graphics. Static delivery uses prebuilt Brotli/gzip and immutable hashed bundles. Native simulation, replay formats and marketplace settlement rules remain unchanged. See [performance audit](docs/performance-audit.md) for measurements and validation.

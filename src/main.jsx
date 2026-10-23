@@ -1,7 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  lazy,
+  Suspense,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import { ccc } from "@ckb-ccc/connector-react";
+
 import {
   MotionConfig,
   motion,
@@ -62,8 +69,16 @@ import {
   apiError,
 } from "./ui-model.mjs";
 import "./style.css";
-import "./marketplace.css";
-import { Studio, VendorPlay, Purchases } from "./marketplace.jsx";
+const loadMarketplace = () => import("./marketplace.jsx");
+const Studio = lazy(() =>
+  loadMarketplace().then((m) => ({ default: m.Studio })),
+);
+const VendorPlay = lazy(() =>
+  loadMarketplace().then((m) => ({ default: m.VendorPlay })),
+);
+const Purchases = lazy(() =>
+  loadMarketplace().then((m) => ({ default: m.Purchases })),
+);
 import initialGames from "../server/catalog.json";
 async function api(url, body) {
   const r = await fetch(url, {
@@ -86,8 +101,6 @@ async function api(url, body) {
   return data;
 }
 const short = (a) => (a ? `${a.slice(0, 9)}…${a.slice(-6)}` : "");
-const filter = async (info) =>
-  ["CkbSecp256k1", "BtcEcdsa", "JoyId"].includes(info.signer.signType);
 function readMotion() {
   try {
     return localStorage.getItem("utxoplay:motion") || "system";
@@ -96,48 +109,50 @@ function readMotion() {
   }
 }
 function Root() {
-  const [client, setClient] = useState(null);
-  useEffect(() => {
-    const owner = ccc.ClientPublicMainnet.open();
-    setClient(owner.value);
-    return () => void owner.dispose();
-  }, []);
-  if (!client)
-    return (
-      <div className="boot" role="status">
-        <BrandIcon />
-        <span>Opening your playground…</span>
-        <Spinner />
-      </div>
+  const [Host, setHost] = useState(null),
+    [runtime, setRuntime] = useState({});
+  const ready = useRef(null),
+    pending = useRef(null);
+  const onState = useCallback((value) => {
+    ready.current = value;
+    setRuntime((old) =>
+      Object.keys(value).every((k) => old[k] === value[k]) ? old : value,
     );
+    pending.current?.resolve(value);
+    pending.current = null;
+  }, []);
+  const prepareWallet = useCallback(() => {
+    if (ready.current) return Promise.resolve(ready.current);
+    if (pending.current) return pending.current.promise;
+    let resolve, reject;
+    const promise = new Promise((yes, no) => {
+      resolve = yes;
+      reject = no;
+    });
+    const timer = setTimeout(() => {
+      pending.current?.reject(
+        new Error("Wallet tools took too long to load. Please try again."),
+      );
+      pending.current = null;
+    }, 20000);
+    promise.then(
+      () => clearTimeout(timer),
+      () => clearTimeout(timer),
+    );
+    pending.current = { promise, resolve, reject };
+    import("./wallet-runtime.jsx")
+      .then((m) => setHost(() => m.default))
+      .catch((e) => {
+        pending.current?.reject(e);
+        pending.current = null;
+      });
+    return promise;
+  }, []);
   return (
-    <ccc.Provider
-      defaultClient={client}
-      clientOptions={[{ client, name: "CKB Mainnet" }]}
-      name="UTXOPlay"
-      icon={location.origin + "/brand/utxoplay-logo-dark-192.png"}
-      signerFilter={filter}
-      hideKhie
-      connectorProps={{
-        role: "dialog",
-        "aria-modal": true,
-        "aria-label": "Choose your wallet",
-        style: {
-          "--background": "#181e1b",
-          "--divider": "#303b34",
-          "--btn-primary": "#222d26",
-          "--btn-primary-hover": "#344b3b",
-          "--btn-secondary": "#303b34",
-          "--btn-secondary-hover": "#415648",
-          "--icon-primary": "#edf5ef",
-          "--icon-secondary": "#a3b2a8",
-          "--tip-color": "#a3b2a8",
-          color: "#edf5ef",
-        },
-      }}
-    >
-      <App />
-    </ccc.Provider>
+    <>
+      <App walletApi={{ ...runtime, prepareWallet }} />
+      {Host && <Host onState={onState} />}
+    </>
   );
 }
 function useAccountResource(user, url, revision = 0) {
@@ -177,7 +192,7 @@ function useAccountResource(user, url, revision = 0) {
     ? state
     : { data: [], loading: !!user, error: "" };
 }
-function App() {
+function App({ walletApi }) {
   const [remoteGame, setRemoteGame] = useState(null),
     [vendorLoading, setVendorLoading] = useState(false),
     [freeOnly, setFreeOnly] = useState(false);
@@ -204,9 +219,22 @@ function App() {
     [frameStatus, setFrameStatus] = useState("loading"),
     [revision, setRevision] = useState(0),
     [motionSetting, setMotionSetting] = useState(readMotion),
+    [quality, setQuality] = useState(() => {
+      try {
+        return localStorage.getItem("utxoplay:quality") || "auto";
+      } catch {
+        return "auto";
+      }
+    }),
     [online, setOnline] = useState(navigator.onLine);
-  const signer = ccc.useSigner();
-  const { open, close: closePicker, disconnect, wallet, isOpen } = ccc.useCcc();
+  const {
+    signer,
+    close: closePicker = () => {},
+    disconnect = async () => {},
+    wallet,
+    isOpen = false,
+    prepareWallet,
+  } = walletApi;
   const previousSigner = useRef(null),
     signing = useRef(false),
     authEpoch = useRef(0),
@@ -457,14 +485,29 @@ function App() {
     setWalletError("");
     setDialog("wallet");
   }
-  function chooseWallet(change = false) {
+  async function chooseWallet(change = false) {
     if (signer && !change) {
       void signIn();
       return;
     }
-    setIntent(true);
-    flushSync(() => setDialog(null));
-    open();
+    setWalletBusy(true);
+    setWalletError("");
+    setWalletPhase("loading");
+    try {
+      const runtime = await prepareWallet();
+      setIntent(true);
+      flushSync(() => setDialog(null));
+      runtime.open();
+    } catch (e) {
+      setIntent(false);
+      setDialog("wallet");
+      setWalletError(
+        "Wallet tools could not load. Check your connection and try again.",
+      );
+    } finally {
+      setWalletBusy(false);
+      setWalletPhase("idle");
+    }
   }
   async function logout() {
     setWalletBusy(true);
@@ -736,595 +779,615 @@ function App() {
             {accountError && (
               <Notice onRetry={loadAccount}>{accountError}</Notice>
             )}
-            {page === "/" ? (
-              <>
-                <PageHeading
-                  eyebrow="PRESS PLAY. FEEL SOMETHING."
-                  title={
-                    <>
-                      Your next <em>good time.</em>
-                    </>
-                  }
-                  description="Independent worlds. No downloads. A lot of ‘one more round’."
-                >
-                  <div className="edition">
-                    <span>CURATED COLLECTION</span>
-                    <b>
-                      VOL. 01 <i>↗</i>
-                    </b>
-                  </div>
-                </PageHeading>
-                <section
-                  className={"hero " + hero.id}
-                  aria-label="Featured game"
-                  style={{ "--accent": gameMeta[hero.id]?.accent }}
-                >
-                  <AnimatePresence initial={false}>
-                    <motion.img
-                      key={hero.id}
-                      className="hero-image"
-                      src={hero.cover}
-                      alt=""
-                      initial={{ opacity: 0, scale: reduced ? 1 : 1.025 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.45 }}
-                    />
-                  </AnimatePresence>
-                  <div className="hero-shade" />
-                  <div className="hero-orbit" aria-hidden="true" />
-                  <div className="hero-content">
-                    <span className="pill">
-                      <Sparkles size={12} />
-                      {hero.id === "openstrike"
-                        ? "NEW ON THE PLAYGROUND"
-                        : "IN THE SPOTLIGHT"}
-                    </span>
-                    <motion.div
-                      key={hero.id}
-                      initial={{ opacity: 0, y: reduced ? 0 : 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <p className="hero-game-name">
-                        {hero.title} <span>／ {hero.genre}</span>
-                      </p>
-                      <h2>
-                        {hero.headline.split("|").map((line, i) => (
-                          <React.Fragment key={line}>
-                            {i > 0 && <br />}
-                            {line}
-                          </React.Fragment>
-                        ))}
-                      </h2>
-                      <p className="hero-description">{hero.heroDescription}</p>
-                    </motion.div>
-                    <div className="hero-actions">
-                      <button
-                        className="primary"
-                        disabled={!!launching || loadingUser}
-                        onClick={() => launch(hero.id)}
-                      >
-                        {launching === hero.id ? (
-                          <Spinner />
-                        ) : (
-                          <Play size={17} fill="currentColor" />
-                        )}
-                        {launching === hero.id
-                          ? "Opening…"
-                          : "Play " + hero.title}
-                        <ArrowUpRight size={17} />
-                      </button>
-                      <button
-                        className="hero-details"
-                        onClick={() => setDetails(hero)}
-                      >
-                        Take a look <ArrowRight size={17} />
-                      </button>
-                    </div>
-                    <div className="hero-trust">
-                      <span>
-                        <Check size={13} />
-                        Always free
-                      </span>
-                      <span>
-                        <Check size={13} />
-                        No wallet required
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hero-bottom">
-                    <span className="hero-caption">
-                      {gameMeta[hero.id]?.tag}
-                    </span>
-                    <span className="hero-index">
-                      0{featuredGames.findIndex((g) => g.id === hero.id) + 1}
-                      <i> / 0{featuredGames.length}</i>
-                    </span>
-                    <button
-                      className="hero-next icon-btn"
-                      aria-label="Next featured game"
-                      onClick={() =>
-                        setFeatured(
-                          featuredGames[
-                            (featuredGames.findIndex((g) => g.id === hero.id) +
-                              1) %
-                              featuredGames.length
-                          ].id,
-                        )
-                      }
-                    >
-                      <ArrowRight size={18} />
-                    </button>
-                  </div>
-                </section>
-                <div className="feature-rail" aria-label="Choose featured game">
-                  {featuredGames.map((g, i) => (
-                    <button
-                      key={g.id}
-                      aria-pressed={hero.id === g.id}
-                      onClick={() => setFeatured(g.id)}
-                      className={hero.id === g.id ? "active" : ""}
-                    >
-                      <img src={g.cover} alt="" />
-                      <span>
-                        <small>
-                          0{i + 1} / {g.genre}
-                        </small>
-                        <b>{g.title}</b>
-                      </span>
-                      {hero.id === g.id && (
-                        <motion.i
-                          layoutId="featured-mark"
-                          className="featured-mark"
-                        />
-                      )}
-                    </button>
-                  ))}
+            <Suspense
+              fallback={
+                <div className="empty" role="status">
+                  <Spinner />
+                  Opening your workspace…
                 </div>
-                <div className="benefits">
-                  <span>
-                    <Globe size={16} />
-                    Open a tab. Start a game.
-                  </span>
-                  <span>
-                    <Wallet size={16} />A wallet when you want one.
-                  </span>
-                  <span>
-                    <ShieldCheck size={16} />A replay you can keep.
-                  </span>
-                </div>
-                {libraryGames.length > 0 && (
-                  <section className="recent-strip">
-                    <div>
-                      <span className="eyebrow">BACK FOR ANOTHER ROUND?</span>
-                      <h2>Jump back in.</h2>
+              }
+            >
+              {page === "/" ? (
+                <>
+                  <PageHeading
+                    eyebrow="PRESS PLAY. FEEL SOMETHING."
+                    title={
+                      <>
+                        Your next <em>good time.</em>
+                      </>
+                    }
+                    description="Independent worlds. No downloads. A lot of ‘one more round’."
+                  >
+                    <div className="edition">
+                      <span>CURATED COLLECTION</span>
+                      <b>
+                        VOL. 01 <i>↗</i>
+                      </b>
                     </div>
-                    <button
-                      className="recent-game"
-                      onClick={() => launch(libraryGames[0].id)}
-                      disabled={!!launching}
-                    >
-                      <img src={libraryGames[0].cover} alt="" />
-                      <span>
-                        <strong>{libraryGames[0].title}</strong>
-                        <small>{gameMeta[libraryGames[0].id]?.length}</small>
+                  </PageHeading>
+                  <section
+                    className={"hero " + hero.id}
+                    aria-label="Featured game"
+                    style={{ "--accent": gameMeta[hero.id]?.accent }}
+                  >
+                    <AnimatePresence initial={false}>
+                      <motion.img
+                        key={hero.id}
+                        className="hero-image"
+                        src={hero.cover}
+                        alt=""
+                        initial={{ opacity: 0, scale: reduced ? 1 : 1.025 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.45 }}
+                      />
+                    </AnimatePresence>
+                    <div className="hero-shade" />
+                    <div className="hero-orbit" aria-hidden="true" />
+                    <div className="hero-content">
+                      <span className="pill">
+                        <Sparkles size={12} />
+                        {hero.id === "openstrike"
+                          ? "NEW ON THE PLAYGROUND"
+                          : "IN THE SPOTLIGHT"}
                       </span>
-                      <Play size={18} fill="currentColor" />
-                    </button>
-                    <button
-                      className="text-link"
-                      onClick={() => go("/library")}
-                    >
-                      Your library <ArrowRight size={15} />
-                    </button>
+                      <motion.div
+                        key={hero.id}
+                        initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <p className="hero-game-name">
+                          {hero.title} <span>／ {hero.genre}</span>
+                        </p>
+                        <h2>
+                          {hero.headline.split("|").map((line, i) => (
+                            <React.Fragment key={line}>
+                              {i > 0 && <br />}
+                              {line}
+                            </React.Fragment>
+                          ))}
+                        </h2>
+                        <p className="hero-description">
+                          {hero.heroDescription}
+                        </p>
+                      </motion.div>
+                      <div className="hero-actions">
+                        <button
+                          className="primary"
+                          disabled={!!launching || loadingUser}
+                          onClick={() => launch(hero.id)}
+                        >
+                          {launching === hero.id ? (
+                            <Spinner />
+                          ) : (
+                            <Play size={17} fill="currentColor" />
+                          )}
+                          {launching === hero.id
+                            ? "Opening…"
+                            : "Play " + hero.title}
+                          <ArrowUpRight size={17} />
+                        </button>
+                        <button
+                          className="hero-details"
+                          onClick={() => setDetails(hero)}
+                        >
+                          Take a look <ArrowRight size={17} />
+                        </button>
+                      </div>
+                      <div className="hero-trust">
+                        <span>
+                          <Check size={13} />
+                          Always free
+                        </span>
+                        <span>
+                          <Check size={13} />
+                          No wallet required
+                        </span>
+                      </div>
+                    </div>
+                    <div className="hero-bottom">
+                      <span className="hero-caption">
+                        {gameMeta[hero.id]?.tag}
+                      </span>
+                      <span className="hero-index">
+                        0{featuredGames.findIndex((g) => g.id === hero.id) + 1}
+                        <i> / 0{featuredGames.length}</i>
+                      </span>
+                      <button
+                        className="hero-next icon-btn"
+                        aria-label="Next featured game"
+                        onClick={() =>
+                          setFeatured(
+                            featuredGames[
+                              (featuredGames.findIndex(
+                                (g) => g.id === hero.id,
+                              ) +
+                                1) %
+                                featuredGames.length
+                            ].id,
+                          )
+                        }
+                      >
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
                   </section>
-                )}
-                <section className="collection" id="collection">
-                  <div className="section-head">
-                    <div>
-                      <span className="eyebrow">FIND YOUR NEXT FAVORITE</span>
-                      <h2>
-                        Small collection. <span>Big play energy.</span>
-                      </h2>
-                    </div>
-                    <label className="search">
-                      <Search size={18} />
-                      <input
-                        ref={searchRef}
-                        aria-label="Search games"
-                        placeholder="Search your next obsession"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                      />
-                      {query ? (
-                        <button
-                          onClick={() => {
-                            setQuery("");
-                            searchRef.current?.focus();
-                          }}
-                          aria-label="Clear search"
-                        >
-                          <X size={16} />
-                        </button>
-                      ) : (
-                        <kbd>/</kbd>
-                      )}
-                    </label>
-                  </div>
-                  <div className="filter-row">
-                    <div
-                      className="genre-filters"
-                      role="group"
-                      aria-label="Filter by genre"
-                    >
-                      {genres.map((g) => (
-                        <button
-                          key={g}
-                          aria-pressed={genre === g}
-                          className={genre === g ? "active" : ""}
-                          onClick={() => setGenre(g)}
-                        >
-                          {g}
-                          {g === "All games" && <span>{games.length}</span>}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      className={"free-filter " + (freeOnly ? "active" : "")}
-                      aria-pressed={freeOnly}
-                      onClick={() => setFreeOnly((v) => !v)}
-                    >
-                      Free to play
-                    </button>
-                    <label className="mode-select">
-                      <Users size={15} />
-                      <span className="sr-only">Play style</span>
-                      <select
-                        aria-label="Play style"
-                        value={mode}
-                        onChange={(e) => setMode(e.target.value)}
-                      >
-                        <option value="all">Any play style</option>
-                        <option value="solo">Play solo</option>
-                        <option value="friends">With a friend</option>
-                      </select>
-                    </label>
-                    <span className="results" role="status">
-                      {filtered.length}{" "}
-                      {filtered.length === 1 ? "game" : "games"}
-                    </span>
-                  </div>
-                  <div className="game-grid">
-                    {filtered.map((g) => (
-                      <GameCard
+                  <div
+                    className="feature-rail"
+                    aria-label="Choose featured game"
+                  >
+                    {featuredGames.map((g, i) => (
+                      <button
                         key={g.id}
-                        g={g}
-                        onPlay={launch}
-                        onDetails={setDetails}
-                        launching={launching}
-                      />
+                        aria-pressed={hero.id === g.id}
+                        onClick={() => setFeatured(g.id)}
+                        className={hero.id === g.id ? "active" : ""}
+                      >
+                        <img src={g.cover} alt="" />
+                        <span>
+                          <small>
+                            0{i + 1} / {g.genre}
+                          </small>
+                          <b>{g.title}</b>
+                        </span>
+                        {hero.id === g.id && (
+                          <motion.i
+                            layoutId="featured-mark"
+                            className="featured-mark"
+                          />
+                        )}
+                      </button>
                     ))}
                   </div>
-                  {!filtered.length && (
-                    <div className="empty">
-                      <Search size={32} />
-                      <h3>No matches. Plenty to play.</h3>
+                  <div className="benefits">
+                    <span>
+                      <Globe size={16} />
+                      Open a tab. Start a game.
+                    </span>
+                    <span>
+                      <Wallet size={16} />A wallet when you want one.
+                    </span>
+                    <span>
+                      <ShieldCheck size={16} />A replay you can keep.
+                    </span>
+                  </div>
+                  {libraryGames.length > 0 && (
+                    <section className="recent-strip">
+                      <div>
+                        <span className="eyebrow">BACK FOR ANOTHER ROUND?</span>
+                        <h2>Jump back in.</h2>
+                      </div>
+                      <button
+                        className="recent-game"
+                        onClick={() => launch(libraryGames[0].id)}
+                        disabled={!!launching}
+                      >
+                        <img src={libraryGames[0].cover} alt="" />
+                        <span>
+                          <strong>{libraryGames[0].title}</strong>
+                          <small>{gameMeta[libraryGames[0].id]?.length}</small>
+                        </span>
+                        <Play size={18} fill="currentColor" />
+                      </button>
+                      <button
+                        className="text-link"
+                        onClick={() => go("/library")}
+                      >
+                        Your library <ArrowRight size={15} />
+                      </button>
+                    </section>
+                  )}
+                  <section className="collection" id="collection">
+                    <div className="section-head">
+                      <div>
+                        <span className="eyebrow">FIND YOUR NEXT FAVORITE</span>
+                        <h2>
+                          Small collection. <span>Big play energy.</span>
+                        </h2>
+                      </div>
+                      <label className="search">
+                        <Search size={18} />
+                        <input
+                          ref={searchRef}
+                          aria-label="Search games"
+                          placeholder="Search your next obsession"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                        />
+                        {query ? (
+                          <button
+                            onClick={() => {
+                              setQuery("");
+                              searchRef.current?.focus();
+                            }}
+                            aria-label="Clear search"
+                          >
+                            <X size={16} />
+                          </button>
+                        ) : (
+                          <kbd>/</kbd>
+                        )}
+                      </label>
+                    </div>
+                    <div className="filter-row">
+                      <div
+                        className="genre-filters"
+                        role="group"
+                        aria-label="Filter by genre"
+                      >
+                        {genres.map((g) => (
+                          <button
+                            key={g}
+                            aria-pressed={genre === g}
+                            className={genre === g ? "active" : ""}
+                            onClick={() => setGenre(g)}
+                          >
+                            {g}
+                            {g === "All games" && <span>{games.length}</span>}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        className={"free-filter " + (freeOnly ? "active" : "")}
+                        aria-pressed={freeOnly}
+                        onClick={() => setFreeOnly((v) => !v)}
+                      >
+                        Free to play
+                      </button>
+                      <label className="mode-select">
+                        <Users size={15} />
+                        <span className="sr-only">Play style</span>
+                        <select
+                          aria-label="Play style"
+                          value={mode}
+                          onChange={(e) => setMode(e.target.value)}
+                        >
+                          <option value="all">Any play style</option>
+                          <option value="solo">Play solo</option>
+                          <option value="friends">With a friend</option>
+                        </select>
+                      </label>
+                      <span className="results" role="status">
+                        {filtered.length}{" "}
+                        {filtered.length === 1 ? "game" : "games"}
+                      </span>
+                    </div>
+                    <div className="game-grid">
+                      {filtered.map((g) => (
+                        <GameCard
+                          key={g.id}
+                          g={g}
+                          onPlay={launch}
+                          onDetails={setDetails}
+                          launching={launching}
+                        />
+                      ))}
+                    </div>
+                    {!filtered.length && (
+                      <div className="empty">
+                        <Search size={32} />
+                        <h3>No matches. Plenty to play.</h3>
+                        <p>
+                          Try another search or clear your filters to see all{" "}
+                          {games.length} games.
+                        </p>
+                        <button className="outline" onClick={resetFilters}>
+                          Clear filters <ArrowRight size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </section>
+                  <section className="wallet-banner">
+                    <div className="wallet-art" aria-hidden="true">
+                      <BrandIcon />
+                      <span>
+                        <Check size={13} />
+                      </span>
+                    </div>
+                    <div>
+                      <span className="eyebrow">SAME YOU. ANY SCREEN.</span>
+                      <h2>Your games, wherever you land.</h2>
                       <p>
-                        Try another search or clear your filters to see all{" "}
-                        {games.length} games.
+                        Connect a CKB-compatible wallet for a library you can
+                        return to.
+                        <br />
+                        Just here to play? A guest session works too.
                       </p>
-                      <button className="outline" onClick={resetFilters}>
-                        Clear filters <ArrowRight size={16} />
+                    </div>
+                    <button className="outline" onClick={connect}>
+                      {signedIn ? "Your account" : "Meet your wallet library"}
+                      <ArrowUpRight size={17} />
+                    </button>
+                  </section>
+                </>
+              ) : page === "/library" ? (
+                <>
+                  <PageHeading
+                    eyebrow="YOUR PERSONAL PLAYGROUND"
+                    title="Welcome back to play."
+                    description={
+                      signedIn
+                        ? "Your wallet library. Ready whenever you are."
+                        : "Your guest library lives in this browser. Make yourself at home."
+                    }
+                  />
+                  <div className="library-summary">
+                    <div className="identity-orb">
+                      <Library size={24} />
+                    </div>
+                    <div>
+                      <strong>
+                        {signedIn
+                          ? short(user.address)
+                          : "Your guest collection"}
+                      </strong>
+                      <p>
+                        {libraryGames.length} games played ·{" "}
+                        {signedIn
+                          ? "Available when you sign in on another device"
+                          : "Keep this browser’s cookies to keep access"}
+                      </p>
+                    </div>
+                    <button className="outline" onClick={connect}>
+                      {signedIn ? "Account details" : "Connect a wallet"}
+                      <ArrowUpRight size={16} />
+                    </button>
+                  </div>
+                  {libraryState.error ? (
+                    <Notice onRetry={() => setRevision((r) => r + 1)}>
+                      {libraryState.error}
+                    </Notice>
+                  ) : loadingUser || libraryState.loading ? (
+                    <Skeletons />
+                  ) : libraryGames.length ? (
+                    <div className="game-grid library-grid">
+                      {libraryGames.map((g) => (
+                        <GameCard
+                          key={g.id}
+                          g={g}
+                          updated={g.updated}
+                          onPlay={launch}
+                          onDetails={setDetails}
+                          launching={launching}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty collection-empty">
+                      <Gamepad2 size={42} />
+                      <h2>Every library starts with a first game.</h2>
+                      <p>
+                        Play something you like. It will be waiting right here.
+                      </p>
+                      <button className="primary" onClick={() => go("/")}>
+                        Find a game <ArrowRight size={17} />
                       </button>
                     </div>
                   )}
-                </section>
-                <section className="wallet-banner">
-                  <div className="wallet-art" aria-hidden="true">
-                    <BrandIcon />
-                    <span>
-                      <Check size={13} />
-                    </span>
-                  </div>
-                  <div>
-                    <span className="eyebrow">SAME YOU. ANY SCREEN.</span>
-                    <h2>Your games, wherever you land.</h2>
-                    <p>
-                      Connect a CKB-compatible wallet for a library you can
-                      return to.
-                      <br />
-                      Just here to play? A guest session works too.
+                  {!signedIn && (
+                    <p className="library-note">
+                      <ShieldCheck size={16} />
+                      Wallet and guest libraries are separate. Signing in won’t
+                      move your guest progress.
                     </p>
-                  </div>
-                  <button className="outline" onClick={connect}>
-                    {signedIn ? "Your account" : "Meet your wallet library"}
-                    <ArrowUpRight size={17} />
-                  </button>
-                </section>
-              </>
-            ) : page === "/library" ? (
-              <>
-                <PageHeading
-                  eyebrow="YOUR PERSONAL PLAYGROUND"
-                  title="Welcome back to play."
-                  description={
-                    signedIn
-                      ? "Your wallet library. Ready whenever you are."
-                      : "Your guest library lives in this browser. Make yourself at home."
-                  }
+                  )}
+                </>
+              ) : page === "/developers" ? (
+                <Studio
+                  key={user?.id || "anonymous"}
+                  user={user}
+                  onConnect={connect}
+                  onCatalogChange={refreshCatalog}
                 />
-                <div className="library-summary">
-                  <div className="identity-orb">
-                    <Library size={24} />
-                  </div>
-                  <div>
-                    <strong>
-                      {signedIn ? short(user.address) : "Your guest collection"}
-                    </strong>
-                    <p>
-                      {libraryGames.length} games played ·{" "}
-                      {signedIn
-                        ? "Available when you sign in on another device"
-                        : "Keep this browser’s cookies to keep access"}
-                    </p>
-                  </div>
-                  <button className="outline" onClick={connect}>
-                    {signedIn ? "Account details" : "Connect a wallet"}
-                    <ArrowUpRight size={16} />
-                  </button>
-                </div>
-                {libraryState.error ? (
-                  <Notice onRetry={() => setRevision((r) => r + 1)}>
-                    {libraryState.error}
-                  </Notice>
-                ) : loadingUser || libraryState.loading ? (
-                  <Skeletons />
-                ) : libraryGames.length ? (
-                  <div className="game-grid library-grid">
-                    {libraryGames.map((g) => (
-                      <GameCard
-                        key={g.id}
-                        g={g}
-                        updated={g.updated}
-                        onPlay={launch}
-                        onDetails={setDetails}
-                        launching={launching}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty collection-empty">
-                    <Gamepad2 size={42} />
-                    <h2>Every library starts with a first game.</h2>
-                    <p>
-                      Play something you like. It will be waiting right here.
-                    </p>
-                    <button className="primary" onClick={() => go("/")}>
-                      Find a game <ArrowRight size={17} />
-                    </button>
-                  </div>
-                )}
-                {!signedIn && (
-                  <p className="library-note">
-                    <ShieldCheck size={16} />
-                    Wallet and guest libraries are separate. Signing in won’t
-                    move your guest progress.
-                  </p>
-                )}
-              </>
-            ) : page === "/developers" ? (
-              <Studio
-                key={user?.id || "anonymous"}
-                user={user}
-                onConnect={connect}
-                onCatalogChange={refreshCatalog}
-              />
-            ) : page === "/purchases" ? (
-              <Purchases
-                key={user?.id || "anonymous"}
-                user={user}
-                signer={signer}
-                onConnect={connect}
-                onPlay={launch}
-              />
-            ) : game?.vendor ? (
-              <>
-                <button className="back" onClick={() => go("/")}>
-                  <ArrowLeft size={16} />
-                  Store
-                </button>
-                <VendorPlay
-                  key={game.id + ":" + (user?.id || "anonymous")}
-                  game={game}
+              ) : page === "/purchases" ? (
+                <Purchases
+                  key={user?.id || "anonymous"}
                   user={user}
                   signer={signer}
                   onConnect={connect}
-                  onRefresh={() => setRevision((r) => r + 1)}
-                  onStartGuest={() => launch(game.id)}
+                  onPlay={launch}
                 />
-              </>
-            ) : vendorLoading ? (
-              <div className="empty" role="status">
-                <Spinner />
-                Opening game…
-              </div>
-            ) : game ? (
-              <>
-                <div className="play-heading">
-                  <button onClick={() => go("/")} className="back">
+              ) : game?.vendor ? (
+                <>
+                  <button className="back" onClick={() => go("/")}>
                     <ArrowLeft size={16} />
                     Store
                   </button>
-                  <span className="play-divider">/</span>
-                  <span>{game.title}</span>
-                  <div className="play-tools">
-                    <button
-                      onClick={() => setDialog("reload")}
-                      aria-label="Reload game"
-                      title="Reload game"
-                    >
-                      <RefreshCw size={16} />
+                  <VendorPlay
+                    key={game.id + ":" + (user?.id || "anonymous")}
+                    game={game}
+                    user={user}
+                    signer={signer}
+                    onConnect={connect}
+                    onRefresh={() => setRevision((r) => r + 1)}
+                    onStartGuest={() => launch(game.id)}
+                  />
+                </>
+              ) : vendorLoading ? (
+                <div className="empty" role="status">
+                  <Spinner />
+                  Opening game…
+                </div>
+              ) : game ? (
+                <>
+                  <div className="play-heading">
+                    <button onClick={() => go("/")} className="back">
+                      <ArrowLeft size={16} />
+                      Store
                     </button>
-                    <button
-                      onClick={() => setDialog("controls")}
-                      aria-label="Game controls"
-                      title="Game controls"
-                    >
-                      <Gamepad2 size={17} />
-                      <span>Controls</span>
-                    </button>
-                    <button
-                      onClick={immersive ? exitImmersive : enterImmersive}
-                      aria-label={
-                        immersive ? "Exit immersive mode" : "Fullscreen"
+                    <span className="play-divider">/</span>
+                    <span>{game.title}</span>
+                    <div className="play-tools">
+                      <button
+                        onClick={() => setDialog("reload")}
+                        aria-label="Reload game"
+                        title="Reload game"
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                      <button
+                        onClick={() => setDialog("controls")}
+                        aria-label="Game controls"
+                        title="Game controls"
+                      >
+                        <Gamepad2 size={17} />
+                        <span>Controls</span>
+                      </button>
+                      <button
+                        onClick={immersive ? exitImmersive : enterImmersive}
+                        aria-label={
+                          immersive ? "Exit immersive mode" : "Fullscreen"
+                        }
+                      >
+                        {immersive ? <X size={17} /> : <Expand size={17} />}
+                        <span>{immersive ? "Exit" : "Fullscreen"}</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="play-title">
+                    <div>
+                      <div className="eyebrow">
+                        {game.genre}
+                        <span>·</span>
+                        {game.players}
+                      </div>
+                      <h1>{game.title}</h1>
+                    </div>
+                    <span className="save-indicator">
+                      <i />
+                      {loadingUser
+                        ? "Checking account"
+                        : signedIn
+                          ? "Wallet library"
+                          : user
+                            ? "Guest library"
+                            : "Free to play"}
+                    </span>
+                  </div>
+                  {loadingUser ? (
+                    <div className="launch-placeholder" role="status">
+                      <Spinner />
+                      <h2>Getting your playground ready…</h2>
+                    </div>
+                  ) : user ? (
+                    <div
+                      className={
+                        "game-stage " +
+                        (frameStatus === "ready" ? "is-ready" : "")
                       }
                     >
-                      {immersive ? <X size={17} /> : <Expand size={17} />}
-                      <span>{immersive ? "Exit" : "Fullscreen"}</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="play-title">
-                  <div>
-                    <div className="eyebrow">
-                      {game.genre}
-                      <span>·</span>
-                      {game.players}
+                      <iframe
+                        ref={frameRef}
+                        key={game.id + ":" + frameKey}
+                        className={"game-frame " + game.id}
+                        src={"/games/" + game.id + "/"}
+                        title={game.title}
+                        onLoad={syncFrame}
+                        allow="fullscreen; autoplay"
+                        allowFullScreen
+                      />
+                      {frameStatus !== "ready" && (
+                        <div className="frame-loading" role="status">
+                          {frameStatus === "slow" ? (
+                            <>
+                              <WifiOff size={30} />
+                              <h2>The game is taking a little longer.</h2>
+                              <p>
+                                Check your connection, then try reloading the
+                                game.
+                              </p>
+                              <button
+                                className="primary"
+                                onClick={() => setFrameKey((k) => k + 1)}
+                              >
+                                <RefreshCw size={16} />
+                                Try again
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <Spinner />
+                              <h2>Opening {game.title}…</h2>
+                              <p>
+                                Getting everything ready for your next round.
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <h1>{game.title}</h1>
-                  </div>
-                  <span className="save-indicator">
-                    <i />
-                    {loadingUser
-                      ? "Checking account"
-                      : signedIn
-                        ? "Wallet library"
-                        : user
-                          ? "Guest library"
-                          : "Free to play"}
-                  </span>
-                </div>
-                {loadingUser ? (
-                  <div className="launch-placeholder" role="status">
-                    <Spinner />
-                    <h2>Getting your playground ready…</h2>
-                  </div>
-                ) : user ? (
-                  <div
-                    className={
-                      "game-stage " +
-                      (frameStatus === "ready" ? "is-ready" : "")
-                    }
-                  >
-                    <iframe
-                      ref={frameRef}
-                      key={game.id + ":" + frameKey}
-                      className={"game-frame " + game.id}
-                      src={"/games/" + game.id + "/"}
-                      title={game.title}
-                      onLoad={syncFrame}
-                      allow="fullscreen; autoplay"
-                      allowFullScreen
-                    />
-                    {frameStatus !== "ready" && (
-                      <div className="frame-loading" role="status">
-                        {frameStatus === "slow" ? (
-                          <>
-                            <WifiOff size={30} />
-                            <h2>The game is taking a little longer.</h2>
-                            <p>
-                              Check your connection, then try reloading the
-                              game.
-                            </p>
-                            <button
-                              className="primary"
-                              onClick={() => setFrameKey((k) => k + 1)}
-                            >
-                              <RefreshCw size={16} />
-                              Try again
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <Spinner />
-                            <h2>Opening {game.title}…</h2>
-                            <p>Getting everything ready for your next round.</p>
-                          </>
-                        )}
+                  ) : (
+                    <div
+                      className="launch-placeholder"
+                      style={{ "--launch-cover": `url(${game.cover})` }}
+                    >
+                      <div>
+                        <span className="pill">FREE · IN YOUR BROWSER</span>
+                        <h2>Your next round is waiting.</h2>
+                        <p>
+                          Play as a guest, or connect a wallet to open your
+                          library.
+                        </p>
+                        <button
+                          className="primary"
+                          disabled={!!launching}
+                          onClick={() => launch(game.id)}
+                        >
+                          {launching ? <Spinner /> : <Play size={17} />}Play as
+                          a guest <ArrowRight size={17} />
+                        </button>
+                        <button className="text-link" onClick={connect}>
+                          Connect a wallet instead <Wallet size={15} />
+                        </button>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    className="launch-placeholder"
-                    style={{ "--launch-cover": `url(${game.cover})` }}
-                  >
+                    </div>
+                  )}
+                  <div className="play-info">
                     <div>
-                      <span className="pill">FREE · IN YOUR BROWSER</span>
-                      <h2>Your next round is waiting.</h2>
+                      <Gamepad2 size={21} />
+                      <h3>Find your rhythm.</h3>
+                      <p>{game.controls}</p>
+                    </div>
+                    <div>
+                      <ShieldCheck size={21} />
+                      <h3>A round worth keeping.</h3>
                       <p>
-                        Play as a guest, or connect a wallet to open your
-                        library.
+                        {["teeworlds", "openstrike"].includes(game.id)
+                          ? "Completed rounds are replayed and saved to your account. Live rounds continue if you leave the page. Download your verified export after a match."
+                          : "Your moves and launches save as you play. Replay and export your session inside the game."}
                       </p>
-                      <button
-                        className="primary"
-                        disabled={!!launching}
-                        onClick={() => launch(game.id)}
-                      >
-                        {launching ? <Spinner /> : <Play size={17} />}Play as a
-                        guest <ArrowRight size={17} />
-                      </button>
-                      <button className="text-link" onClick={connect}>
-                        Connect a wallet instead <Wallet size={15} />
-                      </button>
+                      <p>
+                        {signedIn
+                          ? "Sign back in with this wallet to return to your library."
+                          : "Guest saves belong to this browser. Wallet accounts have a separate library."}
+                      </p>
                     </div>
                   </div>
-                )}
-                <div className="play-info">
-                  <div>
-                    <Gamepad2 size={21} />
-                    <h3>Find your rhythm.</h3>
-                    <p>{game.controls}</p>
-                  </div>
-                  <div>
-                    <ShieldCheck size={21} />
-                    <h3>A round worth keeping.</h3>
-                    <p>
-                      {["teeworlds", "openstrike"].includes(game.id)
-                        ? "Completed rounds are replayed and saved to your account. Live rounds continue if you leave the page. Download your verified export after a match."
-                        : "Your moves and launches save as you play. Replay and export your session inside the game."}
-                    </p>
-                    <p>
-                      {signedIn
-                        ? "Sign back in with this wallet to return to your library."
-                        : "Guest saves belong to this browser. Wallet accounts have a separate library."}
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="empty">
-                <Gamepad2 size={38} />
-                <h1>
-                  {page.startsWith("/play/vendor-")
-                    ? "This game isn’t currently listed."
-                    : "This page took a wrong turn."}
-                </h1>
-                <p>
-                  {page.startsWith("/play/vendor-")
-                    ? "If you already own it, sign in with your purchasing wallet and open your library."
-                    : "There are better adventures in the store."}
-                </p>
-                {page.startsWith("/play/vendor-") && !signedIn && (
-                  <button className="outline" onClick={connect}>
-                    Connect purchasing wallet
+                </>
+              ) : (
+                <div className="empty">
+                  <Gamepad2 size={38} />
+                  <h1>
+                    {page.startsWith("/play/vendor-")
+                      ? "This game isn’t currently listed."
+                      : "This page took a wrong turn."}
+                  </h1>
+                  <p>
+                    {page.startsWith("/play/vendor-")
+                      ? "If you already own it, sign in with your purchasing wallet and open your library."
+                      : "There are better adventures in the store."}
+                  </p>
+                  {page.startsWith("/play/vendor-") && !signedIn && (
+                    <button className="outline" onClick={connect}>
+                      Connect purchasing wallet
+                    </button>
+                  )}
+                  <button className="primary" onClick={() => go("/")}>
+                    Back to the playground <ArrowRight size={17} />
                   </button>
-                )}
-                <button className="primary" onClick={() => go("/")}>
-                  Back to the playground <ArrowRight size={17} />
-                </button>
-              </div>
-            )}
+                </div>
+              )}
+            </Suspense>
             <footer className="footer">
               <div>
                 <button className="brand" onClick={() => go("/")}>
@@ -1462,9 +1525,11 @@ function App() {
                   {walletBusy ? <Spinner /> : <Wallet size={17} />}
                   <span>
                     {walletBusy
-                      ? walletPhase === "verifying"
-                        ? "Verifying your signature…"
-                        : "Confirm in your wallet…"
+                      ? walletPhase === "loading"
+                        ? "Loading wallet tools…"
+                        : walletPhase === "verifying"
+                          ? "Verifying your signature…"
+                          : "Confirm in your wallet…"
                       : signer
                         ? "Sign in with " + (wallet?.name || "wallet")
                         : "Choose a wallet"}
@@ -1498,7 +1563,7 @@ function App() {
               <Settings2 />
             </div>
             <div className="eyebrow">MAKE YOURSELF COMFORTABLE</div>
-            <h2>Your kind of motion.</h2>
+            <h2>Comfort meets performance.</h2>
             <p>
               Keep the little transitions, or make the store a quieter place.
             </p>
@@ -1532,9 +1597,51 @@ function App() {
                 </label>
               ))}
             </fieldset>
+            <fieldset className="motion-options">
+              <legend>Game graphics</legend>
+              {[
+                [
+                  "auto",
+                  "Adaptive · recommended",
+                  "Balances sharpness and smooth play on your device.",
+                ],
+                [
+                  "high",
+                  "High detail",
+                  "Sharper rendering on high-density screens.",
+                ],
+                [
+                  "low",
+                  "Performance",
+                  "Lower rendering resolution for lighter GPU use.",
+                ],
+              ].map(([value, label, description]) => (
+                <label key={value}>
+                  <input
+                    type="radio"
+                    name="quality"
+                    value={value}
+                    checked={quality === value}
+                    onChange={() => {
+                      setQuality(value);
+                      try {
+                        localStorage.setItem("utxoplay:quality", value);
+                      } catch {}
+                      window.dispatchEvent(new Event("utxoplay:quality"));
+                    }}
+                  />
+                  <span>
+                    <strong>{label}</strong>
+                    <small>{description}</small>
+                  </span>
+                  {quality === value && <Check size={18} />}
+                </label>
+              ))}
+            </fieldset>
             <p className="fine">
-              Saved on this browser. This controls the store, not effects inside
-              games.
+              Saved on this browser. Motion applies to the store. Graphics
+              adjusts Teeworlds and OpenStrike rendering without changing
+              gameplay.
             </p>
           </Modal>
         )}

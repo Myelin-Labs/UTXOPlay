@@ -38,3 +38,24 @@ test('OpenStrike uses its own runtime and authenticated account',async()=>{
  assert.equal((await req('/api/library',undefined,guest.cookie)).data.games[0].game,'openstrike');
  assert.equal((await req('/games/openstrike/api/action',{type:'create',mode:'duel'},guest.cookie,{Origin:'https://evil.invalid'})).status,403);
 });
+
+test('library polling coalesces writes but user actions update last played immediately',async()=>{
+ const guest=await req('/api/guest',{});const id=guest.data.user.id;
+ await req('/games/chess/api/state',undefined,guest.cookie);
+ const last=()=>service.db.prepare('SELECT updated FROM plays WHERE account=? AND game=?').get(id,'chess').updated;
+ const stamp=Date.now()-1000;service.db.prepare('UPDATE plays SET updated=? WHERE account=?').run(stamp,id);
+ await req('/games/chess/api/state',undefined,guest.cookie);assert.equal(last(),stamp);
+ await req('/games/chess/api/action',{type:'move',uci:'e2e4'},guest.cookie);assert.ok(last()>stamp);
+ service.db.prepare('UPDATE plays SET updated=? WHERE account=?').run(Date.now()-61000,id);
+ await req('/games/chess/api/state',undefined,guest.cookie);assert.ok(last()>stamp);
+});
+
+test('persistent quotas retain counts and reset only after expiry',async()=>{
+ const guestKey='guest:127.0.0.1',future=Date.now()+86400000;
+ service.db.prepare('INSERT INTO limits VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET count=excluded.count,expires=excluded.expires').run(guestKey,12,future);
+ assert.equal((await req('/api/guest',{})).status,429);
+ assert.equal(service.db.prepare('SELECT expires FROM limits WHERE key=?').get(guestKey).expires,future);
+ service.db.prepare('UPDATE limits SET expires=? WHERE key=?').run(Date.now()-1,guestKey);
+ assert.equal((await req('/api/guest',{})).status,200);
+ assert.equal(service.db.prepare('SELECT count FROM limits WHERE key=?').get(guestKey).count,1);
+});

@@ -8,3 +8,7 @@ games/*/target/
 deploy/*.tar*
 deploy/bin/
 artifacts/
+
+# Generated HTTP transfer encodings
+games/*/web/**/*.br
+games/*/web/**/*.gz

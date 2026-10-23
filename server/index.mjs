@@ -1,4 +1,5 @@
 import express from 'express';
+import {optimizedStatic} from './static.mjs';
 import {installMarketplace} from './marketplace.mjs';
 import {teeworldsSockets} from './teeworlds-socket.mjs';
 import { DatabaseSync } from 'node:sqlite';
@@ -20,14 +21,17 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
  CREATE TABLE IF NOT EXISTS plays(account TEXT NOT NULL,game TEXT NOT NULL,updated INTEGER NOT NULL,PRIMARY KEY(account,game));
  CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,owner TEXT NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,url TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'draft',created INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires INTEGER NOT NULL);`);
+ const lookupAccount=db.prepare('SELECT a.* FROM sessions s JOIN accounts a ON a.id=s.account WHERE s.token=? AND s.expires>?');
+ const recordPlay=db.prepare('INSERT INTO plays VALUES(?,?,?) ON CONFLICT(account,game) DO UPDATE SET updated=excluded.updated WHERE ? OR excluded.updated-plays.updated>=60000');
+ const countLimit=db.prepare('INSERT INTO limits VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN limits.expires<? THEN 1 ELSE limits.count+1 END, expires=CASE WHEN limits.expires<? THEN excluded.expires ELSE limits.expires END RETURNING count');
  const app=express(); app.disable('x-powered-by'); app.set('trust proxy',1);
  const secure=origin.startsWith('https:');
  const cookie=(res,name,value,maxAge)=>res.cookie(name,value,{httpOnly:true,secure,sameSite:'lax',path:'/',maxAge});
  function cookies(req) {return Object.fromEntries((req.headers.cookie||'').split(';').map(s=>s.trim().split('=')).filter(v=>v.length===2));}
- function account(req) {const t=cookies(req).utxoplay_session;if(!t)return null;return db.prepare('SELECT a.* FROM sessions s JOIN accounts a ON a.id=s.account WHERE s.token=? AND s.expires>?').get(digest(t),Date.now())||null;}
+ function account(req) {const t=cookies(req).utxoplay_session;if(!t)return null;return lookupAccount.get(digest(t),Date.now())||null;}
  function userView(a){return a?{id:a.id,address:a.address,guest:!a.address,scheme:a.scheme}:null;}
  function session(res,a) {const token=randomBytes(32).toString('hex');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(token),a,Date.now()+7*86400000);cookie(res,'utxoplay_session',token,7*86400000);}
- function limited(key,max,ms) {const now=Date.now();db.prepare('DELETE FROM limits WHERE key=? AND expires<?').run(key,now);const r=db.prepare('INSERT INTO limits VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').get(key,now+ms);return r.count>max;}
+ function limited(key,max,ms) {const now=Date.now();const r=countLimit.get(key,now+ms,now,now);return r.count>max;}
  const needUser=(req,res,next)=>{req.account=account(req);if(!req.account)return res.status(401).json({error:'Start a guest session or sign in to play.'});next();};
  app.use((req,res,next)=>{
   res.set({'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Permissions-Policy':'camera=(), microphone=(), geolocation=()', 'Content-Security-Policy':"default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://app.joy.id; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self' https:"});
@@ -38,7 +42,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   next();
  });
  app.use(express.json({limit:'64kb'}));
- app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.5.0'}));
+ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.6.0'}));
  app.get('/api/games',(_req,res)=>res.json({games:[...games,...marketplace.catalog()]}));
  app.get('/api/me',(req,res)=>res.json({user:userView(account(req))}));
  app.post('/api/guest',(req,res)=>{
@@ -83,14 +87,14 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
    const base=req.params.game==='openstrike'?(process.env.OPENSTRIKE_URL||'http://127.0.0.1:8784'):req.params.game==='teeworlds'?(process.env.TEEWORLDS_URL||'http://127.0.0.1:8783'):req.params.game==='chess'?(process.env.CHESS_URL||'http://127.0.0.1:8781'):(process.env.SLING_URL||'http://127.0.0.1:8782');
    const result=await runtimeFetch(base+'/api'+endpoint,{method:req.method,headers:{'Content-Type':'application/json','X-Runtime-Token':process.env.RUNTIME_TOKEN||'','X-UTXOPlay-Account':req.account.id},body:req.method==='POST'?JSON.stringify(req.body||{}):undefined,signal:AbortSignal.timeout(20000)});
    const content=await result.text();
-   if(result.ok && (!['teeworlds','openstrike'].includes(req.params.game)||req.method==='POST'&&['create','join'].includes(req.body?.type)))db.prepare('INSERT INTO plays VALUES(?,?,?) ON CONFLICT(account,game) DO UPDATE SET updated=excluded.updated').run(req.account.id,req.params.game,Date.now());
+   if(result.ok && (!['teeworlds','openstrike'].includes(req.params.game)||req.method==='POST'&&['create','join'].includes(req.body?.type)))recordPlay.run(req.account.id,req.params.game,Date.now(),req.method==='POST'?1:0);
    if(endpoint==='/export')res.set('Content-Disposition',`attachment; filename="utxoplay-${req.params.game}-session.json"`);
    res.status(result.status).type('json').send(content);
   }catch(e){console.error('runtime request failed',req.params.game,e.name);res.status(503).json({error:'The game is waking up. Please retry in a moment; your saved progress is safe.'});}
  });
- for(const game of games)app.use('/games/'+game.id,(_req,res,next)=>{res.set('Content-Security-Policy',`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self' ${new URL(origin).protocol==='https:'?'wss:':'ws:'}//${new URL(origin).host}; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`);next();},express.static(path.join(root,'games',game.id,'web'),{index:'index.html',maxAge:0}));
+ for(const game of games)app.use('/games/'+game.id,(_req,res,next)=>{res.set('Content-Security-Policy',`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self' ${new URL(origin).protocol==='https:'?'wss:':'ws:'}//${new URL(origin).host}; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`);next();},optimizedStatic(path.join(root,'games',game.id,'web')));
  app.use('/api',(_req,res)=>res.status(404).json({error:'Unknown API endpoint'}));
- app.use(express.static(path.join(root,'dist'),{maxAge:'1h',index:false}));
+ app.use(optimizedStatic(path.join(root,'dist'),{index:false}));
  app.get('/{*path}',(_req,res)=>{res.set('Cache-Control','no-cache');res.sendFile(path.join(root,'dist','index.html'));});
  app.use((err,_req,res,_next)=>res.status(err.status||500).json({error:err.status===413?'Request too large':'Unable to complete request'}));
  const cleanup=setInterval(()=>{const t=Date.now();db.prepare('DELETE FROM sessions WHERE expires<?').run(t);db.prepare('DELETE FROM challenges WHERE expires<?').run(t);db.prepare('DELETE FROM limits WHERE expires<?').run(t);},60000);cleanup.unref();
