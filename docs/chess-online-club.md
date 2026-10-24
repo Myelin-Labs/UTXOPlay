@@ -29,3 +29,9 @@ The board keeps its 64 square elements. Unchanged move journals and session deta
 Local production-build browser checks cover white and black inputs, automatic flipped orientation, two-account synchronized moves, refresh recovery and a real Stockfish response. The board remains square with no horizontal overflow at 390×844, 844×390, 1920×1080, 2560×1080, 2560×1440 and 3840×2160. Scene controls remain within the viewport at phone and 4K sizes. No physical-device frame-rate benchmark is claimed.
 
 Deployment backs up SQLite, installs the additive room table on startup and recreates only the Store image. Native games and existing saves remain in place. Rolling back the Store to 0.28.0 hides online rooms without deleting their membership rows or native state.
+
+## Public rollout — 2026-10-24
+
+Implementation `c62b2f6` is deployed as Store 0.29.0, container `34fc7f764bac`, healthy. The SQLite online backup `platform-before-0.29.0-1792829533.sqlite` passed quick_check. All twenty other container IDs are unchanged, including chess `9d5665a43c9b`.
+
+`STORE_URL=https://store.utxoplay.io CHESS_BINARY=/path/to/myelin-chess node tests/live-chess-online.mjs` passed: two disposable CKB signing identities created and joined a private table, received a public SSE event through the proxy, completed a four-ply checkmate, and obtained a verified native replay and offline-verified export with the same final state root. Both test sessions were logged out; no funds or blockchain transactions were used. Public browser visual testing was not repeated; local browser testing used the shipped production assets.
