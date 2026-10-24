@@ -66,6 +66,7 @@ let actions = 0,
   worker,
   verified = true,
   replyDelay = false,
+  failMove = true,
   pending;
 const snapshots = [chess.fen()];
 const state = () => ({
@@ -99,6 +100,13 @@ w.Worker = Worker;
 w.fetch = async (url, options) => {
   let payload;
   if (url.endsWith("/action")) {
+    if (failMove) {
+      failMove = false;
+      return {
+        ok: false,
+        json: async () => ({ error: "Temporary storage failure" }),
+      };
+    }
     const b = JSON.parse(options.body);
     assert.equal(b.expected_block, String(actions));
     chess.move({
@@ -130,6 +138,19 @@ try {
   await settle();
   assert.equal(actions, 0, "terminated worker cannot submit a stale move");
   menu(false);
+  await settle(520);
+  worker.onmessage({ data: { id: worker.request.id, move: "e2e4" } });
+  await settle();
+  assert.equal(actions, 0);
+  assert.equal(d.querySelector("#bot-retry").hidden, false);
+  const pausedWorker = worker;
+  await settle(520);
+  assert.equal(
+    worker,
+    pausedWorker,
+    "failed saves must not retry automatically",
+  );
+  d.querySelector("#bot-retry").click();
   await settle(520);
   worker.onmessage({ data: { id: worker.request.id, move: "e2e4" } });
   await settle();
