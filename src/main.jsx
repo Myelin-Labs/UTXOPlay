@@ -64,7 +64,7 @@ import {
   genres,
   selectGames,
   gameMeta,
-  accountLabel,
+  walletButtonState,
   apiError,
 } from "./ui-model.mjs";
 import "./style.css";
@@ -502,6 +502,7 @@ function App({ walletApi }) {
   }
   async function logout() {
     setWalletBusy(true);
+    setWalletPhase("logout");
     try {
       authEpoch.current++;
       await api("/api/auth/logout", {});
@@ -517,6 +518,7 @@ function App({ walletApi }) {
       setWalletError(apiError(e));
     } finally {
       setWalletBusy(false);
+      setWalletPhase("idle");
     }
   }
   async function launch(id) {
@@ -563,6 +565,7 @@ function App({ walletApi }) {
     setFreeOnly(false);
     searchRef.current?.focus();
   }
+  const walletDisplay = walletButtonState({ user, loadingUser, walletBusy, walletPhase, isOpen, signer, walletError });
   const filtered = selectGames(games, { query, genre, mode, freeOnly });
   const navItems = [
     ["/", "Discover", Grid2X2],
@@ -685,22 +688,21 @@ function App({ walletApi }) {
             >
               <Search size={18} />
             </button>
-            <span className="guest-pill">
-              {loadingUser ? "Checking account…" : accountLabel(user)}
-            </span>
             <button
               className="wallet-button"
-              disabled={walletBusy || loadingUser}
+              data-state={walletDisplay.state}
+              disabled={walletDisplay.busy}
+              aria-busy={walletDisplay.busy}
+              aria-label={walletDisplay.hint}
+              title={walletDisplay.hint}
               onClick={connect}
             >
-              {walletBusy ? <Spinner /> : <Wallet size={17} />}
-              <span>
-                {walletBusy
-                  ? "Signing in…"
-                  : signedIn
-                    ? short(user.address)
-                    : "Connect wallet"}
+              <span className="wallet-glyph" aria-hidden="true">
+                {walletDisplay.busy ? <Spinner /> : <Wallet size={18} strokeWidth={1.6} />}
               </span>
+              <span className="wallet-label" aria-live="polite">{walletDisplay.label}</span>
+              <span className="wallet-state-dot" aria-hidden="true" />
+              <ChevronRight className="wallet-chevron" size={14} aria-hidden="true" />
             </button>
           </div>
         </header>
@@ -824,7 +826,7 @@ function App({ walletApi }) {
                     <div className="hero-bottom">
                       <span className="hero-caption">
                         {gameMeta[hero.id]?.tag}
-                        {hero.myelin?.based && <span className="myelin-badge"><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN BASED</span>}
+                        {hero.myelin?.based && <span className="myelin-badge"><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN</span>}
                       </span>
                       <span className="hero-index">
                         0{featuredGames.findIndex((g) => g.id === hero.id) + 1}

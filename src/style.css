@@ -194,29 +194,21 @@ h3 {
   gap: 18px;
   align-items: center;
 }
-.guest-pill {
-  color: #89988e;
-  font-size: 12px;
-  border-left: 1px solid #ffffff16;
-  padding-left: 22px;
-}
-.wallet-button {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 12px;
-  font-weight: 550;
-  padding: 11px 15px;
-  min-height: 44px;
-  border: 1px solid #63f58b35;
-  border-radius: 9px;
-  background: linear-gradient(110deg, #26342b, #19261f);
-  box-shadow: inset 0 1px 0 #ffffff08;
-}
-.wallet-button:hover {
-  border-color: #63f58b80;
-  box-shadow: 0 0 25px #63f58b0b;
-}
+/* One compact control carries the entire wallet authentication state. */
+.wallet-button { display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:6px 12px 6px 7px;border:1px solid #ffffff20;border-radius:999px;background:linear-gradient(135deg,#26332d,#17221d);color:#ecf6ef;font-size:12px;font-weight:550;box-shadow:inset 0 1px 0 #ffffff0c,0 4px 12px #00000018;transition:background .18s,border-color .18s,box-shadow .18s;white-space:nowrap; }
+.wallet-button:hover:not(:disabled){border-color:#adf3c167;background:linear-gradient(135deg,#304138,#1c2d23);box-shadow:inset 0 1px 0 #ffffff12,0 4px 18px #0002;}
+.wallet-button:focus-visible{outline:2px solid #a8f5c4;outline-offset:4px;}
+.wallet-button:disabled{opacity:.8;cursor:wait;}
+.wallet-glyph{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#ffffff09;flex:none;color:#b9d2c3;}
+.wallet-label{line-height:1.2;}
+.wallet-chevron{color:#82978b;}
+.wallet-state-dot{width:5px;height:5px;flex:none;border-radius:50%;background:#74867b;}
+.wallet-button[data-state="connected"]{border-color:#99e8b342;}
+.wallet-button[data-state="connected"] .wallet-state-dot{background:#a1f2bd;box-shadow:0 0 8px #9cf2b84d;}
+.wallet-button[data-state="connected"] .wallet-label{font-variant-numeric:tabular-nums;}
+.wallet-button[data-state="error"] .wallet-state-dot{background:#edba87;}
+.wallet-button[data-state="ready"] .wallet-state-dot{background:#b8b3f5;}
+.wallet-button[aria-busy="true"] .wallet-state-dot{background:#a8c5dc;}
 .mobile-menu {
   display: none;
 }
@@ -2302,9 +2294,6 @@ h3 {
   .build-note {
     padding: 14px 10px;
   }
-  .guest-pill {
-    display: none;
-  }
   .edition {
     display: none;
   }
@@ -3146,3 +3135,6 @@ body:has(.game-active){overflow:hidden}
 .game-active .main:before{display:none}
 .game-active .game-stage{position:fixed;inset:0;z-index:100;width:100vw;height:100dvh;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:#0b121b}
 .game-active .game-frame{display:block;width:100%;height:100%;min-height:0;border:0;border-radius:0}
+
+.price-free{align-self:center;flex:none;padding:5px 8px;border-radius:6px;border:1px solid #a4f3bd38;background:#8eeeb014;color:#c2fbd3;font-weight:700;letter-spacing:1.05px;line-height:1;box-shadow:inset 0 1px 0 #d1ffdf0a;}
+@media(max-width:600px){.wallet-button{padding:5px 9px 5px 5px;gap:7px;min-height:40px}.wallet-glyph{width:28px;height:28px}.wallet-chevron{display:none}}

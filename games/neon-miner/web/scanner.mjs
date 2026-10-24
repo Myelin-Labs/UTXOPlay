@@ -1,9 +1,9 @@
-import {tip,step,oreValue} from './engine.mjs';
-// Replay the actual future cast on a disposable copy, including moving ore and armor.
-export function scan(g){
- const copy=structuredClone(g);copy.previous=0;step(copy,1);
- for(let n=0;n<60&&copy.phase===1&&copy.mode==='mining';n++)step(copy,0);
- const index=copy.cargo>=0?copy.cargo:copy.ores.findIndex((o,n)=>o.armor<g.ores[n].armor);
- const ore=index>=0?copy.ores[index]:null;
- return {ore,point:tip(copy),index,cracked:!!ore&&copy.cargo<0,value:ore?oreValue(g,ore):0};
+import {tip} from './engine.mjs';
+// Direction only: no simulation, target identification, value forecast or moving-ore lock.
+export function aimingGuide(g,hx,hy){
+ if(g.phase!==0||g.mode!=='mining')return null;
+ const [tx,ty]=tip(g),dx=tx-500,dy=ty-100,length=Math.hypot(dx,dy);
+ if(!length)return null;
+ const reach=Math.max(170,260-(g.level-1)*2);
+ return {start:{x:hx,y:hy},end:{x:hx+dx/length*reach,y:hy+dy/length*reach},reach};
 }

@@ -169,8 +169,8 @@
   (menu.querySelector('.game-menu-content') || menu).append(actions);
   const badge = document.createElement('span');
   badge.className = 'game-myelin-badge';
-  badge.title = 'Myelin based · off-chain host replay';
-  badge.innerHTML = '<img src="/assets/myelin-logo.png?v=0.7.1" alt="" width="24" height="24"><span>MYELIN BASED</span>';
+  badge.title = 'Myelin · off-chain host replay';
+  badge.innerHTML = '<img src="/assets/myelin-logo.png?v=0.7.1" alt="" width="24" height="24"><span>MYELIN</span>';
   if(kind === 'openstrike') {
     surface.querySelector('.top > div').append(badge);
     surface.querySelector('.top small').hidden = true;

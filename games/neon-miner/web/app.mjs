@@ -12,7 +12,7 @@ function preference(key,fallback){try{return localStorage.getItem('neon-miner:'+
 function remember(key,value){try{localStorage.setItem('neon-miner:'+key,String(value));}catch{}}
 renderer.scanner=preference('scanner','true')==='true';
 function scannerToggle(){renderer.scanner=!renderer.scanner;remember('scanner',renderer.scanner);scannerHud();dirty=true;}
-function scannerHud(){$('scanner').setAttribute('aria-pressed',String(renderer.scanner));text('scanner-label',renderer.scanner?'SCAN ON':'SCAN OFF');}
+function scannerHud(){$('scanner').setAttribute('aria-pressed',String(renderer.scanner));text('scanner-label',renderer.scanner?'AIM ON':'AIM OFF');}
 $('scanner').onclick=()=>{scannerToggle();if(running)canvas.focus();};scannerHud();
 async function artwork(){artFailed=false;try{await renderer.load();assetsReady=true;dirty=true;}catch(error){artFailed=true;globalThis.UTXOPlayLoader?.fail('assets');throw error;}}
 audio.music=preference('music','false')==='true';audio.effects=preference('sound','true')==='true';

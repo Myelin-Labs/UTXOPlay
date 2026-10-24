@@ -28,7 +28,11 @@ export class PrismRenderer {
   c.textAlign='center';c.fillStyle='#ead6f9aa';c.font='500 10px system-ui';c.fillText(`${String(g.level).padStart(2,'0')} / 24  ·  ${levels[g.level-1].name.toUpperCase()}`,500,96);
   for(let n=0;n<96;n++){if(!g.cells[n])continue;const p=brickPoint(g,n);this.sprite(gems[(Math.floor(n/12)+g.level-1)%6],p.x,p.y,70,24);if(g.cells[n]>1){c.strokeStyle='#f3e5ca';c.lineWidth=1;c.strokeRect(p.x-29,p.y-9,58,18);c.fillStyle='#fff6df';for(let i=0;i<g.cells[n];i++)c.fillRect(p.x-7+i*6,p.y-2,3,3);}if(g.types[n]){c.fillStyle=g.types[n]===1?'#ffb1a0':'#a2ffe4';c.font='bold 12px system-ui';c.fillText(g.types[n]===1?'✦':'+',p.x,p.y+4);}}
   const blend=(a,b)=>lerp(a,b,running?alpha:1),x=blend(before.x,g.x);
-  if(this.lens&&!g.over&&!g.draft){if(this.pathTick!==g.tick){this.path=focusPath(g);this.pathTick=g.tick;}c.strokeStyle='#d6d2ff58';c.lineWidth=1.5;c.setLineDash([3,8]);c.beginPath();(this.path?.points||[]).forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.stroke();c.setLineDash([]);const land=this.path?.landing;if(land){c.strokeStyle=land.catchable?'#a9f6dbbb':'#ffc5a7bb';c.beginPath();c.ellipse(land.x,562,16,4,0,0,Math.PI*2);c.stroke();}}
+  if(this.lens&&!g.over&&!g.draft){
+   if(this.pathTick!==g.tick){this.path=focusPath(g);this.pathTick=g.tick;}
+   const points=this.path?.points||[],start=points[0],end=points.at(-1);
+   if(points.length>1){const fade=c.createLinearGradient(start.x,start.y,end.x,end.y);fade.addColorStop(0,'#ddd5ff70');fade.addColorStop(.35,'#d4cbff30');fade.addColorStop(.72,'#c7bdff0e');fade.addColorStop(1,'#c7bdff00');c.strokeStyle=fade;c.lineWidth=1.2;c.setLineDash([2,7]);c.beginPath();points.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.stroke();c.setLineDash([]);}
+  }
   if(!reduced){c.strokeStyle='#b19dff55';c.lineWidth=4;c.beginPath();this.trail.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.stroke();}
   for(const p of g.pickups){c.fillStyle='#090e27e8';c.strokeStyle=dropColors[p.tag];c.lineWidth=1;c.beginPath();c.roundRect(p.x-22,p.y-15,44,30,8);c.fill();c.stroke();this.sprite(dropArt[p.tag],p.x,p.y,30,23);}
   this.sprite('paddle',x,563,paddleHalf(g)*2,27);

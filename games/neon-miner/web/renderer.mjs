@@ -1,8 +1,7 @@
 import {tip, districts, tier} from './engine.mjs';
 import {loadArt, oreArt, scenes} from './art.mjs';
-import {scan} from './scanner.mjs';
+import {aimingGuide} from './scanner.mjs';
 const colors = ['#ffc968','#ffd68a','#bc9aff','#8596ad','#73f5df','#ff87d7','#ff6073','#ffc968'];
-const names = ['GOLD ORE','HEAVY GOLD','DATA CRYSTAL','INDUSTRIAL SCRAP','POWER CELL','SEALED CACHE','VOLATILE MINE','ARMORED VAULT'];
 const accents = ['#6debe0','#ff89da','#85dcff','#ffad65'];
 
 export class MinerRenderer {
@@ -10,7 +9,7 @@ export class MinerRenderer {
     this.canvas=canvas; this.ctx=canvas.getContext('2d'); this.art=null; this.cache=null;
     this.level=0; this.particles=[]; this.labels=[]; this.rings=[];
     this.reduced=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
-    this.quality='auto'; this.scanner=true; this.clock=0; this.prev=null; this.forecast=null;
+    this.quality='auto'; this.scanner=true; this.clock=0; this.prev=null;
   }
   async load() { if(!this.art) this.art=await loadArt(); this.cache=null; }
   background(g) {
@@ -45,25 +44,12 @@ export class MinerRenderer {
   }
   ring(x,y,color,large=false) {if(!this.reduced&&this.rings.length<5)this.rings.push({x,y,color,age:0,large});}
   targeting(g,hx,hy) {
-    const x=this.ctx;
-    if(!this.scanner||g.phase!==0){this.forecast=null;return;}
-    if(!this.forecast||this.forecast.angle!==g.angle||this.forecast.tick!==g.tick||this.forecast.score!==g.score||this.forecast.level!==g.level||this.forecast.lens!==g.lens) {
-      this.forecast={...scan(g),angle:g.angle,tick:g.tick,score:g.score,level:g.level,lens:g.lens};
-    }
-    const {ore,point,value}=this.forecast;
-    x.setLineDash([3,10]); x.strokeStyle=ore?colors[ore.kind]+'99':'#88c5ce35'; x.lineWidth=1;
-    x.beginPath(); x.moveTo(hx,hy); x.lineTo(...point); x.stroke(); x.setLineDash([]);
-    if(!ore)return;
-    const r=ore.radius+13;
-    x.strokeStyle=colors[ore.kind]; x.lineWidth=1.5;
-    // Four quiet brackets leave the generated asset fully visible.
-    for(let i=0;i<4;i++){x.save();x.translate(ore.x,ore.y);x.rotate(i*Math.PI/2);x.beginPath();x.moveTo(-r,-r+9);x.lineTo(-r,-r);x.lineTo(-r+9,-r);x.stroke();x.restore();}
-    const scale=Math.min(2.6,Math.max(1,1000/(this.canvas.clientWidth||1000))),half=98*scale;
-    const bx=Math.min(994-half,Math.max(half+6,ore.x)),by=Math.min(700-24*scale,ore.y+r+14*scale);
-    x.fillStyle='#060e1be8';x.fillRect(bx-half,by-12*scale,half*2,34*scale);
-    x.textAlign='center';x.font=`600 ${10*scale}px system-ui`;x.fillStyle=colors[ore.kind];x.fillText(names[ore.kind],bx,by);
-    x.font=`${10*scale}px monospace`;x.fillStyle='#b6c8d8';
-    x.fillText(ore.kind===6?'DANGER · DELIVERING COSTS TIME':ore.armor?`${ore.armor} ARMOR · CRACK BEFORE COLLECTING`:`${ore.kind===5?'SEALED':value} VALUE  ·  ${ore.weight>=5?'HEAVY':ore.weight<=2?'LIGHT':'MEDIUM'}${ore.kind===4?'  +3s':''}`,bx,by+14*scale);x.textAlign='left';
+    if(!this.scanner)return;
+    const guide=aimingGuide(g,hx,hy);if(!guide)return;
+    const x=this.ctx,{start,end}=guide;
+    const fade=x.createLinearGradient(start.x,start.y,end.x,end.y);
+    fade.addColorStop(0,'#a8e9e883');fade.addColorStop(.28,'#9ee0e14d');fade.addColorStop(.65,'#92d5da18');fade.addColorStop(1,'#92d5da00');
+    x.save();x.strokeStyle=fade;x.lineWidth=1.2;x.setLineDash([3,10]);x.beginPath();x.moveTo(start.x,start.y);x.lineTo(end.x,end.y);x.stroke();x.restore();
   }
   draw(g,dt=16,alpha=1,previous=g) {
     const x=this.ctx,w=this.canvas.width,h=this.canvas.height;
@@ -71,7 +57,7 @@ export class MinerRenderer {
     if(!this.art){x.fillStyle='#080e19';x.fillRect(0,0,1000,700);return;}
     this.clock+=dt/1000;
     if(!this.cache||g.level!==this.level) {
-      this.background(g);this.particles=[];this.labels=[];this.rings=[];this.prev=null;this.forecast=null;
+      this.background(g);this.particles=[];this.labels=[];this.rings=[];this.prev=null;
     }
     const cover=Math.max(w/1000,h/700);x.setTransform(1,0,0,1,0,0);x.drawImage(this.cache,(w-1000*cover)/2,(h-700*cover)/2,1000*cover,700*cover);const cssW=this.canvas.clientWidth||1000,cssH=this.canvas.clientHeight||700,pixel=w/cssW,ui=Math.max(1,Math.min(2,cssH/1080)),top=cssW<=600?198:cssH<=540?100:134*ui,bottom=cssW<=600?130:76*ui,scale=Math.min(cssW/1000,Math.max(100,cssH-top-bottom)/700);x.setTransform(scale*pixel,0,0,scale*pixel,(cssW-1000*scale)/2*pixel,(top+(cssH-top-bottom-700*scale)/2)*pixel);
     const color=accents[tier(g)], [tx,ty]=tip(g),[oldX,oldY]=tip(previous);

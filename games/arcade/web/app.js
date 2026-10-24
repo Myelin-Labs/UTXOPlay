@@ -29,7 +29,7 @@ let noticeTime=0,quality=readQuality(),artworkReady=false;
 if(id==='prism-breaker'){
  renderer.setLens(read('utxoplay:prism-lens','on')==='on');
  const lens=$('#prism-lens');
- const label=()=>{lens.setAttribute('aria-pressed',String(renderer.lens));lens.querySelector('span').textContent=renderer.lens?'Focus lens ON':'Focus lens OFF';};
+ const label=()=>{lens.setAttribute('aria-pressed',String(renderer.lens));lens.querySelector('span').textContent=renderer.lens?'Direction hint ON':'Direction hint OFF';};
  lens.onclick=()=>{renderer.setLens(!renderer.lens);write('utxoplay:prism-lens',renderer.lens?'on':'off');label();if(running||countdown)canvas.focus();};label();
 }
 async function prepareArtwork(){if(id==='prism-breaker'&&!artworkReady){await renderer.load($('#cover'));artworkReady=true;}}

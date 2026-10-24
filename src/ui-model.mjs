@@ -28,12 +28,15 @@ export function selectGames(
           (g.vendor ? g.mode !== "Single player" : g.mode !== "Single-player"))),
   );
 }
-export function accountLabel(user) {
-  return !user
-    ? "No account needed"
-    : user.guest
-      ? "Guest on this browser"
-      : "Wallet connected";
+// Display follows authentication, never just the presence of a wallet provider.
+export function walletButtonState({user,loadingUser=false,walletBusy=false,walletPhase='idle',isOpen=false,signer=null,walletError=''}) {
+ const pending=loadingUser?'checking':walletBusy?(walletPhase==='idle'?'loading':walletPhase):isOpen?'choosing':null;
+ const labels={checking:'Checking session',loading:'Opening wallet',choosing:'Choose wallet',signature:'Confirm in wallet',verifying:'Verifying',logout:'Signing out'};
+ if(pending)return {state:pending,label:labels[pending]||'Connecting',hint:labels[pending]||'Connecting',busy:true};
+ if(user&&!user.guest){const address=user.address||'';return {state:'connected',label:address.slice(0,6)+'…'+address.slice(-4),hint:'Signed in · '+address+' · Open account',busy:false};}
+ if(walletError)return {state:'error',label:'Try again',hint:walletError,busy:false};
+ if(signer)return {state:'ready',label:'Sign in',hint:'Wallet selected · Sign a message to sign in',busy:false};
+ return {state:user?.guest?'guest':'disconnected',label:'Connect wallet',hint:'Connect a wallet to sign in',busy:false};
 }
 export function apiError(error) {
   if (error?.name === "TimeoutError" || error?.name === "AbortError")
@@ -43,8 +46,8 @@ export function apiError(error) {
   return error?.message || "Something went wrong. Please try again.";
 }
 export const gameMeta = {
-  "neon-miner": {accent:"#ffd075",tag:"THE UNDERCITY",length:"20 sectors to explore",input:"One-button + touch",note:"Time the swing. Take the gold. Upgrade your rig.",repo:"UTXOPlay"},
-  "prism-breaker": {"accent": "#b7a2ff", "tag": "REFRACTION LAB", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Find the angle. Break the spectrum.", "repo": "UTXOPlay"},
+  "neon-miner": {accent:"#ffd075",tag:"THE UNDERCITY",length:"60 sectors to explore",input:"One-button + touch",note:"Time the swing. Take the gold. Upgrade your rig.",repo:"UTXOPlay"},
+  "prism-breaker": {"accent": "#b7a2ff", "tag": "REFRACTION LAB", "length": "24 crystal sectors", "input": "Keyboard + touch", "note": "Find the angle. Break the spectrum.", "repo": "UTXOPlay"},
   "neon-coil": {"accent": "#84efba", "tag": "LIVING CIRCUIT", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "A little hunger. A longer circuit.", "repo": "UTXOPlay"},
   "starfall": {"accent": "#7edaff", "tag": "ORBITAL DEFENCE", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Hold the line. Light up the night.", "repo": "UTXOPlay"},
   "drift-run": {"accent": "#ffbc83", "tag": "AFTER HOURS", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Three lanes. One way forward.", "repo": "UTXOPlay"},

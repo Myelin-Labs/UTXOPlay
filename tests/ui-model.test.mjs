@@ -20,3 +20,12 @@ test('network failures and timeouts have actionable messages, server validation 
 test('every bundled game owns its viewport and loads its current interface',()=>{
  for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');if(game.id==='neon-miner'){assert.match(html,/data-surface="miner"/);assert.match(html,/id="game-menu"/);assert.match(html,/app\.mjs\?v=0\.16\.0/);}else assert.match(html,/\/game-shell\.js\?v=0\.14\.0/);}
 });
+
+test('wallet button distinguishes authentication phases and never treats a selected signer as login',async()=>{
+ const {walletButtonState:state}=await import('../src/ui-model.mjs');
+ assert.equal(state({}).state,'disconnected');assert.equal(state({user:{guest:true}}).label,'Connect wallet');
+ assert.equal(state({signer:{}}).state,'ready');assert.equal(state({loadingUser:true}).state,'checking');
+ for(const phase of ['loading','signature','verifying','logout']){const view=state({walletBusy:true,walletPhase:phase});assert.equal(view.state,phase);assert.equal(view.busy,true);}
+ assert.equal(state({isOpen:true}).state,'choosing');assert.equal(state({walletError:'Rejected'}).state,'error');
+ const signed=state({user:{guest:false,address:'ckb1abcdefghijklmnopqrstuvwxyz'}});assert.equal(signed.state,'connected');assert.match(signed.label,/^ckb1ab…wxyz$/);assert.equal(signed.busy,false);
+});
