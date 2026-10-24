@@ -76,11 +76,11 @@ export const gameMeta = {
     repo: "myelin-sling",
   },
   chess: {
-    accent: "#ceb6fc",
-    tag: "THE QUIET BOARD",
+    accent: "#d9c18a",
+    tag: "THE CONSERVATORY",
     length: "Play at your pace",
     input: "Mouse or touch",
-    note: "Two players share a board on the same device.",
+    note: "Play a friend, or train with three computer levels.",
     repo: "myelin-chess",
   },
 };

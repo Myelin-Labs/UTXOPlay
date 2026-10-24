@@ -1,16 +1,23 @@
 // Original synthesized interaction effects; background recording credited in ASSETS.md.
 const music = new Audio("/games/chess/assets/music.mp3");
 music.loop = true;
-music.volume = 0.3;
+let master = 0.3;
+try {
+  const saved = localStorage.getItem("chess:volume");
+  if (saved !== null && Number.isFinite(Number(saved)))
+    master = Math.max(0, Math.min(1, Number(saved)));
+} catch {}
+music.volume = master;
+export const savedVolume = () => master;
 music.preload = "none";
 let ctx,
   enabled = false;
 export async function toggleSound() {
   enabled = !enabled;
   if (enabled) {
-    ctx ??= new AudioContext();
-    await ctx.resume();
     try {
+      ctx ??= new AudioContext();
+      await ctx.resume();
       await music.play();
     } catch {
       enabled = false;
@@ -19,10 +26,14 @@ export async function toggleSound() {
   return enabled;
 }
 export function volume(v) {
-  music.volume = Math.max(0, Math.min(1, v));
+  if (!Number.isFinite(v)) return;
+  master = music.volume = Math.max(0, Math.min(1, v));
+  try {
+    localStorage.setItem("chess:volume", String(master));
+  } catch {}
 }
 export function sound(kind = "move") {
-  if (!enabled || !ctx) return;
+  if (!enabled || !ctx || !master || document.hidden) return;
   const now = ctx.currentTime;
   const notes =
     kind === "win"
@@ -45,7 +56,10 @@ export function sound(kind = "move") {
     f.type = "lowpass";
     f.frequency.value = 1800;
     g.gain.setValueAtTime(0.0001, now + i * 0.065);
-    g.gain.exponentialRampToValueAtTime(0.12, now + i * 0.065 + 0.008);
+    g.gain.exponentialRampToValueAtTime(
+      Math.max(0.0001, 0.12 * master),
+      now + i * 0.065 + 0.008,
+    );
     g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.065 + 0.28);
     o.connect(f).connect(g).connect(ctx.destination);
     o.start(now + i * 0.065);

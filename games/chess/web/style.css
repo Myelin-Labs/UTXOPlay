@@ -25,7 +25,7 @@ body:before {
   background:
     linear-gradient(90deg, #10231ee8, #10231e69 50%, #10231eee),
     linear-gradient(0deg, #10231e 0%, transparent 60%),
-    url("/games/chess/assets/study.webp") center/cover;
+    url("/games/chess/assets/conservatory.webp") center/cover;
   z-index: -1;
 }
 button,
@@ -283,7 +283,7 @@ h1 {
   width: 95%;
   height: 95%;
   display: block;
-  background-image: url("/games/chess/assets/pieces.webp");
+  background-image: url("/games/chess/assets/porcelain-pieces.webp");
   background-size: 600% 200%;
   background-position: calc(var(--col) * 20%) calc(var(--row) * 100%);
   filter: drop-shadow(1px 3px 2px #0005);
