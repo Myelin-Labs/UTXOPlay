@@ -1,0 +1,121 @@
+{
+  "tool": "image_gen.imagegen (built-in)",
+  "generated": "2026-10-24",
+  "assetsDirectory": "games/neon-miner/web/art",
+  "sources": {
+    "world": "exec-a44a371a-4040-4baf-8b01-af6159eb7342.png",
+    "ores": "exec-02ccba43-d054-4626-ab55-97fbfe4050f9.png",
+    "rig": "exec-5d22a50c-31a2-4709-910d-e80b8678a029.png",
+    "foundry": "exec-52352713-4058-4e85-9b5c-b2ac03100b78.png",
+    "vault": "exec-71990759-97d5-424e-a2f4-e4d3643a3065.png",
+    "reactor": "exec-219f037f-07c2-46cb-ad3f-831f11771bfa.png"
+  },
+  "sourceDirectory": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7",
+  "processing": "Environment PNGs encoded to WebP quality86, 1536x1024. Each transparent atlas cell extracted, transparent bounds trimmed, resized within320x320 and encoded WebP quality92 preserving alpha. No third-party artwork imported.",
+  "oreCrops": [
+    "512x512+0+0",
+    "512x512+512+0",
+    "512x512+1024+0",
+    "555x512+0+512",
+    "469x512+555+512",
+    "512x512+1024+512"
+  ],
+  "rigCrops": [
+    "550x505+0+0",
+    "474x505+550+0",
+    "512x505+1024+0",
+    "575x519+0+505",
+    "449x519+575+505",
+    "512x519+1024+505"
+  ],
+  "prompts": {
+    "world": "Use case: stylized-concept. Production game environment plate for Neon Prospector, a premium cyberpunk gold-mining arcade game. Landscape 3:2. Exquisite hand-painted 3D cinematic illustration, richly textured, refined art direction, atmospheric volumetric light, indigo shadows, oxidized brass, warm amber gold and controlled luminous cyan. A vast subterranean industrial excavation below a futuristic rain-soaked metropolis. COMPOSITION FOR ACTUAL PLAY: straight-on side-view cutaway, upper 25 percent is a beautifully detailed horizontal mining gantry and distant neon city; center top MUST leave room for a separate robot at x=50%,y=10%. Lower 75 percent is a wide deep dark cavern excavation wall, rich subtle layered rock, cables and mineral veins ONLY AT FAR EDGES and bottom corners, generous dim uncluttered negative space across the whole middle from x=8% to92%,y=30%to88% for moving ore sprites. Gorgeous depth, mist and scale; dark center reads clearly behind small bright objects. No foreground collectible gold, no robot, no claw, no rope, no HUD, no letters, no words, no logos. Professional authored game background, not a screenshot, no interface frames. Full bleed.",
+    "ores": "Use case: stylized-concept. Production transparent sprite atlas for a premium cyberpunk mining game Neon Prospector. EXACTLY SIX independent richly detailed game object cutouts in an evenly spaced 3 columns by 2 rows grid on a genuinely transparent alpha background. Landscape 3:2 image. Each object entirely inside its own equal cell with generous transparent padding, no overlap, no labels, no numbers, no text, no shadows outside silhouette. Readable chunky silhouettes, exquisite physically based stylized 3D rendering with hand-painted finish, sharp macro details, warm gold key light and subtle cyan rim. Consistent front three-quarter perspective. Cell top-left: irregular small raw natural gold nugget embedded in a tiny charcoal rock base, very bright metallic gold. Top-middle: large heavy cluster of lustrous angular raw gold ore with beautiful orange-gold metallic facets, distinct boulder silhouette. Top-right: striking amethyst crystalline cluster with lavender luminous core, glass facets and dark violet mineral base. Bottom-left: heavy broken industrial salvage motor, rusted dark gunmetal casing, copper coils, wrecked turbine details, subtly cyan rim. Bottom-middle: futuristic upright cylindrical power cell, aqua glowing glass capsule in weathered titanium clamps and brass endcaps. Bottom-right: compact closed mysterious cyberpunk loot cache, beveled square dark purple metal crate, magenta luminous seams, beautiful tiny hardware. No extra items or decoration. Every object sized about70% of its cell, keep background truly transparent.",
+    "rig": "Use case: stylized-concept. Production transparent sprite atlas for a premium cyberpunk mining game Neon Prospector. EXACTLY SIX independent richly detailed game object cutouts in an evenly spaced 3 columns by 2 rows grid on genuinely transparent alpha background. Landscape 3:2, equal cells, generous padding, no overlap, no labels, no words, no letters, no watermark, no floor shadows. Consistent premium stylized 3D physically based hand-painted finish, intricate weathered brass and graphite titanium, tiny screws and machined edges, cyan rim light, warm amber key. Top-left: adorable but sophisticated suspended mining winch drone robot seen directly from the front, broad compact body, expressive cyan binocular visor, bronze armor, side thruster pods, small cable outlet centered on bottom. No rope no claw attached. Top-middle: open mechanical mining CLAW, pointing directly DOWN, top cable connector centered, dark titanium central cylinder and two curved golden articulated jaws open symmetrically to left and right, extremely clear silhouette, no rope. Top-right: EMP charge, beautiful dark red spherical grenade with magenta luminous equatorial ring and small technical grip. Bottom-left: overdrive engine booster cartridge, intricate copper turbine with hot pink plasma core and two small fins, striking diagonal silhouette. Bottom-middle: time extension device, refined cyan glowing hourglass-shaped reactor within a gold metal cage, round blue energy heart. Bottom-right: optical scanner lens upgrade, polished amethyst glass circular lens in layered brass camera rings, tiny cyan LED marks. Keep all six isolated objects entirely inside each equal grid cell, around70% cell size. Actual transparent alpha background.",
+    "foundry": "Use case: stylized-concept. Create a completely NEW original production game background for Neon Prospector. Input image is STYLE and LAYOUT reference only: preserve the exquisite cinematic hand-painted 3D detail, same straight-on wide side view, same dark negative space in middle. New setting: THE VIOLET FOUNDRY: a magnificent derelict subterranean cyberpunk refinery. Huge bronze pipes, magenta lit industrial architecture and hanging chains in the top strip; beautifully detailed machinery and amethyst mineral seams only at extreme side edges. Muted violet smoky depth, tiny pink lights and warm copper reflections, with subdued dark cavern rock across the central gameplay area. Landscape 3:2. Composition exact: top 22% is a horizontal gantry/platform at roughly y=18%, leave middle top clear for a separate robot. Bottom78% is playable excavation area with all high-detail foreground structures confined to x<8%,x>92%,bottom5%. Dim clear negative space from x=8%to92%,y=30%to90% for separate bright ore sprites. Rich volumetric atmosphere and subtle geological texture. No collectible objects, no robot, no hook, no rope, no UI, no text, no letters, no logos. Full bleed.",
+    "vault": "Use case: stylized-concept. Create a completely NEW original production game background for Neon Prospector. Input image is STYLE and LAYOUT reference only: preserve the exquisite cinematic hand-painted 3D detail, same straight-on wide side view, same dark negative space in middle. New setting: THE GLACIER VAULT: an astonishing deep underground cobalt ice cavern converted into a lost futuristic data vault. Ancient black titanium structures, cyan light conduits and tiny arctic-blue crystals at the edges, huge luminous server architecture across the top strip, restrained teal aurora mist. Deep navy uncluttered central stone and ice wall with subtle texture. Frozen cathedral scale. Landscape 3:2. Composition exact: top 22% is a horizontal gantry/platform at roughly y=18%, leave middle top clear for a separate robot. Bottom78% is playable excavation area with all high-detail foreground structures confined to x<8%,x>92%,bottom5%. Dim clear negative space from x=8%to92%,y=30%to90% for separate bright ore sprites. Rich volumetric atmosphere and subtle geological texture. No collectible objects, no robot, no hook, no rope, no UI, no text, no letters, no logos. Full bleed.",
+    "reactor": "Use case: stylized-concept. Create a completely NEW original production game background for Neon Prospector. Input image is STYLE and LAYOUT reference only: preserve the exquisite cinematic hand-painted 3D detail, same straight-on wide side view, same dark negative space in middle. New setting: THE REACTOR HEART: an ominous deep cyberpunk geothermal extraction chamber. Massive circular reactor architecture visible in the top strip, orange-lit machinery and volcanic rock at extreme side edges, molten amber fissures along the bottom corners, delicate drifting embers and ruby atmospheric haze. Central area is very dark low-contrast textured basalt wall, not lava. Monumental industrial grandeur. Landscape 3:2. Composition exact: top 22% is a horizontal gantry/platform at roughly y=18%, leave middle top clear for a separate robot. Bottom78% is playable excavation area with all high-detail foreground structures confined to x<8%,x>92%,bottom5%. Dim clear negative space from x=8%to92%,y=30%to90% for separate bright ore sprites. Rich volumetric atmosphere and subtle geological texture. No collectible objects, no robot, no hook, no rope, no UI, no text, no letters, no logos. Full bleed."
+  },
+  "assets": [
+    {
+      "path": "games/neon-miner/web/art/cache.webp",
+      "bytes": 39124,
+      "sha256": "22eeebabdc6c94999c232ecca569c8c9b5d31fb2a4ac2a5ef3dd0f52708b3067"
+    },
+    {
+      "path": "games/neon-miner/web/art/claw.webp",
+      "bytes": 29814,
+      "sha256": "c202a7580a141ab9f6177d8163bfde87d6ae6e8cb50435f7c010e9339e30fdd6"
+    },
+    {
+      "path": "games/neon-miner/web/art/crystal.webp",
+      "bytes": 40648,
+      "sha256": "5e4fe2fda9a6c16a5dddb52126d191395bf3df6c1ffeae976c13264ff4183502"
+    },
+    {
+      "path": "games/neon-miner/web/art/drone.webp",
+      "bytes": 37076,
+      "sha256": "2bc5c442c758dcc7ea63c2598399e6180a1a25b9a72d78558f6645f143650f05"
+    },
+    {
+      "path": "games/neon-miner/web/art/emp.webp",
+      "bytes": 41322,
+      "sha256": "58c8ca1ea79e1a9ebe07d9b2c74f2af1bd34a00ad387b25edd05a52cc57e87ec"
+    },
+    {
+      "path": "games/neon-miner/web/art/foundry.webp",
+      "bytes": 320468,
+      "sha256": "4da206b0d24b1b8e93b4d32086d040779704a2aaaf88f850f392cde60d173bbf"
+    },
+    {
+      "path": "games/neon-miner/web/art/gold.webp",
+      "bytes": 29332,
+      "sha256": "66a76db9c13655ff17b1237abe8d360c40e32a20ddd37d16cc9dffda70f88dbd"
+    },
+    {
+      "path": "games/neon-miner/web/art/heavy-gold.webp",
+      "bytes": 50442,
+      "sha256": "b26d9e39956038d970d076d9a10f8edf993d583fb6c6aebcd07ab58a294fde97"
+    },
+    {
+      "path": "games/neon-miner/web/art/lens.webp",
+      "bytes": 37506,
+      "sha256": "60641f6848ce2f5d97161add33627b07cf9474222aceb11acdfd72047925888e"
+    },
+    {
+      "path": "games/neon-miner/web/art/overdrive.webp",
+      "bytes": 30276,
+      "sha256": "0bca2059be6aac14cbec1ef475c1316e7b8ae093c9c1557d30447b390482b4c0"
+    },
+    {
+      "path": "games/neon-miner/web/art/power-cell.webp",
+      "bytes": 25688,
+      "sha256": "dcaf816e815b1e80988c530de24d99d9e9127705b8463fdcd24112d8440fc867"
+    },
+    {
+      "path": "games/neon-miner/web/art/reactor.webp",
+      "bytes": 379260,
+      "sha256": "93a6eb4005e10efcdff1c34f8e2a54ff077f2f3efa2841f031fc3b8a3957687b"
+    },
+    {
+      "path": "games/neon-miner/web/art/scrap.webp",
+      "bytes": 34042,
+      "sha256": "ed672b03ec8461baf13af61a83a0317b076bf2e7bf972d3ece18109736c9676e"
+    },
+    {
+      "path": "games/neon-miner/web/art/time-cell.webp",
+      "bytes": 37326,
+      "sha256": "342d6b3017370cd978afbd62f73d7dae9d1f0618f9223fb54c13e195afe5a7ab"
+    },
+    {
+      "path": "games/neon-miner/web/art/undercity.webp",
+      "bytes": 304550,
+      "sha256": "528a7c9d95b65d80ef47c6a6fe64e42f726d8194bc24beb41f4959febca36db1"
+    },
+    {
+      "path": "games/neon-miner/web/art/vault.webp",
+      "bytes": 409284,
+      "sha256": "6b12949ccd62f1321dc84d7f5b308cd7cbb78d31268a8c852bedc264ebfe005f"
+    }
+  ]
+}

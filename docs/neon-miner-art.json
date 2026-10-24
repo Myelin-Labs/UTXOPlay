@@ -4,5 +4,5 @@
   "source": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-b2e1f57a-4d9a-4164-b8bd-f16be0b943aa.png",
   "asset": "public/assets/neon-miner-cover.webp",
   "encoding": "1536 × 1024 WebP, quality 85",
-  "notes": "Original cover. Canvas sprites and Web Audio music are authored code. Myelin logo uses the owner's supplied asset."
+  "notes": "Original cover. In-game artwork was replaced by original imagegen assets in store 0.13.0; see neon-miner-ingame-art.json. Web Audio music remains authored code. Myelin logo uses the owner's supplied asset."
 }
