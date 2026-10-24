@@ -26,7 +26,7 @@ fn main() -> AnyResult<()> {
             }
         } else {
             for v in input["inputs"].as_array().ok_or("Missing inputs")? {
-                let i = v.as_u64().filter(|i| *i <= 15).ok_or("Invalid input")?;
+                let i = v.as_u64().filter(|i| *i <= 31).ok_or("Invalid input")?;
                 g.step(i as u8);
             }
         }

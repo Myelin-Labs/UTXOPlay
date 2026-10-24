@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.15.0
+    image: utxoplay:0.16.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -143,7 +143,7 @@ services:
       retries: 3
 
   miner:
-    image: utxoplay:0.12.0
+    image: utxoplay:0.16.0
     container_name: utxoplay-miner
     restart: unless-stopped
     init: true
@@ -151,7 +151,7 @@ services:
     environment: {PORT: '8786', BIND: 0.0.0.0}
     env_file: /data/utxoplay/shared/runtime.env
     volumes:
-      - /data/utxoplay/shared/neon-miner:/app/data
+      - /data/utxoplay/shared/neon-miner-deep-expedition:/app/data
     networks: [games]
     mem_limit: 384m
     cpus: '0.75'

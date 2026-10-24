@@ -1,7 +1,7 @@
 // Original imagegen assets, decoded once and reused by Canvas and the in-game store.
-export const oreArt = ['gold', 'heavy-gold', 'crystal', 'scrap', 'power-cell', 'cache'];
+export const oreArt = ['gold', 'heavy-gold', 'crystal', 'scrap', 'power-cell', 'cache', 'emp', 'cache'];
 export const scenes = ['undercity', 'foundry', 'vault', 'reactor'];
-export const artNames = [...scenes, ...oreArt, 'drone', 'claw', 'emp', 'overdrive', 'time-cell', 'lens'];
+export const artNames = [...new Set([...scenes, ...oreArt, 'drone', 'claw', 'emp', 'overdrive', 'time-cell', 'lens'])];
 export const artUrl = name => new URL(`./art/${name}.webp`, import.meta.url).href;
 export async function loadArt() {
   let loaded=0;globalThis.UTXOPlayLoader?.assets(0,artNames.length);

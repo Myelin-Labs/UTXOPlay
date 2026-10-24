@@ -1,12 +1,9 @@
-import {tip} from './engine.mjs';
-
-// Forecast the same discrete 18-unit probe steps and ore ordering as the host.
-// Pure presentation: it never advances the session or chooses an input for the player.
-export function scan(g) {
-  for (let length = 54; length <= 954; length += 18) {
-    const point = tip({...g, length: Math.min(length, 950)});
-    const ore = g.ores.find(o => !o.taken && (point[0]-o.x)**2 + (point[1]-o.y)**2 <= (o.radius+8)**2);
-    if (ore) return {ore, point, value: ore.kind === 2 ? Math.trunc(ore.value*(100+20*g.lens)/100) : ore.value};
-    if (point[0]<25 || point[0]>975 || point[1]>=650 || length>=950) return {ore:null,point};
-  }
+import {tip,step,oreValue} from './engine.mjs';
+// Replay the actual future cast on a disposable copy, including moving ore and armor.
+export function scan(g){
+ const copy=structuredClone(g);copy.previous=0;step(copy,1);
+ for(let n=0;n<60&&copy.phase===1&&copy.mode==='mining';n++)step(copy,0);
+ const index=copy.cargo>=0?copy.cargo:copy.ores.findIndex((o,n)=>o.armor<g.ores[n].armor);
+ const ore=index>=0?copy.ores[index]:null;
+ return {ore,point:tip(copy),index,cracked:!!ore&&copy.cargo<0,value:ore?oreValue(g,ore):0};
 }

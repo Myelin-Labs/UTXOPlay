@@ -119,7 +119,7 @@ fn profile(kind: Kind) -> ApplicationProfile {
         command_identity_required: false,
         application_id: format!("{ID}/{}", kind.id()),
         program_digest: *program.finalize().as_bytes(),
-        input_schema_hash: hash(b"neon-miner-tapes-30hz-1-to-60-four-bit-controls-and-shop-next-retry"),
+        input_schema_hash: hash(b"neon-miner-tapes-30hz-1-to-60-five-bit-controls-and-shop-next-retry"),
         state_codec_hash: hash(b"neon-miner-integer-state-json"),
         logical_time_policy_hash: hash(b"one-accepted-action-one-logical-tick"),
         entropy_policy_hash: hash(b"park-miller-sector-seed-92017"),

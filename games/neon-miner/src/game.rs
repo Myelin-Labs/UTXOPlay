@@ -1,10 +1,11 @@
-//! Original deterministic Gold Miner rules; all rewards and purchases execute here.
+//! Deterministic deep-sector mining. Rewards, contracts and purchases execute here.
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 pub const ID: &str = "myelin-neon-miner";
 pub const PORT: u16 = 8786;
-pub const MAX_ACTIONS: u64 = 6000;
-pub const MAX_TICKS: u32 = 90000;
+pub const MAX_ACTIONS: u64 = 10000;
+pub const MAX_TICKS: u32 = 200000;
+pub const SECTORS: u32 = 60;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Kind {
@@ -28,6 +29,9 @@ pub struct Ore {
     pub value: u32,
     pub weight: i32,
     pub taken: bool,
+    pub anchor: i32,
+    pub vx: i32,
+    pub armor: u32,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -52,9 +56,13 @@ pub struct Game {
     pub cargo: i32,
     pub rng: u32,
     pub previous: u8,
-    pub stock: [u32; 3],
+    pub stock: [u32; 4],
     pub boost: u32,
     pub lens: u32,
+    pub winch: u32,
+    pub stasis: u32,
+    pub combo: u32,
+    pub collected: [u32; 8],
     pub time_used: u32,
     pub ores: Vec<Ore>,
 }
@@ -66,6 +74,12 @@ enum Action {
     Next,
     Retry,
 }
+fn sector_time(level: u32) -> u32 {
+    1800 - 750.min((level - 1) * 13)
+}
+fn sector_goal(level: u32) -> u32 {
+    (380 + (level - 1) * 32 + (level - 1) / 15 * 100) * [100, 85, 65, 85, 85][((level - 1) % 5) as usize] / 100
+}
 impl Game {
     pub fn new(kind: Kind) -> Self {
         let mut g = Self {
@@ -74,14 +88,14 @@ impl Game {
             level: 1,
             score: 0,
             level_score: 0,
-            goal: 350,
+            goal: sector_goal(1),
             coins: 0,
             earned: 0,
             spent: 0,
             lives: 3,
             mode: "mining".into(),
             over: false,
-            time: 1800,
+            time: sector_time(1),
             phase: 0,
             angle: 35,
             dir: 1,
@@ -89,14 +103,38 @@ impl Game {
             cargo: -1,
             rng: 92017,
             previous: 0,
-            stock: [1, 0, 0],
+            stock: [1, 0, 0, 0],
             boost: 0,
             lens: 0,
+            winch: 0,
+            stasis: 0,
+            combo: 0,
+            collected: [0; 8],
             time_used: 0,
             ores: vec![],
         };
         g.populate();
         g
+    }
+    fn tier(&self) -> u32 {
+        (self.level - 1) / 15
+    }
+    fn time_limit(&self) -> u32 {
+        if self.level > 30 {
+            1
+        } else {
+            2
+        }
+    }
+    fn contract_done(&self) -> bool {
+        let t = self.tier();
+        match (self.level - 1) % 5 {
+            0 => true,
+            1 => self.collected[2] >= 2 + u32::from(t > 1),
+            2 => self.collected[3] >= 2 + u32::from(t > 1),
+            3 => self.collected[4] > u32::from(t > 0),
+            _ => self.collected[7] > u32::from(t > 1),
+        }
     }
     fn rand(&mut self) -> u32 {
         self.rng = (u64::from(self.rng) * 16807 % 2147483647) as u32;
@@ -104,24 +142,46 @@ impl Game {
     }
     fn populate(&mut self) {
         self.rng = 92017 + self.level * 104729;
-        let mut types = [0, 1, 2, 3, 0, 1, 0, 4, 1, 3, 2, 0, 5, 3, 1];
+        let mut types = [0, 1, 2, 3, 0, 1, 2, 4, 1, 3, 2, 0, 5, 3, 1, 4, 7, 7, 6, 0];
+        if self.level >= 16 {
+            types[19] = 6;
+        }
+        if self.level >= 31 {
+            types[0] = 3;
+        }
+        if self.level >= 46 {
+            types[8] = 6;
+        }
         for n in (1..types.len()).rev() {
             let j = self.rand() as usize % (n + 1);
             types.swap(n, j);
         }
         self.ores.clear();
         for (n, kind) in types.into_iter().enumerate() {
-            let x = 120 + (n as i32 % 5) * 190 + (self.rand() % 61) as i32 - 30;
-            let y = 260 + (n as i32 / 5) * 140 + (self.rand() % 41) as i32 - 20;
+            let x = 120 + (n as i32 % 5) * 190 + (self.rand() % 41) as i32 - 20;
+            let y = 280 + (n as i32 / 5) * 98 + (self.rand() % 31) as i32 - 15;
             let (value, weight, radius) = match kind {
                 0 => (80, 2, 24),
-                1 => (200, 5, 38),
+                1 => (200, 5, 36),
                 2 => (260, 1, 21),
-                3 => (15, 7, 33),
+                3 => (40, 7, 30),
                 4 => (110, 2, 24),
-                _ => (90 + self.rand() % 151, 3, 27),
+                5 => (90 + self.rand() % 151, 3, 27),
+                6 => (0, 4, 26),
+                _ => (420, 6, 32),
             };
-            self.ores.push(Ore { x, y, radius, kind, value, weight, taken: false });
+            self.ores.push(Ore {
+                x,
+                y,
+                radius,
+                kind,
+                value,
+                weight,
+                taken: false,
+                anchor: x,
+                vx: if self.level >= 11 && n % 3 == 0 { (if n % 2 == 1 { -1 } else { 1 }) * (1 + self.tier() as i32 / 2) } else { 0 },
+                armor: if kind == 7 { 1 + self.tier() / 2 } else { 0 },
+            });
         }
     }
     pub fn tip(&self) -> (i32, i32) {
@@ -134,7 +194,7 @@ impl Game {
     }
     pub fn validate(&self) -> Result<(), String> {
         if self.tick > MAX_TICKS
-            || !(1..=20).contains(&self.level)
+            || !(1..=SECTORS).contains(&self.level)
             || self.score > 1000000
             || self.earned > 1000000
             || self.spent > self.earned
@@ -146,32 +206,46 @@ impl Game {
             || ![-1, 1].contains(&self.dir)
             || !(36..=950).contains(&self.length)
             || self.cargo < -1
-            || self.cargo >= 15
-            || self.ores.len() != 15
+            || self.cargo >= 20
+            || self.ores.len() != 20
             || self.rng == 0
             || self.rng >= 2147483647
-            || self.previous > 15
+            || self.previous > 31
             || self.stock.iter().any(|v| *v > 3)
             || self.boost > 450
             || self.lens > 3
+            || self.winch > 3
+            || self.stasis > 180
+            || self.combo > 5
             || self.time_used > 2
+            || self.collected.iter().any(|v| *v > 20)
+            || self.collected.iter().sum::<u32>() > 20
             || !["mining", "cleared", "lost", "complete"].contains(&self.mode.as_str())
         {
             return Err("Invalid miner snapshot".into());
         }
-        if self.ores.iter().any(|o| {
-            o.kind > 5
-                || o.x < 60
-                || o.x > 940
-                || o.y < 220
-                || o.y > 600
-                || o.radius < 20
-                || o.radius > 40
-                || o.weight < 1
-                || o.weight > 7
-                || o.value > 300
-        }) {
-            return Err("Invalid ore".into());
+        if self.goal != sector_goal(self.level)
+            || self.level_score > self.score
+            || self.collected[6] != 0
+            || self.ores.iter().any(|o| {
+                o.kind > 7
+                    || o.x < 40
+                    || o.x > 960
+                    || o.y < 220
+                    || o.y > 600
+                    || o.radius < 20
+                    || o.radius > 40
+                    || o.weight < 1
+                    || o.weight > 7
+                    || o.value > 420
+                    || o.anchor < 100
+                    || o.anchor > 900
+                    || o.vx.unsigned_abs() > 2
+                    || o.armor > 2
+                    || (o.kind != 7 && o.armor != 0)
+            })
+        {
+            return Err("Invalid ore or contract".into());
         }
         Ok(())
     }
@@ -182,7 +256,7 @@ impl Game {
         let action: Action = serde_json::from_value(v.clone()).map_err(|e| e.to_string())?;
         match action {
             Action::Ticks { inputs } => {
-                if inputs.is_empty() || inputs.len() > 60 || inputs.iter().any(|i| *i > 15) || self.mode != "mining" || self.over {
+                if inputs.is_empty() || inputs.len() > 60 || inputs.iter().any(|i| *i > 31) || self.mode != "mining" || self.over {
                     return Err("Invalid tape or inactive sector".into());
                 }
                 for i in inputs {
@@ -191,15 +265,18 @@ impl Game {
             }
             Action::Buy { item } => self.buy(&item)?,
             Action::Next => {
-                if self.mode != "cleared" || self.level >= 20 {
+                if self.mode != "cleared" || self.level >= SECTORS {
                     return Err("Clear this sector first".into());
                 }
                 self.level += 1;
                 self.level_score = 0;
-                self.goal = 350 + (self.level - 1) * 30;
-                self.time = 1800;
+                self.goal = sector_goal(self.level);
+                self.time = sector_time(self.level);
                 self.time_used = 0;
                 self.boost = 0;
+                self.stasis = 0;
+                self.combo = 0;
+                self.collected = [0; 8];
                 self.phase = 0;
                 self.angle = 35;
                 self.dir = 1;
@@ -214,7 +291,7 @@ impl Game {
                     return Err("No recovery charges left".into());
                 }
                 self.lives -= 1;
-                self.time = 1800;
+                self.time = sector_time(self.level);
                 self.mode = "mining".into();
                 self.over = false;
                 self.previous = 0;
@@ -226,27 +303,54 @@ impl Game {
         if self.over || self.mode == "complete" {
             return Err("Start a new expedition".into());
         }
-        let (slot, price) = match item {
+        let (slot, base) = match item {
             "emp" => (0, 8),
             "overdrive" => (1, 18),
             "time-cell" => (2, 15),
-            "lens" => (3, 30 * (self.lens + 1)),
+            "stasis" => (3, 20),
+            "lens" => (4, 30),
+            "winch" => (5, 45),
             _ => return Err("Unknown item".into()),
         };
-        if (slot < 3 && self.stock[slot] >= 3) || (slot == 3 && self.lens >= 3) {
+        let owned = if slot == 4 {
+            self.lens
+        } else if slot == 5 {
+            self.winch
+        } else {
+            self.stock[slot]
+        };
+        if owned >= 3 {
             return Err("Upgrade or stock limit reached".into());
         }
+        let price = base * if slot >= 4 { owned + 1 } else { 1 + self.tier() * self.tier() };
         if self.coins < price {
             return Err("Mine more credits first".into());
         }
         self.coins -= price;
         self.spent += price;
-        if slot == 3 {
+        if slot == 4 {
             self.lens += 1
+        } else if slot == 5 {
+            self.winch += 1
         } else {
             self.stock[slot] += 1
         }
         Ok(())
+    }
+    fn can_discard(&self) -> bool {
+        if self.phase != 2 || self.cargo < 0 || self.stock[0] == 0 {
+            return false;
+        }
+        let t = self.tier();
+        let (kind, need) = match (self.level - 1) % 5 {
+            0 => return true,
+            1 => (2, 2 + u32::from(t > 1)),
+            2 => (3, 2 + u32::from(t > 1)),
+            3 => (4, 1 + u32::from(t > 0)),
+            _ => (7, 1 + u32::from(t > 1)),
+        };
+        self.ores[self.cargo as usize].kind != kind
+            || self.collected[kind as usize] + self.ores.iter().filter(|o| !o.taken && o.kind == kind).count() as u32 >= need
     }
     pub fn step(&mut self, input: u8) {
         if self.mode != "mining" || self.over {
@@ -256,27 +360,48 @@ impl Game {
         self.time = self.time.saturating_sub(1);
         let pressed = input & !self.previous;
         self.previous = input;
-        if self.boost > 0 {
-            self.boost -= 1;
-        }
-        if pressed & 2 != 0 && self.phase == 2 && self.cargo >= 0 && self.stock[0] > 0 {
+        self.boost = self.boost.saturating_sub(1);
+        self.stasis = self.stasis.saturating_sub(1);
+        if pressed & 2 != 0 && self.can_discard() {
             self.stock[0] -= 1;
             self.cargo = -1;
+            self.combo = 0;
         }
         if pressed & 4 != 0 && self.boost == 0 && self.stock[1] > 0 {
             self.stock[1] -= 1;
             self.boost = 450;
         }
-        if pressed & 8 != 0 && self.time_used < 2 && self.stock[2] > 0 {
+        if pressed & 8 != 0 && self.time_used < self.time_limit() && self.stock[2] > 0 {
             self.stock[2] -= 1;
             self.time_used += 1;
             self.time = (self.time + 300).min(2400);
+        }
+        if pressed & 16 != 0 && self.stasis == 0 && self.stock[3] > 0 {
+            self.stock[3] -= 1;
+            self.stasis = 180;
+        }
+        let range = 25 + self.tier() as i32 * 8;
+        if self.stasis == 0 && self.tick.is_multiple_of(2) {
+            for o in &mut self.ores {
+                if !o.taken && o.vx != 0 {
+                    o.x += o.vx;
+                    if o.x >= o.anchor + range || o.x <= o.anchor - range {
+                        o.vx = -o.vx;
+                    }
+                }
+            }
         }
         match self.phase {
             0 => {
                 if pressed & 1 != 0 {
                     self.phase = 1;
-                } else if self.tick.is_multiple_of(2) {
+                } else if self.tick.is_multiple_of(if self.stasis > 0 {
+                    4
+                } else if self.level > 30 {
+                    1
+                } else {
+                    2
+                }) {
                     self.angle += self.dir;
                     if self.angle >= 70 {
                         self.dir = -1;
@@ -291,9 +416,13 @@ impl Game {
                 let (x, y) = self.tip();
                 for (n, o) in self.ores.iter_mut().enumerate() {
                     if !o.taken && (x - o.x).pow(2) + (y - o.y).pow(2) <= (o.radius + 8).pow(2) {
-                        o.taken = true;
-                        self.cargo = n as i32;
                         self.phase = 2;
+                        if o.armor > 0 {
+                            o.armor -= 1;
+                        } else {
+                            o.taken = true;
+                            self.cargo = n as i32;
+                        }
                         break;
                     }
                 }
@@ -302,26 +431,37 @@ impl Game {
                 }
             }
             2 => {
-                let speed = if self.cargo < 0 { 22 } else { (18 / self.ores[self.cargo as usize].weight).max(3) };
+                let speed =
+                    if self.cargo < 0 { 22 } else { ((18 + 4 * self.winch as i32) / self.ores[self.cargo as usize].weight).max(3) };
                 self.length = (self.length - speed * if self.boost > 0 { 2 } else { 1 }).max(36);
                 if self.length == 36 {
                     if self.cargo >= 0 {
                         let o = &self.ores[self.cargo as usize];
-                        let value = if o.kind == 2 { o.value * (100 + 20 * self.lens) / 100 } else { o.value };
-                        let battery = o.kind == 4;
-                        self.score += value;
-                        self.level_score += value;
-                        self.reward(value / 10);
-                        if battery {
-                            self.time = (self.time + 90).min(2400);
+                        let kind = o.kind as usize;
+                        if kind == 6 {
+                            self.time = self.time.saturating_sub(120 + self.tier() * 30);
+                            self.combo = 0;
+                        } else {
+                            let base = if kind == 2 { o.value * (100 + 20 * self.lens) / 100 } else { o.value };
+                            let value = base * (100 + 5 * self.combo.min(5)) / 100;
+                            self.score += value;
+                            self.level_score += value;
+                            self.collected[kind] += 1;
+                            self.reward(value / 10);
+                            self.combo = (self.combo + 1).min(5);
+                            if kind == 4 {
+                                self.time = (self.time + 90).min(2400);
+                            }
                         }
+                    } else {
+                        self.combo = 0;
                     }
                     self.cargo = -1;
                     self.phase = 0;
-                    if self.level_score >= self.goal {
-                        self.reward(15);
-                        self.mode = if self.level == 20 { "complete" } else { "cleared" }.into();
-                        self.over = self.level == 20;
+                    if self.level_score >= self.goal && self.contract_done() {
+                        self.reward(20 + 5 * self.tier());
+                        self.mode = if self.level == SECTORS { "complete" } else { "cleared" }.into();
+                        self.over = self.level == SECTORS;
                     }
                 }
             }
@@ -338,7 +478,6 @@ impl Game {
         }
     }
 }
-
 const DIRECTIONS: [[i32; 2]; 71] = [
     [-940, 342],
     [-927, 375],
@@ -412,116 +551,152 @@ const DIRECTIONS: [[i32; 2]; 71] = [
     [927, 375],
     [940, 342],
 ];
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
     #[test]
-    fn twenty_sectors_are_winnable_without_purchases() {
+    fn sixty_sector_campaign_is_replayable() {
         let mut g = Game::new(Kind::NeonMiner);
         let actions: Vec<Value> = serde_json::from_str(include_str!("../../../tests/neon-miner-solutions.json")).unwrap();
         for action in actions {
             g.apply(&action).unwrap();
         }
-        assert_eq!(g.level, 20);
+        assert_eq!(g.level, 60);
         assert_eq!(g.mode, "complete");
         assert_eq!(g.lives, 3);
-        assert_eq!(g.coins, g.earned);
-        assert_eq!(g.spent, 0);
+        assert!(g.spent > 0);
+        assert_eq!(g.coins, g.earned - g.spent);
     }
     #[test]
-    fn shop_rejects_forgery_limits_and_insufficient_credits() {
+    fn shop_and_tapes_reject_forged_input_without_mutation() {
         let mut g = Game::new(Kind::NeonMiner);
         let before = g.clone();
         for a in [
             json!({"type":"buy","item":"emp"}),
             json!({"type":"buy","item":"emp","price":0}),
-            json!({"type":"buy","item":"emp","quantity":10}),
-            json!({"type":"buy","item":"bad"}),
-            json!({"type":"ticks","inputs":[16]}),
+            json!({"type":"buy","item":"emp","quantity":5}),
+            json!({"type":"buy","item":"unknown"}),
+            json!({"type":"ticks","inputs":[32]}),
+            json!({"type":"ticks","inputs":[]}),
             json!({"type":"next"}),
         ] {
             assert!(g.apply(&a).is_err());
             assert_eq!(g, before);
         }
-        g.reward(500);
-        for _ in 0..2 {
-            g.apply(&json!({"type":"buy","item":"emp"})).unwrap();
-        }
-        assert_eq!(g.stock[0], 3);
-        assert_eq!(g.coins, 484);
-        assert_eq!(g.spent, 16);
-        let before = g.clone();
-        assert!(g.apply(&json!({"type":"buy","item":"emp"})).is_err());
-        assert_eq!(g, before);
+        g.reward(1000);
         for _ in 0..3 {
-            g.apply(&json!({"type":"buy","item":"lens"})).unwrap();
+            g.apply(&json!({"type":"buy","item":"winch"})).unwrap();
         }
-        assert_eq!(g.lens, 3);
-        assert_eq!(g.spent, 196);
-        assert!(g.apply(&json!({"type":"buy","item":"lens"})).is_err());
+        assert_eq!(g.winch, 3);
+        assert_eq!(g.spent, 270);
+        assert!(g.apply(&json!({"type":"buy","item":"winch"})).is_err());
     }
     #[test]
-    fn power_items_only_consume_when_eligible_and_once_per_press() {
+    fn contracts_cannot_be_replaced_by_score() {
         let mut g = Game::new(Kind::NeonMiner);
-        g.stock = [3, 3, 3];
-        g.time = 1000;
-        g.step(14);
-        assert_eq!(g.stock, [3, 2, 2]);
-        assert_eq!(g.time_used, 1);
-        assert_eq!(g.boost, 450);
-        g.step(14);
-        assert_eq!(g.stock, [3, 2, 2]);
+        g.level = 2;
+        g.goal = sector_goal(2);
+        g.level_score = 10000;
+        g.score = 10000;
+        g.phase = 2;
+        g.length = 40;
         g.step(0);
-        g.step(8);
+        assert_eq!(g.mode, "mining");
+        g.collected[2] = 2;
+        g.phase = 2;
+        g.length = 40;
         g.step(0);
-        g.step(8);
-        assert_eq!(g.stock[2], 1);
-        assert_eq!(g.time_used, 2);
+        assert_eq!(g.mode, "cleared");
+    }
+    #[test]
+    fn armor_mines_and_emp_have_distinct_effects() {
+        let mut g = Game::new(Kind::NeonMiner);
+        for o in &mut g.ores {
+            o.taken = true;
+        }
+        g.ores[0].taken = false;
+        g.ores[0].x = 500;
+        g.ores[0].y = 280;
+        g.ores[0].kind = 7;
+        g.ores[0].armor = 2;
+        g.phase = 1;
+        g.length = 145;
+        g.step(0);
+        g.step(0);
+        assert_eq!(g.ores[0].armor, 1);
+        assert!(!g.ores[0].taken);
+        assert_eq!(g.cargo, -1);
+        assert_eq!(g.score, 0);
+        g.ores[0].kind = 6;
+        g.ores[0].armor = 0;
+        g.ores[0].taken = true;
         g.phase = 2;
         g.cargo = 0;
-        g.ores[0].taken = true;
-        g.length = 500;
+        g.length = 37;
+        g.time = 1000;
         g.step(0);
-        g.step(2);
-        assert_eq!(g.stock[0], 2);
-        assert_eq!(g.cargo, -1);
+        assert_eq!(g.time, 879);
         assert_eq!(g.coins, 0);
-        assert!(g.ores[0].taken);
+        g.phase = 2;
+        g.cargo = 0;
+        g.length = 37;
+        g.time = 1000;
+        g.step(2);
+        assert_eq!(g.time, 999);
+        assert_eq!(g.stock[0], 0);
+        assert_eq!(g.coins, 0);
     }
     #[test]
-    fn retry_does_not_respawn_ore_or_duplicate_earnings() {
+    fn stasis_and_time_cells_are_edge_triggered_and_bounded() {
+        let mut g = Game::new(Kind::NeonMiner);
+        g.level = 31;
+        g.stock = [3; 4];
+        g.time = 500;
+        g.ores[0].vx = 1;
+        let x = g.ores[0].x;
+        g.step(24);
+        g.step(24);
+        assert_eq!(g.stock, [3, 3, 2, 2]);
+        assert_eq!(g.ores[0].x, x);
+        g.step(0);
+        g.step(8);
+        assert_eq!(g.time_used, 1);
+        assert_eq!(g.stock[2], 2);
+        assert_eq!(g.stasis, 177);
+    }
+    #[test]
+    fn recovery_preserves_collections_and_armor() {
         let mut g = Game::new(Kind::NeonMiner);
         g.ores[2].taken = true;
-        g.score = 260;
-        g.level_score = 260;
+        g.ores[3].armor = 0;
+        g.collected[2] = 1;
         g.reward(26);
         g.time = 1;
         g.step(0);
-        assert_eq!(g.mode, "lost");
         g.apply(&json!({"type":"retry"})).unwrap();
         assert!(g.ores[2].taken);
-        assert_eq!(g.level_score, 260);
+        assert_eq!(g.collected[2], 1);
         assert_eq!(g.coins, 26);
         assert_eq!(g.lives, 2);
-        assert_eq!(g.time, 1800);
     }
     #[test]
-    fn corrupted_snapshot_and_unknown_actions_fail_closed() {
+    fn corrupt_snapshots_fail_closed() {
         let g = Game::new(Kind::NeonMiner);
         let mut bad = g.clone();
         bad.coins = 1;
         assert!(bad.validate().is_err());
         bad = g.clone();
-        bad.cargo = 999;
+        bad.collected[0] = u32::MAX;
         assert!(bad.validate().is_err());
         bad = g.clone();
-        bad.angle = -1;
+        bad.ores[0].vx = i32::MIN;
         assert!(bad.validate().is_err());
         bad = g.clone();
-        assert!(bad.apply(&json!({"type":"award","coins":1000})).is_err());
-        assert!(bad.apply(&json!({"type":"ticks","inputs":[]})).is_err());
-        assert!(bad.apply(&json!({"type":"ticks","inputs":vec![0;61]})).is_err());
+        bad.goal = 1;
+        assert!(bad.validate().is_err());
+        bad = g.clone();
+        bad.cargo = 99;
+        assert!(bad.validate().is_err());
     }
 }

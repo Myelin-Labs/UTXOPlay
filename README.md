@@ -103,4 +103,4 @@ Store 0.11.0 adds Skyward's in-game Item Store. Earn coins through play, buy ext
 
 ## Neon Prospector — store 0.12.0
 
-A cyberpunk Gold Miner game with 20 sectors, earned-credit upgrades, synthesized music and a game-owned interface. Its isolated Myelin runtime executes inputs, score, inventory and purchases; the browser never supplies a score or balance. See [release and verification notes](docs/neon-miner-release.md).
+A cyberpunk Gold Miner game with 60 sectors, five contract types, moving ore, hazardous mines, armored vaults, earned-credit equipment and controls embedded in the mine canvas. Its isolated Myelin runtime executes inputs, score, inventory and purchases; the browser never supplies a score or balance. See [current release and verification notes](docs/neon-miner-deep-expedition.md).

@@ -1,8 +1,8 @@
-import {tip, districts} from './engine.mjs';
+import {tip, districts, tier} from './engine.mjs';
 import {loadArt, oreArt, scenes} from './art.mjs';
 import {scan} from './scanner.mjs';
-const colors = ['#ffc968','#ffd68a','#bc9aff','#8596ad','#73f5df','#ff87d7'];
-const names = ['GOLD ORE','HEAVY GOLD','DATA CRYSTAL','INDUSTRIAL SCRAP','POWER CELL','SEALED CACHE'];
+const colors = ['#ffc968','#ffd68a','#bc9aff','#8596ad','#73f5df','#ff87d7','#ff6073','#ffc968'];
+const names = ['GOLD ORE','HEAVY GOLD','DATA CRYSTAL','INDUSTRIAL SCRAP','POWER CELL','SEALED CACHE','VOLATILE MINE','ARMORED VAULT'];
 const accents = ['#6debe0','#ff89da','#85dcff','#ffad65'];
 
 export class MinerRenderer {
@@ -15,11 +15,11 @@ export class MinerRenderer {
   async load() { if(!this.art) this.art=await loadArt(); this.cache=null; }
   background(g) {
     const c=document.createElement('canvas'); c.width=1000; c.height=700;
-    const x=c.getContext('2d'); x.drawImage(this.art[scenes[Math.floor((g.level-1)/5)]],0,0,1000,700);
+    const x=c.getContext('2d'); x.drawImage(this.art[scenes[tier(g)]],0,0,1000,700);
     const shade=x.createLinearGradient(0,0,0,700); shade.addColorStop(0,'#03071320'); shade.addColorStop(.3,'#03071300'); shade.addColorStop(1,'#03071330');
     x.fillStyle=shade; x.fillRect(0,0,1000,700);
     x.font='500 11px monospace'; x.fillStyle='#b0c7da'; x.fillText(`↓ ${180+g.level*65} M`,24,31);
-    x.textAlign='right'; x.fillText(districts[Math.floor((g.level-1)/5)].toUpperCase(),976,31);
+    x.textAlign='right'; x.fillText(districts[tier(g)].toUpperCase(),976,31);
     this.cache=c; this.level=g.level;
   }
   sprite(name,x,y,width,height=width) {
@@ -34,7 +34,7 @@ export class MinerRenderer {
       light.addColorStop(0,colors[o.kind]+'22'); light.addColorStop(1,colors[o.kind]+'00');
       x.fillStyle=light; x.fillRect(-r*2,-r*2,r*4,r*4);
     }
-    this.sprite(oreArt[o.kind],0,0,r*2.25,r*2.25); x.restore();
+    this.sprite(oreArt[o.kind],0,0,r*2.25,r*2.25);if(o.armor){x.strokeStyle='#ffd075';x.lineWidth=2;for(let i=0;i<o.armor;i++){x.beginPath();x.arc(0,0,r+6+i*5,0,Math.PI*2);x.stroke();}}if(o.kind===6){x.strokeStyle='#ff566d';x.lineWidth=2;x.beginPath();x.arc(0,0,r+5,0,Math.PI*2);x.stroke();x.fillStyle='#ff9aa7';x.font='bold 18px system-ui';x.textAlign='center';x.fillText('!',0,6);}x.restore();
   }
   burst(x,y,color,count=18) {
     if(this.reduced)return;
@@ -47,7 +47,7 @@ export class MinerRenderer {
   targeting(g,hx,hy) {
     const x=this.ctx;
     if(!this.scanner||g.phase!==0){this.forecast=null;return;}
-    if(!this.forecast||this.forecast.angle!==g.angle||this.forecast.tick>g.tick||this.forecast.score!==g.score||this.forecast.level!==g.level||this.forecast.lens!==g.lens) {
+    if(!this.forecast||this.forecast.angle!==g.angle||this.forecast.tick!==g.tick||this.forecast.score!==g.score||this.forecast.level!==g.level||this.forecast.lens!==g.lens) {
       this.forecast={...scan(g),angle:g.angle,tick:g.tick,score:g.score,level:g.level,lens:g.lens};
     }
     const {ore,point,value}=this.forecast;
@@ -63,7 +63,7 @@ export class MinerRenderer {
     x.fillStyle='#060e1be8';x.fillRect(bx-half,by-12*scale,half*2,34*scale);
     x.textAlign='center';x.font=`600 ${10*scale}px system-ui`;x.fillStyle=colors[ore.kind];x.fillText(names[ore.kind],bx,by);
     x.font=`${10*scale}px monospace`;x.fillStyle='#b6c8d8';
-    x.fillText(`${ore.kind===5?'90–240':value} VALUE  ·  ${ore.weight>=5?'HEAVY':ore.weight<=2?'LIGHT':'MEDIUM'}${ore.kind===4?'  +3s':''}`,bx,by+14*scale);x.textAlign='left';
+    x.fillText(ore.kind===6?'DANGER · DELIVERING COSTS TIME':ore.armor?`${ore.armor} ARMOR · CRACK BEFORE COLLECTING`:`${ore.kind===5?'SEALED':value} VALUE  ·  ${ore.weight>=5?'HEAVY':ore.weight<=2?'LIGHT':'MEDIUM'}${ore.kind===4?'  +3s':''}`,bx,by+14*scale);x.textAlign='left';
   }
   draw(g,dt=16,alpha=1,previous=g) {
     const x=this.ctx,w=this.canvas.width,h=this.canvas.height;
@@ -73,8 +73,8 @@ export class MinerRenderer {
     if(!this.cache||g.level!==this.level) {
       this.background(g);this.particles=[];this.labels=[];this.rings=[];this.prev=null;this.forecast=null;
     }
-    x.drawImage(this.cache,0,0);
-    const color=accents[Math.floor((g.level-1)/5)], [tx,ty]=tip(g),[oldX,oldY]=tip(previous);
+    const cover=Math.max(w/1000,h/700);x.setTransform(1,0,0,1,0,0);x.drawImage(this.cache,(w-1000*cover)/2,(h-700*cover)/2,1000*cover,700*cover);const cssW=this.canvas.clientWidth||1000,cssH=this.canvas.clientHeight||700,pixel=w/cssW,top=cssW<=600?198:cssH<=540?100:134,bottom=cssW<=600?130:76,scale=Math.min(cssW/1000,Math.max(100,cssH-top-bottom)/700);x.setTransform(scale*pixel,0,0,scale*pixel,(cssW-1000*scale)/2*pixel,(top+(cssH-top-bottom-700*scale)/2)*pixel);
+    const color=accents[tier(g)], [tx,ty]=tip(g),[oldX,oldY]=tip(previous);
     const smooth=previous.level===g.level&&previous.phase===g.phase&&!this.reduced;
     const hx=smooth?oldX+(tx-oldX)*alpha:tx,hy=smooth?oldY+(ty-oldY)*alpha:ty;
     if(this.prev) {
@@ -83,7 +83,7 @@ export class MinerRenderer {
       if(g.stock[0]<this.prev.stock[0]){this.burst(oldX,oldY,'#ff80da',36);this.ring(oldX,oldY,'#ff80da',true);}
       if(g.stock[2]<this.prev.stock[2]){this.labels.push({x:500,y:190,text:'+10s · TIME CELL',age:0});this.ring(500,350,'#7eefff',true);}
     }
-    this.prev={score:g.score,cargo:g.cargo,stock:[...g.stock]};
+    this.prev={score:g.score,cargo:g.cargo,stock:[...g.stock]};if(g.stasis){x.fillStyle='#71efff';x.font='600 12px monospace';x.textAlign='center';x.fillText(`STASIS / ${(g.stasis/30).toFixed(1)}s`,500,690);x.textAlign='left';}if(g.combo){x.fillStyle='#ffd075';x.font='600 12px monospace';x.fillText(`CHAIN +${g.combo*5}%`,25,690);}
     if(!this.reduced&&this.quality!=='low') {
       // Tiny parallax motes and moving search lights, bounded independently of simulation.
       x.save();x.globalCompositeOperation='screen';
