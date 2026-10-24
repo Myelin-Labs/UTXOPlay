@@ -8,10 +8,10 @@ import {setText,startRenderLoop,readQuality} from './performance.mjs';
 globalThis.UTXOPlayLoader?.boot();
 const id=location.pathname.split('/')[2];
 const config={
- 'prism-breaker':{title:'Prism Breaker',label:'01 / REFRACTION LAB',accent:'#b7a2ff',intro:'Find the angle. Break the spectrum.',goal:'Conquer 24 distinct crystal sectors. Collect six capsule types, break armoured and explosive gems, and choose a permanent perk after every sector. Space fires a column pulse every 12 seconds.',keys:['←','→','A','D'],tip:'Mouse, arrows or touch drag steer the paddle. F toggles Focus Lens: a projected path and landing marker with the paddle held still. Aim with the edges to change the return angle.'},
- 'neon-coil':{title:'Neon Coil',label:'02 / LIVING CIRCUIT',accent:'#84efba',intro:'A little hunger. A longer circuit.',goal:'Collect the glowing nodes. Grow your circuit without crossing yourself or touching the edge.',keys:['↑','←','↓','→'],tip:'Arrow keys or WASD to turn. Swipe on the board or use the direction buttons. The pace increases as you grow.'},
- 'starfall':{title:'Starfall',label:'03 / ORBITAL DEFENCE',accent:'#7edaff',intro:'Hold the line. Light up the night.',goal:'Break through each descending formation. Dodge return fire and survive the next wave.',keys:['←','→','SPACE'],tip:'Move the mouse, use A/D, or drag to steer. Auto fire is on by default; turn it off to fire manually with Space or FIRE.'},
- 'drift-run':{title:'Drift Run',label:'04 / AFTER HOURS',accent:'#ffbc83',intro:'Three lanes. One way forward.',goal:'Slip between the barriers. Catch amber energy rings as the city rushes past.',keys:['←','→','A','D'],tip:'Tap left or right to change lanes. Swipe sideways on the road, or use the touch arrows. Stay clear of the coral barriers.'}
+ 'prism-breaker':{title:'Prism Breaker',label:'01 / REFRACTION LAB',accent:'#b7a2ff',intro:'Bend light. Rewrite the angle.',goal:'Conquer 24 distinct crystal sectors. Collect six capsule types, break armoured and explosive gems, and choose a permanent perk after every sector. Break crystals to charge Refraction. Q / E bends every ball up-left / up-right for 4 charge. Space fires a column pulse every 12 seconds.',keys:['←','→','Q','E','SPACE'],tip:'Mouse, arrows or touch drag steer the paddle. F toggles Focus Lens: a projected path and landing marker with the paddle held still. Aim with the edges to change the return angle.'},
+ 'neon-coil':{title:'Neon Coil',label:'02 / LIVING CIRCUIT',accent:'#84efba',intro:'Grow a circuit. Close it. Cash it in.',goal:'Eat nodes until your coil has at least 9 segments. Turn back into a distant segment to enclose empty tiles: the circuit discharges for 40 + 10 per tile, leaving a short tail. Small knots and walls are still fatal.',keys:['↑','←','↓','→'],tip:'Arrow keys or WASD to turn. Swipe on the board or use the direction buttons. Gold segments mark possible connection points. Enclose at least one whole grid tile; a tight knot will not discharge.'},
+ 'starfall':{title:'Starfall',label:'03 / ORBITAL DEFENCE',accent:'#7edaff',intro:'Catch their fire. Send it home.',goal:'Hold W or CAPTURE to absorb up to 6 enemy shots, then release to reflect a spreading volley. Shooting pauses while you capture. Hold for 1.5 seconds and the shield overheats for 2 seconds: choose your window carefully.',keys:['←','→','W','SPACE'],tip:'Move the mouse, use A/D, or drag to steer. Auto fire is on by default; turn it off to fire manually with Space or FIRE.'},
+ 'drift-run':{title:'Drift Run',label:'04 / AFTER HOURS',accent:'#ffbc83',intro:'Leave an echo. Steal a second line.',goal:'Changing lanes leaves a short-lived echo that can catch rings in the lane you left. Echo rings and close passes beside barriers charge OVERDRIVE. Spend 3 charge with Space to smash through barriers for 1.5 seconds.',keys:['←','→','SPACE'],tip:'Tap left or right to change lanes. Swipe sideways on the road, or use the touch arrows. Stay clear of the coral barriers.'}
 }[id];
 if(!config||!kinds.includes(id))throw Error('Unknown arcade game');
 const $=s=>document.querySelector(s),canvas=$('canvas');
@@ -23,7 +23,7 @@ const read=(key,fallback)=>{try{return localStorage.getItem(key)||fallback;}catc
 const write=(key,value)=>{try{localStorage.setItem(key,String(value));}catch{}};
 let predicted=createGame(id),previous=structuredClone(predicted),confirmed=null,pending=[],sending=null;
 let running=false,loaded=false,stopping=false,accumulator=0,saveTimer=0,countdown=0,lastCount=0;
-let best=Number(read(`utxoplay:best:${id}`,'0'))||0,runBest=best;
+let best=Number(read(`utxoplay:best:signature:${id}`,'0'))||0,runBest=best;
 let autoFire=read('utxoplay:autofire','on')==='on',hoverX=null,overlayAction='play',resumeEpoch=0,busy=false;
 let noticeTime=0,quality=readQuality(),artworkReady=false;
 if(id==='prism-breaker'){
@@ -33,8 +33,41 @@ if(id==='prism-breaker'){
  lens.onclick=()=>{renderer.setLens(!renderer.lens);write('utxoplay:prism-lens',renderer.lens?'on':'off');label();if(running||countdown)canvas.focus();};label();
 }
 async function prepareArtwork(){if(id==='prism-breaker'&&!artworkReady){await renderer.load($('#cover'));artworkReady=true;}}
+// Scene-owned instrumentation and controls share the exact signed input tape.
+const signatures={
+ 'prism-breaker':{name:'REFRACTION',hint:'Break crystals · spend 4 to bend light',buttons:[[4,'↖','Bend left','Q'],[8,'↗','Bend right','E']]},
+ 'neon-coil':{name:'CLOSED CIRCUIT',hint:'Grow to 9 · enclose a tile · discharge',buttons:[]},
+ starfall:{name:'CAPTURE / REFLECT',hint:'Hold to absorb · release to return fire',buttons:[[4,'◉','Capture','W · HOLD']]},
+ 'drift-run':{name:'ECHO DRIVE',hint:'Echo rings + close passes charge a burst',buttons:[[16,'»','Overdrive','SPACE']]}
+};
+const signature=signatures[id],instrument=document.createElement('section');
+instrument.className='signature-mechanic';instrument.setAttribute('aria-label',signature.name);
+instrument.innerHTML='<div class="signature-heading"><span></span><strong id="signature-value"></strong></div><div class="signature-meter" role="meter" aria-label="Ability charge" aria-valuemin="0" aria-valuemax="6"><i></i></div><small id="signature-hint"></small>';
+instrument.querySelector('span').textContent=signature.name;
+instrument.querySelector('small').textContent=signature.hint;
+$('.board').append(instrument);
+const abilities=document.createElement('div');abilities.className='signature-actions';abilities.setAttribute('aria-label','Special abilities');
+for(const [bit,glyph,label,key] of signature.buttons){const button=document.createElement('button');button.type='button';button.dataset.input=bit;button.setAttribute('aria-label',label+' · '+key);button.innerHTML='<b></b><span></span><kbd></kbd>';button.querySelector('b').textContent=glyph;button.querySelector('span').textContent=label;button.querySelector('kbd').textContent=key;abilities.append(button);}
+$('.board').append(abilities);
+const meter=instrument.querySelector('[role="meter"]');
+let signatureCache='';
+function updateSignature(){
+ const g=predicted;
+ const max=id==='prism-breaker'?6:id==='neon-coil'?9:id==='drift-run'?3:6;
+ const charge=id==='prism-breaker'?g.refraction:id==='neon-coil'?Math.min(9,g.trail.length):g.energy;
+ const ready=id==='prism-breaker'?charge>=4:id==='neon-coil'?charge>=9:id==='drift-run'?charge>=3:!g.ability_lock;
+ const active=id!=='prism-breaker'&&g.ability_ticks>0;
+ const detail=id==='prism-breaker'?`${charge}/6 · COST 4`:id==='neon-coil'?`${g.trail.length} SEGMENTS`:id==='drift-run'?(active?'OVERDRIVE':`${charge}/3`):g.ability_lock?`COOLING ${Math.ceil(g.ability_lock/30)}s`:`${charge}/6 · ${Math.round(g.ability_ticks/45*100)}% HEAT`;
+ const hint=id==='neon-coil'&&active?`${g.loop_area} tiles discharged · ${g.specials} circuits`:id==='neon-coil'&&ready?'Connect to gold · leave an empty tile inside':id==='drift-run'&&g.echo_ticks?'Echo collecting in your previous lane':signature.hint;
+ const key=[charge,detail,hint,ready,active,running].join('|');if(key===signatureCache)return;signatureCache=key;
+ setText('signature-value',detail);setText('signature-hint',hint);
+ meter.setAttribute('aria-valuemax',String(max));meter.setAttribute('aria-valuenow',String(charge));meter.style.setProperty('--charge',charge/max*100+'%');
+ instrument.dataset.ready=String(ready);instrument.dataset.active=String(active);abilities.dataset.ready=String(ready);
+ for(const button of abilities.children)button.setAttribute('aria-disabled',String(!running||!ready||(id==='drift-run'&&active)));
+}
 const hud={};
 function updateHud(){
+  updateSignature();
   if(id==='prism-breaker'){
     setText('prism-sector',levels[predicted.level-1].name);
     setText('prism-owned',predicted.perks.map((rank,i)=>rank?PERKS[i].name+' '+rank+'/4':'').filter(Boolean).join(' · ')||'Clear a sector to choose your first perk.');
@@ -70,7 +103,7 @@ function refreshButtons(){
 }
 function focusLaunch(){if(!document.hidden&&!$('#launch').disabled)$('#launch').focus({preventScroll:true});}
 function toast(text){setText('notice',text);$('#notice').hidden=false;noticeTime=1800;announce(text);}
-function rememberBest(){if(confirmed.game.score>best){best=confirmed.game.score;write(`utxoplay:best:${id}`,best);}setText('best',best.toLocaleString());}
+function rememberBest(){if(confirmed.game.score>best){best=confirmed.game.score;write(`utxoplay:best:signature:${id}`,best);}setText('best',best.toLocaleString());}
 function begin(){if(predicted.draft){void showPerks();return;}clearInput();syncView();$('#notice').hidden=true;noticeTime=0;$('#overlay').hidden=true;$('#pause').textContent='Pause';countdown=1800;lastCount=0;$('#countdown').hidden=false;setText('countdown','3');canvas.focus();}
 document.documentElement.style.setProperty('--accent',config.accent);document.documentElement.dataset.game=id;document.title=config.title+' · UTXOPlay';
 document.documentElement.style.setProperty('--key-art',`url('/assets/${id}-keyart.webp${id==='prism-breaker'?'?v=0.15.0':''}')`);
@@ -136,7 +169,7 @@ if(id==='prism-breaker'){
 
 async function boot(){
   try{const [state]=await Promise.all([api('state').then(state=>{globalThis.UTXOPlayLoader?.session();return state;},error=>{globalThis.UTXOPlayLoader?.fail('session');throw error;}),prepareArtwork()]);confirmed=state;predicted=structuredClone(confirmed.game);syncView();updateHud();loaded=true;runBest=best;rememberBest();
-    showOverlay(predicted.over?'Your last run':config.title,predicted.tick?`${predicted.score} points saved. ${predicted.over?'Ready for another run?':'Pick up where you left off.'}`:config.intro,predicted.over?'Play again':predicted.tick?'Continue run':'Start playing',true);
+    showOverlay(predicted.over?'Your last run':config.title,predicted.tick?`${predicted.score} points saved. ${predicted.over?'Ready for another run?':'Pick up where you left off.'}`:config.intro+' '+config.goal,predicted.over?'Play again':predicted.tick?'Continue run':'Start playing',true);
     status('Connected · progress saves as you play');globalThis.UTXOPlayLoader?.session();globalThis.UTXOPlayLoader?.ready();
   }catch(e){if(!globalThis.UTXOPlayLoader?.state?.error)globalThis.UTXOPlayLoader?.fail('game');loaded=false;showOverlay('Connecting failed',e.message,'Retry connection',true);status('Unable to load your session.');}
   finally{refreshButtons();}
@@ -172,7 +205,7 @@ $('#cancel-restart').onclick=()=>{if(busy||stopping)return;showOverlay('Take a b
 $('#sound').onclick=()=>{audio.enabled=!audio.enabled;write('utxoplay:arcade-sound',audio.enabled?'on':'off');soundLabel();audio.unlock();audio.play('start');if(running)canvas.focus();};
 $('#replay').onclick=async()=>{if(busy||stopping||!loaded)return;busy=true;refreshButtons();await pause();try{await saveAll();const v=await api('replay',{});status(`Replay verified · ${v.frames} signed frames · ${v.state_root?.slice(0,16)||'genesis'}`);announce('Myelin replay verified');}catch(e){status(e.message);}finally{busy=false;refreshButtons();focusLaunch();}};
 $('#export').onclick=async e=>{e.preventDefault();if(busy||stopping||!loaded)return;busy=true;refreshButtons();await pause();try{await saveAll();const v=await api('export');const u=URL.createObjectURL(new Blob([JSON.stringify(v,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download=`${id}-myelin-session.json`;a.click();setTimeout(()=>URL.revokeObjectURL(u),10000);}catch(err){status(err.message);}finally{busy=false;refreshButtons();focusLaunch();}};
-const mapping={ArrowLeft:1,KeyA:1,ArrowRight:2,KeyD:2,ArrowUp:4,KeyW:4,ArrowDown:8,KeyS:8,Space:16};
+const mapping={ArrowLeft:1,KeyA:1,ArrowRight:2,KeyD:2,ArrowUp:4,KeyW:4,ArrowDown:8,KeyS:8,Space:16,...(id==='prism-breaker'?{KeyQ:4,KeyE:8}:{}),...(id==='starfall'?{ShiftLeft:4,ShiftRight:4}:{})};
 addEventListener('keydown',e=>{
   if(e.target.closest?.('input,select,textarea,a'))return;
   if(e.code==='Escape'){
@@ -190,6 +223,7 @@ addEventListener('blur',()=>{clearInput();void pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();void pause();}});
 addEventListener('offline',()=>{void pause();status('You are offline. Reconnect to save and continue.');});
 for(const b of document.querySelectorAll('[data-input]')){
+  if(b.closest('.signature-actions')&&id!=='starfall')b.addEventListener('click',e=>{if(e.detail===0&&running){const source='accessible'+b.dataset.input;input.press(source,+b.dataset.input,predicted);input.release(source);}});
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(!running&&!countdown)return;b.setPointerCapture(e.pointerId);input.press('touch'+e.pointerId,+b.dataset.input,predicted);b.classList.add('pressed');});
   for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,e=>{input.release('touch'+e.pointerId);b.classList.remove('pressed');});
   b.addEventListener('keydown',e=>{if((e.code==='Space'||e.code==='Enter')&&(running||countdown)){e.preventDefault();if(!e.repeat){input.press('button'+b.dataset.input,+b.dataset.input,predicted);b.classList.add('pressed');}}});
@@ -225,7 +259,7 @@ function frame(now,delta,ratio){
     while(accumulator>=1000/30&&running){
       if(pending.length>=60){running=false;clearInput();showOverlay('Saving your run','Waiting for your connection to catch up.','Resume');break;}
       previous=structuredClone(predicted);const bits=controls();pending.push(bits);step(predicted,bits);input.stepped(previous,predicted);renderer.tick(predicted);
-      for(const e of feedback(previous,predicted)){renderer.event(e);audio.play(e.type);if(e.type==='wave')toast((id==='neon-coil'||id==='drift-run'?'Pace ':'Wave ')+e.value);if(e.type==='damage'&&!predicted.over)toast(predicted.lives+' lives left');}
+      for(const e of feedback(previous,predicted)){renderer.event(e);audio.play(e.type);if(e.label)toast(e.label);if(e.type==='wave'&&predicted.specials===previous.specials)toast((id==='neon-coil'||id==='drift-run'?'Pace ':'Wave ')+e.value);if(e.type==='damage'&&!predicted.over)toast(predicted.lives+' lives left');}
       accumulator-=1000/30;if(predicted.draft){void showPerks();break;}if(predicted.over){void finish();break;}
     }
     saveTimer+=delta;if(saveTimer>=1000){saveTimer=0;void flush().catch(()=>{});}

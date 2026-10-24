@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.22.0
+    image: utxoplay:0.23.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -119,7 +119,7 @@ services:
       retries: 3
 
   arcade:
-    image: utxoplay:0.7.0
+    image: utxoplay:0.23.0
     container_name: utxoplay-arcade
     restart: unless-stopped
     init: true
@@ -127,7 +127,7 @@ services:
     environment: {PORT: '8785', BIND: 0.0.0.0}
     env_file: /data/utxoplay/shared/runtime.env
     volumes:
-      - /data/utxoplay/shared/arcade:/app/data
+      - /data/utxoplay/shared/arcade-signatures:/app/data
     networks: [games]
     mem_limit: 768m
     cpus: '1.0'
@@ -168,7 +168,7 @@ services:
       timeout: 10s
       retries: 3
   prism:
-    image: utxoplay:0.17.0
+    image: utxoplay:0.23.0
     container_name: utxoplay-prism
     restart: unless-stopped
     init: true
@@ -176,7 +176,7 @@ services:
     environment: {PORT: '8787', BIND: 0.0.0.0}
     env_file: /data/utxoplay/shared/runtime.env
     volumes:
-      - /data/utxoplay/shared/prism-crystal-campaign:/app/data
+      - /data/utxoplay/shared/prism-refraction:/app/data
     networks: [games]
     mem_limit: 384m
     cpus: '0.75'

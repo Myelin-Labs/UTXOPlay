@@ -36,19 +36,20 @@ export class BoardGesture {
 export function runSummary(game, previousBest) {
   const duration = `${Math.floor(game.tick / 1800)}:${String(Math.floor(game.tick / 30) % 60).padStart(2,'0')}`;
   const tips = {
-    'prism-breaker': 'Aim with the paddle edges to reach the remaining crystals.',
-    'neon-coil': 'Plan two turns ahead and leave space for your tail.',
-    starfall: 'Keep moving between gaps. Auto fire lets you focus on dodging.',
-    'drift-run': 'One swipe changes one lane. Line up early for the next opening.'
+    'prism-breaker': 'Break crystals to recharge. Q / E bends a falling ball back into play.',
+    'neon-coil': 'Grow to 9 segments, then close a circuit around an empty tile to cash in its area.',
+    starfall: 'Hold W to capture a volley, release to reflect it. Leave room to dodge during cooldown.',
+    'drift-run': 'Leave your echo on a ring, then spend 3 charge on an Overdrive through traffic.'
   };
   return {title: game.kind==='prism-breaker'&&game.over&&game.level===24&&!game.cells.some(Boolean)?'Spectrum restored!': game.tick >= (game.kind==='prism-breaker'?108000:18000) ? (game.kind==='prism-breaker'?'Campaign time limit reached!':'Ten minutes complete!') : game.score > previousBest ? 'New device best!' : 'One more run?', duration, tip: tips[game.kind]};
 }
 
 export class InputBuffer {
-  constructor(kind) { this.kind = kind; this.held = new Map(); this.queue = []; }
+  constructor(kind) { this.kind = kind; this.held = new Map(); this.queue = []; this.tapBits = 0; }
   press(source, bit, game) {
     if (this.held.has(source)) return;
     this.held.set(source, bit);
+    if ((this.kind === 'prism-breaker' && (bit === 4 || bit === 8 || bit === 16)) || (this.kind === 'drift-run' && bit === 16)) this.tapBits |= bit;
     if (this.kind === 'neon-coil') {
       const next = direction[bit];
       if (next === undefined) return;
@@ -61,14 +62,15 @@ export class InputBuffer {
   release(source) { this.held.delete(source); }
   pulse(bit, game) { this.release('swipe'); this.press('swipe', bit, game); this.release('swipe'); }
   read(game) {
+    const tapped=this.tapBits;this.tapBits=0;
     if (this.kind === 'neon-coil') return this.queue[0] || 0;
-    if (this.kind === 'drift-run') return game.cooldown <= 1 ? this.queue.shift() || 0 : 0;
-    return [...this.held.values()].reduce((bits, bit) => bits | bit, 0);
+    if (this.kind === 'drift-run') return (game.cooldown <= 1 ? this.queue.shift() || 0 : 0) | ([...this.held.values()].some(bit => bit === 16) ? 16 : 0) | tapped;
+    return [...this.held.values()].reduce((bits, bit) => bits | bit, tapped);
   }
   stepped(before, after) {
     if (this.kind === 'neon-coil' && (before.trail[0][0] !== after.trail[0][0] || before.trail[0][1] !== after.trail[0][1])) this.queue.shift();
   }
-  clear() { this.held.clear(); this.queue = []; }
+  clear() { this.held.clear(); this.queue = []; this.tapBits = 0; }
 }
 
 // Match only physically adjacent entities of the same kind; spawns snap in.
@@ -88,14 +90,19 @@ export function feedback(before, after) {
   if (after.tick !== before.tick + 1) return events;
   const kind = after.kind;
   if (kind === 'prism-breaker') {
+    if(after.refractions>before.refractions)events.push({type:'bounce',x:after.bodies[0]?.x||after.x,y:after.bodies[0]?.y||400,label:after.refract_dir<0?'REFRACT ↖':'REFRACT ↗'});
     before.cells.forEach((v, i) => {
       if (v && !after.cells[i]) events.push({type: 'brick', ...brickPoint(before,i), value: after.score - before.score});
     });
     const a = before.bodies[0], b = after.bodies[0];
     if (a && b && a.vy > 0 && b.vy < 0 && b.y >= 540 && after.lives === before.lives) events.push({type: 'bounce', x: b.x, y: 563});
   } else if (kind === 'neon-coil' && after.score > before.score) {
-    events.push({type: 'collect', x: before.x * 50 + 25, y: before.y * 50 + 25, value: after.score - before.score});
+    const loop=after.specials>before.specials;
+    events.push({type:'collect',x:(loop?after.trail[0][0]:before.x)*50+25,y:(loop?after.trail[0][1]:before.y)*50+25,value:after.score-before.score,...(loop?{label:`CIRCUIT · ${after.loop_area} TILES`}:{})});
   } else if (kind === 'starfall') {
+    if(after.energy>before.energy)events.push({type:'collect',x:after.x,y:880,value:5});
+    if(after.specials>before.specials)events.push({type:'collect',x:after.x,y:850,label:`RETURN FIRE · ${before.energy} SHOTS`});
+    if(after.ability_lock>before.ability_lock)events.push({type:'bounce',x:after.x,y:880,label:'SHIELD OVERHEATED · DODGE'});
     if (after.level === before.level) {
       const bounce = before.bodies.some(b => b.tag === 1 && (b.x + b.vx < 45 || b.x + b.vx > 955));
       for (const b of before.bodies.filter(b => b.tag === 1)) {
@@ -104,8 +111,14 @@ export function feedback(before, after) {
       }
     }
     if (after.cooldown === 7 && before.cooldown <= 1) events.push({type: 'shot', x: after.x, y: 860});
-  } else if (kind === 'drift-run' && after.score - before.score >= 25) {
-    events.push({type: 'collect', ...roadPoint(after.x, 830), value: 25});
+  } else if (kind === 'drift-run') {
+    if(after.specials>before.specials)events.push({type:'collect',...roadPoint(after.x,830),label:'OVERDRIVE · BREAK THROUGH'});
+    if(after.score-before.score>=15){
+      const speed=9+Math.min(after.level,14)+(after.ability_ticks?7:0);
+      const echo=after.echo_ticks>0&&before.bodies.some(b=>b.tag===2&&b.x===after.echo_lane&&b.x!==after.x&&Math.abs(b.y+speed-830)<48);
+      const close=before.bodies.some(b=>b.tag===1&&b.y<830&&b.y+speed>=830&&Math.abs(b.x-after.x)===1);
+      events.push({type:'collect',...roadPoint(echo?after.echo_lane:after.x,830),value:after.score-before.score,label:echo?'ECHO PICKUP':close?'CLOSE PASS':undefined});
+    }
   }
   if (after.lives < before.lives) events.push({type: 'damage', x: kind === 'neon-coil' ? before.trail[0][0] * 50 + 25 : kind === 'drift-run' ? roadPoint(before.x, 830).x : after.x, y: kind === 'neon-coil' ? before.trail[0][1] * 50 + 25 : 880});
   if (after.level > before.level) events.push({type: 'wave', x: 500, y: 500, value: after.level});

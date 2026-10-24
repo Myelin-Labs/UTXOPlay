@@ -45,6 +45,10 @@ pub struct Game {
     pub cooldown: u32,
     pub wave_tick: u32,
     pub destroyed: u32,
+    pub refraction: u32,
+    pub refract_latch: u8,
+    pub refractions: u32,
+    pub refract_dir: i32,
     pub wide: u32,
     pub slow: u32,
     pub pierce: u32,
@@ -77,6 +81,10 @@ impl Game {
             cooldown: 0,
             wave_tick: 0,
             destroyed: 0,
+            refraction: 4,
+            refract_latch: 0,
+            refractions: 0,
+            refract_dir: 0,
             wide: 0,
             slow: 0,
             pierce: 0,
@@ -128,6 +136,8 @@ impl Game {
         self.wide = 0;
         self.slow = 0;
         self.pierce = 0;
+        self.refraction = 4;
+        self.refract_latch = 0;
         self.shield = self.perks[5];
         self.cooldown = 0;
         self.combo = 0;
@@ -151,6 +161,10 @@ impl Game {
             || self.pickups.len() > 24
             || self.offers.len() > 3
             || self.offers.iter().any(|n| *n >= 6)
+            || self.refraction > 6
+            || ![0, 4, 8, 12].contains(&self.refract_latch)
+            || self.refractions > MAX_TICKS
+            || !(-1..=1).contains(&self.refract_dir)
             || self.shield > 5
             || self.wide > 720
             || self.slow > 720
@@ -201,6 +215,7 @@ impl Game {
         }
         self.combo += 1;
         self.destroyed += 1;
+        self.refraction = (self.refraction + 1).min(6);
         self.score += 10 * self.combo.min(8 + self.perks[4] * 2);
         let (x, y) = self.point(n);
         if (self.destroyed.is_multiple_of(5) || self.types[n] == 2) && self.pickups.len() < 24 {
@@ -225,6 +240,18 @@ impl Game {
         self.slow = self.slow.saturating_sub(1);
         self.pierce = self.pierce.saturating_sub(1);
         self.cooldown = self.cooldown.saturating_sub(1);
+        let bend = input & 12;
+        if bend != 0 && self.refract_latch == 0 && self.refraction >= 4 && !self.bodies.is_empty() {
+            let direction = if bend & 4 != 0 { -1 } else { 1 };
+            self.refraction -= 4;
+            self.refractions += 1;
+            self.refract_dir = direction;
+            for b in &mut self.bodies {
+                b.vx = direction * (6 + b.vx.abs().min(6));
+                b.vy = -b.vy.abs().max(8);
+            }
+        }
+        self.refract_latch = bend;
         let half = self.half();
         self.x = (self.x + if input & 1 != 0 { -19 } else { 0 } + if input & 2 != 0 { 19 } else { 0 }).clamp(half + 15, 985 - half);
         if input & 16 != 0 && self.cooldown == 0 {
@@ -353,6 +380,23 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn refraction_has_direction_cost_and_release_latch() {
+        let mut g = Game::new(Kind::PrismBreaker);
+        g.bodies = vec![Body { x: 500, y: 450, vx: 7, vy: 12, tag: 0 }];
+        g.step(4);
+        assert_eq!((g.refraction, g.refractions, g.bodies[0].vx, g.bodies[0].vy), (0, 1, -12, -12));
+        g.refraction = 6;
+        g.step(4);
+        assert_eq!(g.refractions, 1);
+        g.step(0);
+        g.step(8);
+        assert_eq!((g.refractions, g.refract_dir, g.refraction), (2, 1, 2));
+        g.validate().unwrap();
+        g.step(0);
+        g.step(4);
+        assert_eq!(g.refractions, 2);
+    }
     #[test]
     fn authored_layouts_and_perks() {
         let mut layouts = std::collections::HashSet::new();

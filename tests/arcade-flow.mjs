@@ -48,6 +48,16 @@ await import(`${root}/games/arcade/web/app.js`);
 await until(()=>!$('#launch').disabled);assert.equal($('#overlay').dataset.art,'true');
 if(kind==='prism-breaker'){assert.equal($('#prism-lens').getAttribute('aria-pressed'),'true');$('#prism-lens').click();assert.equal($('#prism-lens').getAttribute('aria-pressed'),'false');$('#prism-lens').click();assert.equal($('#prism-lens').getAttribute('aria-pressed'),'true');assert.equal(document.querySelectorAll('#lives img').length,3);}
 
+// Every ability is scene-owned, and even a fast pointer tap must enter the tape.
+assert.ok($('.game-surface').contains($('.signature-mechanic')));
+assert.ok($('.game-surface').contains($('.signature-actions')));
+if(kind==='prism-breaker'){
+ await $('#launch').onclick();await pump(125);
+ const bend=$('.signature-actions [data-input="4"]');
+ const pointer=(type)=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.defineProperty(e,'pointerId',{value:42});bend.dispatchEvent(e);};
+ bend.setPointerCapture=()=>{};pointer('pointerdown');pointer('pointerup');await pump(4);await $('#pause').onclick();
+ assert.equal((await state()).game.refractions,1,'tap survives pointer release before simulation');
+}
 // Holding a direction during countdown must affect the first simulation tick.
 await $('#launch').onclick();key('keydown',kind==='neon-coil'?'KeyW':'KeyA');await pump(130);key('keyup',kind==='neon-coil'?'KeyW':'KeyA');
 assert.equal($('#overlay').hidden,true);assert.equal($('#countdown').hidden,true);

@@ -47,10 +47,10 @@ export function apiError(error) {
 }
 export const gameMeta = {
   "neon-miner": {accent:"#ffd075",tag:"THE UNDERCITY",length:"60 sectors to explore",input:"One-button + touch",note:"Time the swing. Take the gold. Upgrade your rig.",repo:"UTXOPlay"},
-  "prism-breaker": {"accent": "#b7a2ff", "tag": "REFRACTION LAB", "length": "24 crystal sectors", "input": "Keyboard + touch", "note": "Find the angle. Break the spectrum.", "repo": "UTXOPlay"},
-  "neon-coil": {"accent": "#84efba", "tag": "LIVING CIRCUIT", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "A little hunger. A longer circuit.", "repo": "UTXOPlay"},
-  "starfall": {"accent": "#7edaff", "tag": "ORBITAL DEFENCE", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Hold the line. Light up the night.", "repo": "UTXOPlay"},
-  "drift-run": {"accent": "#ffbc83", "tag": "AFTER HOURS", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Three lanes. One way forward.", "repo": "UTXOPlay"},
+  "prism-breaker": {"accent": "#b7a2ff", "tag": "REFRACTION LAB", "length": "24 crystal sectors", "input": "Keyboard + touch", "note": "Bend light. Rewrite the angle.", "repo": "UTXOPlay"},
+  "neon-coil": {"accent": "#84efba", "tag": "LIVING CIRCUIT", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Grow a circuit. Close it. Cash it in.", "repo": "UTXOPlay"},
+  "starfall": {"accent": "#7edaff", "tag": "ORBITAL DEFENCE", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Catch their fire. Send it home.", "repo": "UTXOPlay"},
+  "drift-run": {"accent": "#ffbc83", "tag": "AFTER HOURS", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Leave an echo. Steal a second line.", "repo": "UTXOPlay"},
   openstrike: {
     accent: "#69b7ad",
     tag: "SUNLIT HARBOR",

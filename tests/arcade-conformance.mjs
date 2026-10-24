@@ -20,3 +20,6 @@ for(const kind of kinds){
  }
 }
 console.log(`${count} full-state Rust/browser conformance tapes passed (259,200 input ticks).`);
+const {signatureTape}=await import('./signature-tapes.mjs');
+for(const kind of kinds){const {game,...tape}=signatureTape(kind);const result=spawnSync(kind==='prism-breaker'?(process.env.PRISM_BIN||'deploy/bin/myelin-prism-breaker'):bin,['simulate'],{input:JSON.stringify(tape),encoding:'utf8'});assert.equal(result.status,0,result.stderr);assert.deepEqual(JSON.parse(result.stdout),game,kind+' signature');}
+console.log('Four reachable signature-mechanic tapes also match native execution exactly.');
