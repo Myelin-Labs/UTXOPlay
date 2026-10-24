@@ -838,6 +838,7 @@ async function act(action, animate = false) {
     if (action.type === "buy") {
       const item = data.game.shop.items.find((item) => item.id === action.item);
       shopMessage = `${item.name} added · ${item.price} coins spent · ${item.owned} owned. Equip or use it when ready.`;
+      feedback(`${item.name} restocked · ${item.owned} owned`);
       sound("move");
     } else if (action.type === "extra") {
       sound("move");

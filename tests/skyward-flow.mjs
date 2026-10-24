@@ -101,7 +101,7 @@ const walletBefore=await state();release=undefined;hold=true;
 const buying=$('[data-buy="burst"]').onclick();for(let i=0;i<100&&!release;i++)await sleep(10);
 await $('[data-buy="burst"]').onclick();hold=false;release();await buying;
 const bought=await state();assert.equal(bought.game.coins,walletBefore.game.coins-12);assert.equal(bought.game.inventory.burst,2);assert.equal(bought.session.actions,walletBefore.session.actions+1);
-assert.match($('#shop-feedback').textContent,/added/);assert.equal($('#game-menu').open,true);
+assert.match($('#flight-status').textContent,/restocked/);assert.match($('#shop-feedback').textContent,/added/);assert.equal($('#game-menu').open,true);
 // Response loss after a committed purchase recovers from the signed state, never retries the debit.
 dropCommittedBuy=true;failRecovery=true;await $('[data-buy="extra"]').onclick();
 assert.equal($('#shop-reconnect').hidden,false);assert.equal($('#launch').disabled,true);assert.equal($('[data-buy="burst"]').disabled,true);
