@@ -29,3 +29,7 @@ The shared tokens apply to discovery, cards, game details, account dialogs, crea
 - Checked the homepage at 390×844, 844×390, 1920×1080, 2560×1080, 2560×1440 and 3840×2160: 13 cards, the same 47 buttons, no horizontal overflow or broken loaded images.
 - Browser-reviewed desktop/mobile home, game details, wallet dialog, mobile navigation, community and item store. Verified shared computed colors and preservation of the Myelin/coin colors.
 - Representative text contrast ratios: primary text on card 15.60:1; secondary text on card 9.79:1; muted text on raised surface 5.82:1; Play/FREE text 11.62:1; selected navigation text 9.80:1. These are specific solid-color pairs, not a claim of a whole-site accessibility audit.
+
+## Rollout
+
+Released implementation `fd56dbc` as 0.31.0 at `/data/utxoplay/releases/20261024-store-0.31.0`, assembled from the verified 0.30.0 release plus all changed tracked files and the rebuilt frontend. Container `d9e5edb75061` is healthy; the other 20 running containers retained their IDs. Public entry and lazy publishing JS/CSS match the local build byte-for-byte. The public catalog still carries all 13 original credit records. Verified pre-rollout SQLite backup: `platform-before-0.31.0-1792830893.sqlite`.
