@@ -120,14 +120,6 @@ h3 {
 .skip-link:focus {
   transform: none;
 }
-.status-dot {
-  width: 5px;
-  height: 5px;
-  background: var(--lime);
-  border-radius: 100%;
-  box-shadow: 0 0 10px #63f58b66;
-  display: inline-block;
-}
 .icon-btn {
   width: 40px;
   height: 40px;
@@ -172,22 +164,6 @@ h3 {
   font-weight: 450;
   color: #edf2ed;
 }
-.brand small {
-  display: block;
-  font-size: 7px;
-  font-weight: 500;
-  letter-spacing: 2px;
-  color: #7c8b82;
-  margin-top: 5px;
-}
-.top-context {
-  font-size: 13px;
-  color: #91a197;
-  display: flex;
-  gap: 9px;
-  align-items: center;
-  margin-left: 18px;
-}
 .top-right {
   margin-left: auto;
   display: flex;
@@ -228,13 +204,6 @@ h3 {
   flex-direction: column;
   overflow-y: auto;
   background: #0f1311;
-}
-.sidebar-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 1.8px;
-  color: #77857c;
-  margin: 0 12px 15px;
 }
 .sidebar nav,
 .mobile-drawer nav {
@@ -289,63 +258,11 @@ h3 {
   border-radius: 5px;
   padding: 3px 5px;
 }
-.side-rule {
-  height: 1px;
-  background: var(--line);
-  margin: 26px 12px;
-}
-.genre-dot {
-  width: 6px;
-  height: 6px;
-  background: #808e85;
-  border-radius: 50%;
-  margin: 0 6px;
-}
-.genre-dot.action {
-  background: #6ec5d7;
-}
-.genre-dot.arcade {
-  background: #efbd75;
-}
-.genre-dot.strategy {
-  background: #bba8eb;
-}
 .sidebar-bottom {
   margin-top: auto;
   padding-top: 50px;
 }
-.build-note {
-  border: 1px solid #ffffff0d;
-  background:
-    radial-gradient(ellipse at top left, #63f58b0b, transparent 75%), #151c17;
-  padding: 17px 13px;
-  border-radius: 11px;
-}
-.build-note > svg {
-  color: #9bcea9;
-  margin-bottom: 19px;
-}
-.build-note strong {
-  display: block;
-  font-size: 12px;
-  line-height: 1.5;
-  font-weight: 550;
-}
-.build-note p {
-  font-size: 12px;
-  color: #82978a;
-  margin: 7px 0 10px;
-}
-.build-note button {
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 0;
-  color: #a0eab2;
-}
-.preference-link,
-.source-link {
+.preference-link {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -354,11 +271,6 @@ h3 {
   padding: 12px 6px;
   margin-top: 8px;
   min-height: 40px;
-}
-.source-link {
-  font-size: 11px;
-  color: #6f8276;
-  margin-top: 0;
 }
 .main {
   width: calc(100% - 208px);
@@ -420,30 +332,7 @@ h3 {
   color: var(--muted);
   margin: 0;
 }
-.edition {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: #72857a;
-  text-align: right;
-  white-space: nowrap;
-  padding-bottom: 4px;
-}
-.edition b {
-  display: block;
-  color: #b7c8bc;
-  letter-spacing: 2px;
-  font-weight: 450;
-  font-size: 12px;
-  margin-top: 11px;
-}
-.edition i {
-  color: var(--lime);
-  font-size: 17px;
-  font-style: normal;
-  margin-left: 20px;
-}
 .hero {
-  height: 460px;
   border: 1px solid #ffffff23;
   border-radius: 17px;
   position: relative;
@@ -512,24 +401,8 @@ h3 {
 .pill svg {
   color: var(--accent, var(--lime));
 }
-.hero-game-name {
-  margin: 23px 0 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #e8f4ee;
-}
-.hero-game-name span {
-  color: #adc1bc;
-  font-weight: 400;
-  font-size: 12px;
-  margin-left: 6px;
-}
 .hero h2 {
-  font-size: clamp(44px, 4.8vw, 67px);
   font-weight: 600;
-  line-height: 0.99;
-  letter-spacing: -3.1px;
-  margin: 0 0 18px;
   color: #f4faf5;
 }
 .hero-description {
@@ -627,107 +500,6 @@ h3 {
   color: #e9f6ef;
   width: 33px;
   height: 33px;
-}
-.hero-orbit {
-  position: absolute;
-  right: 15%;
-  top: -40%;
-  width: 60%;
-  aspect-ratio: 1;
-  border: 1px solid #ffffff04;
-  box-shadow:
-    0 0 90px #7bffc409,
-    inset 0 0 90px #7bffc404;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: drift 12s ease-in-out infinite;
-  z-index: -1;
-}
-@keyframes drift {
-  50% {
-    transform: translate(4%, 12%);
-    opacity: 0.5;
-  }
-}
-.feature-rail {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
-  margin-top: 12px;
-}
-.feature-rail button {
-  padding: 11px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  text-align: left;
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-  min-height: 74px;
-}
-.feature-rail button:hover {
-  background: #ffffff04;
-}
-.feature-rail button.active {
-  background: #19231d;
-  border-color: #a0ffb720;
-}
-.feature-rail img {
-  width: 49px;
-  height: 43px;
-  object-fit: cover;
-  border-radius: 6px;
-  opacity: 0.7;
-}
-.feature-rail .active img {
-  opacity: 1;
-}
-.feature-rail small {
-  font-size: 10px;
-  color: #7e9286;
-  display: block;
-  letter-spacing: 0.8px;
-  margin-bottom: 5px;
-}
-.feature-rail b {
-  font-size: 13px;
-  color: #b8c7bd;
-  font-weight: 500;
-  display: block;
-  white-space: nowrap;
-}
-.feature-rail .active b {
-  color: #e6f6e9;
-}
-.featured-mark {
-  position: absolute;
-  left: 11px;
-  right: 11px;
-  bottom: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #63f58b99, transparent);
-}
-.benefits {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 23px 4px;
-  border-bottom: 1px solid var(--line);
-  color: #8d9e93;
-  font-size: 12px;
-}
-.benefits span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.benefits svg {
-  color: #a2c4ae;
-  stroke-width: 1.5;
 }
 .recent-strip {
   display: flex;
@@ -891,13 +663,6 @@ h3 {
   background: #ffffff06;
   color: #d5edde;
 }
-.genre-filters button span {
-  background: #7fe29a17;
-  color: #a9e5bb;
-  border-radius: 4px;
-  padding: 2px 4px;
-  font-size: 11px;
-}
 .mode-select {
   margin-left: auto;
   display: flex;
@@ -965,8 +730,8 @@ h3 {
   object-fit: cover;
   transition: transform 0.65s var(--ease);
 }
-.cover-button:hover img,
-.cover-button:focus-visible img {
+.card-overview:hover img,
+.card-overview:focus-visible img {
   transform: scale(1.045);
 }
 .card-badge {
@@ -999,8 +764,8 @@ h3 {
     opacity 0.2s,
     transform 0.25s;
 }
-.cover-button:hover .card-explore,
-.cover-button:focus-visible .card-explore {
+.card-overview:hover .card-explore,
+.card-overview:focus-visible .card-explore {
   opacity: 1;
   transform: none;
 }
@@ -1015,7 +780,7 @@ h3 {
   text-align: left;
   padding: 0;
 }
-.card-title h3 {
+.card-title {
   font-size: 20px;
   letter-spacing: -0.6px;
   font-weight: 550;
@@ -1072,13 +837,6 @@ h3 {
   background: #6bf58c0c;
   color: var(--lime);
 }
-.card-details {
-  font-size: 12px;
-  color: #8fa699;
-  padding: 9px 10px;
-  border-left: 1px solid var(--line);
-  min-height: 40px;
-}
 .game-card .last-played {
   font-size: 11px;
   color: #83998b;
@@ -1086,64 +844,6 @@ h3 {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-.wallet-banner {
-  border: 1px solid #78f29a20;
-  background:
-    radial-gradient(ellipse at 10% 50%, #5ef08c0c, transparent 60%),
-    linear-gradient(110deg, #18271d, #141c17);
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 32px;
-  margin: 40px 0 10px;
-  border-radius: 13px;
-  position: relative;
-  overflow: hidden;
-}
-.wallet-art {
-  width: 76px;
-  height: 76px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #78f29a30;
-  border-radius: 20px;
-  transform: rotate(-7deg);
-  background: linear-gradient(145deg, #ffffff08, #ffffff00);
-  box-shadow: 0 7px 35px #63f58b0c;
-  flex-shrink: 0;
-  position: relative;
-}
-.wallet-art img {
-  width: 58px;
-  height: 58px;
-}
-.wallet-art > span {
-  position: absolute;
-  bottom: -3px;
-  right: -5px;
-  width: 25px;
-  height: 25px;
-  display: grid;
-  place-items: center;
-  border: 4px solid #1a2c20;
-  border-radius: 50%;
-  background: var(--lime);
-  color: #12351e;
-}
-.wallet-banner h2 {
-  font-size: 23px;
-  font-weight: 500;
-  margin: 10px 0 9px;
-}
-.wallet-banner p {
-  font-size: 13px;
-  color: #99b1a1;
-  margin: 0;
-}
-.wallet-banner > .outline {
-  margin-left: auto;
-  flex-shrink: 0;
 }
 .outline {
   display: inline-flex;
@@ -1170,19 +870,6 @@ h3 {
   display: flex;
   align-items: center;
   gap: 24px;
-}
-.footer .brand {
-  font-size: 17px;
-  gap: 7px;
-}
-.footer .brand img {
-  width: 32px;
-  height: 32px;
-}
-.footer p {
-  font-size: 11px;
-  color: #798b7f;
-  margin: 8px 0 0;
 }
 .footer nav {
   display: flex;
@@ -2109,14 +1796,8 @@ h3 {
   .main {
     padding: 48px 58px 0;
   }
-  .hero {
-    height: 490px;
-  }
   .hero-content {
     padding: 42px 44px;
-  }
-  .hero h2 {
-    font-size: 70px;
   }
   .hero-bottom {
     left: 44px;
@@ -2124,24 +1805,11 @@ h3 {
   .cover-button {
     height: 270px;
   }
-  .feature-rail b {
-    font-size: 13px;
-  }
-  .feature-rail img {
-    width: 60px;
-    height: 47px;
-  }
-  .wallet-banner h2 {
-    font-size: 26px;
-  }
 }
 @media (max-width: 1200px) {
   .topbar {
     padding: 0 22px;
     gap: 24px;
-  }
-  .top-context {
-    display: none;
   }
   .sidebar {
     width: 185px;
@@ -2151,10 +1819,6 @@ h3 {
     font-size: 12px;
     gap: 8px;
   }
-  .sidebar-label {
-    font-size: 7px;
-    letter-spacing: 1.5px;
-  }
   .main {
     width: calc(100% - 185px);
     padding: 34px 30px 0;
@@ -2162,45 +1826,14 @@ h3 {
   .page-heading h1 {
     font-size: 38px;
   }
-  .hero {
-    height: 460px;
-  }
   .hero-content {
     padding: 33px 30px;
-  }
-  .hero h2 {
-    font-size: 57px;
   }
   .hero-bottom {
     left: 30px;
   }
   .hero-description {
     max-width: 280px;
-  }
-  .feature-rail {
-    gap: 4px;
-  }
-  .feature-rail button {
-    padding: 9px;
-    gap: 8px;
-  }
-  .feature-rail img {
-    width: 36px;
-    height: 36px;
-  }
-  .feature-rail small {
-    font-size: 7px;
-  }
-  .feature-rail b {
-    font-size: 12px;
-  }
-  .featured-mark {
-    left: 9px;
-    right: 9px;
-  }
-  .benefits {
-    font-size: 11px;
-    gap: 12px;
   }
   .section-head h2 {
     font-size: 23px;
@@ -2221,16 +1854,6 @@ h3 {
   }
   .game-card p {
     font-size: 12px;
-  }
-  .wallet-banner {
-    flex-wrap: wrap;
-    padding: 27px;
-  }
-  .wallet-banner > .outline {
-    margin-left: 100px;
-  }
-  .wallet-banner h2 {
-    font-size: 22px;
   }
   .footer {
     flex-wrap: wrap;
@@ -2287,44 +1910,8 @@ h3 {
   .sidebar nav button svg {
     width: 16px;
   }
-  .sidebar-label {
-    margin-left: 8px;
-    letter-spacing: 1px;
-  }
-  .build-note {
-    padding: 14px 10px;
-  }
-  .edition {
-    display: none;
-  }
   .page-heading h1 {
     font-size: 34px;
-  }
-  .feature-rail {
-    grid-template-columns: 1fr 1fr;
-  }
-  .feature-rail button {
-    padding: 10px 12px;
-    min-height: 62px;
-    gap: 12px;
-  }
-  .feature-rail b {
-    font-size: 13px;
-  }
-  .feature-rail small {
-    font-size: 10px;
-  }
-  .feature-rail img {
-    width: 43px;
-    height: 36px;
-  }
-  .benefits {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px 23px;
-  }
-  .hero h2 {
-    font-size: 54px;
   }
   .hero-shade {
     background:
@@ -2371,19 +1958,13 @@ h3 {
     padding: 15px 8px 0;
     gap: 6px;
   }
-  .card-title h3 {
+  .card-title {
     font-size: 18px;
   }
   .card-meta {
     flex-wrap: wrap;
     gap: 8px;
     margin: 15px 8px;
-  }
-  .wallet-banner h2 {
-    font-size: 20px;
-  }
-  .wallet-banner p br {
-    display: none;
   }
   .recent-strip {
     flex-wrap: wrap;
@@ -2449,9 +2030,6 @@ h3 {
     gap: 15px;
     flex-wrap: wrap;
   }
-  .footer > div {
-    width: 100%;
-  }
   .footer nav {
     margin-left: 0;
   }
@@ -2478,11 +2056,6 @@ h3 {
   .brand img {
     width: 35px;
     height: 35px;
-  }
-  .brand small {
-    font-size: 6px;
-    letter-spacing: 1.2px;
-    margin-top: 4px;
   }
   .top-right {
     gap: 7px;
@@ -2527,19 +2100,10 @@ h3 {
     letter-spacing: 1.5px;
   }
   .hero {
-    height: 455px;
     border-radius: 13px;
   }
   .hero-content {
     padding: 27px 24px;
-  }
-  .hero h2 {
-    font-size: 53px;
-    letter-spacing: -2.6px;
-    line-height: 1.03;
-  }
-  .hero-game-name {
-    margin-top: 24px;
   }
   .hero-description {
     font-size: 12px;
@@ -2578,33 +2142,6 @@ h3 {
   .hero-caption {
     font-size: 7px;
     letter-spacing: 1.3px;
-  }
-  .feature-rail {
-    gap: 5px;
-    margin-top: 10px;
-  }
-  .feature-rail button {
-    padding: 10px;
-    gap: 9px;
-  }
-  .feature-rail b {
-    font-size: 13px;
-  }
-  .feature-rail small {
-    font-size: 7px;
-  }
-  .feature-rail img {
-    width: 43px;
-  }
-  .benefits {
-    padding: 21px 0;
-    gap: 13px 20px;
-  }
-  .benefits > span {
-    font-size: 11px;
-  }
-  .benefits svg {
-    width: 14px;
   }
   .recent-strip {
     margin-top: 3px;
@@ -2685,7 +2222,7 @@ h3 {
   .cover-button {
     height: 220px;
   }
-  .card-title h3 {
+  .card-title {
     font-size: 22px;
   }
   .game-card-info {
@@ -2706,44 +2243,9 @@ h3 {
     font-size: 12px;
     min-height: 44px;
   }
-  .card-details {
-    font-size: 13px;
-    min-height: 44px;
-  }
   .card-explore {
     opacity: 1;
     transform: none;
-  }
-  .wallet-banner {
-    margin-top: 30px;
-    padding: 23px;
-    gap: 19px;
-  }
-  .wallet-art {
-    width: 58px;
-    height: 58px;
-    border-radius: 15px;
-  }
-  .wallet-art img {
-    width: 48px;
-    height: 48px;
-  }
-  .wallet-banner > .outline {
-    margin-left: 0;
-    width: 100%;
-  }
-  .wallet-banner h2 {
-    font-size: 23px;
-  }
-  .wallet-banner p {
-    font-size: 13px;
-  }
-  .wallet-banner > div:nth-child(2) {
-    flex: 1;
-    min-width: 200px;
-  }
-  .wallet-banner .eyebrow {
-    font-size: 7px;
   }
   .footer {
     margin-top: 35px;
@@ -2940,20 +2442,11 @@ h3 {
     display: flex;
     animation: drawer-in 0.25s var(--ease);
   }
-  .mobile-drawer .sidebar-label {
-    font-size: 11px;
-  }
   .mobile-drawer nav button {
     font-size: 12px;
   }
   .mobile-drawer .sidebar-bottom {
     padding-top: 30px;
-  }
-  .mobile-drawer .build-note p {
-    font-size: 13px;
-  }
-  .mobile-drawer .build-note strong {
-    font-size: 13px;
   }
   @keyframes drawer-in {
     from {
@@ -2976,9 +2469,6 @@ h3 {
     width: 30px;
     height: 30px;
   }
-  .brand small {
-    display: none;
-  }
   .wallet-button {
     font-size: 11px;
     padding: 9px 8px;
@@ -2991,9 +2481,6 @@ h3 {
   }
   .hero-content {
     padding: 27px 20px;
-  }
-  .hero h2 {
-    font-size: 47px;
   }
   .hero-actions {
     gap: 10px;
@@ -3008,20 +2495,11 @@ h3 {
   .hero-caption {
     font-size: 6px;
   }
-  .feature-rail b {
-    font-size: 12px;
-  }
-  .feature-rail img {
-    width: 33px;
-  }
   .recent-strip > div {
     min-width: 100%;
   }
   .recent-game {
     flex: 1;
-  }
-  .wallet-banner > div:nth-child(2) {
-    min-width: 100%;
   }
   .game-card .card-meta {
     font-size: 11px;
@@ -3046,7 +2524,7 @@ h3 {
   .code-panel {
     transform: none;
   }
-  .cover-button:hover img {
+  .card-overview:hover img {
     transform: none;
   }
 }
@@ -3060,7 +2538,7 @@ html[data-motion="reduced"] *:after {
   transition: none !important;
 }
 html[data-motion="reduced"] .code-panel,
-html[data-motion="reduced"] .cover-button:hover img {
+html[data-motion="reduced"] .card-overview:hover img {
   transform: none;
 }
 .wallet-picker-close {
@@ -3081,15 +2559,13 @@ html[data-motion="reduced"] .cover-button:hover img {
 
 /* Let translated or wrapped hero copy determine its height. */
 .hero {
-  height: auto;
-  min-height: 460px;
-  padding-bottom: 42px;
+  min-height: 320px;
+  padding-bottom: 48px;
 }
 @media (max-width: 700px) {
   .hero {
-    height: auto;
-    min-height: 455px;
-    padding-bottom: 44px;
+    min-height: 320px;
+    padding-bottom: 48px;
   }
   .hero-caption {
     font-size: 9px;
@@ -3195,3 +2671,24 @@ body:has(.game-active){overflow:hidden}
 .creator-empty { margin: 30px 0; border: 1px dashed #9cbaa833; border-radius: 16px; }
 .creator-tools input:focus-visible,.creator-tools select:focus-visible,.creator-roles a:focus-visible { outline: 2px solid #a6e5b9; outline-offset: 3px; }
 @media(max-width:560px) { .creator-tools { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); } .creator-tools > .creator-search { grid-column: 1/-1; } .creator-tools > .creator-free { grid-column: 1/-1; } }
+
+/* One discovery surface, one details target per card. */
+.hero h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.08; letter-spacing: -.04em; margin: 22px 0 14px; }
+.hero-description { font-size: 15px; max-width: 420px; }
+.hero-actions { flex-wrap: wrap; }
+.hero-caption { display: flex; align-items: center; gap: 14px; }
+.card-overview { display: block; width: 100%; padding: 0; text-align: left; border-radius: 8px; }
+.card-overview:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
+.card-copy { min-width: 0; }
+.card-subtitle { display: block; font-size: 13px; color: #98a89d; line-height: 1.6; }
+.filter-row { flex-wrap: wrap; }
+.footer { justify-content: space-between; }
+.footer nav { margin-left: 0; }
+@media (max-width: 700px) {
+  .hero-content { padding: 24px; }
+  .hero h2 { margin-top: 18px; }
+  .hero-description { font-size: 13px; }
+}
+.hero-index { white-space: nowrap; }
+.hero-next { width: 44px; height: 44px; flex-shrink: 0; }
+@media (max-width: 700px) { .page-heading { flex-wrap: wrap; align-items: flex-start; } }

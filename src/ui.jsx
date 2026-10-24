@@ -170,29 +170,23 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
       className={"game-card " + g.id}
       style={{ "--accent": meta.accent }}
     >
-      <button
-        className="cover-button"
-        onClick={() => onDetails(g)}
-        aria-label={"About " + g.title}
-      >
-        <img src={g.cover} alt="" loading="lazy" />
-        <span className="card-badge">{g.genre}</span>
-        <MyelinBadge game={g} />
-        <span className="card-explore">
-          Explore game <ArrowUpRight size={17} />
+      <button className="card-overview" onClick={() => onDetails(g)} aria-label={"View " + g.title + " details"}>
+        <span className="cover-button">
+          <img src={g.cover} alt="" loading="lazy" />
+          <span className="card-badge">{g.genre}</span>
+          <MyelinBadge game={g} />
+          <span className="card-explore">Details <ArrowUpRight size={17} /></span>
+        </span>
+        <span className="game-card-info">
+          <span className="card-copy">
+            <span className="card-title" role="heading" aria-level="3">{g.title}</span>
+            <span className="card-subtitle">{g.subtitle}</span>
+          </span>
+          <span className={"price" + (g.pricing !== "paid" ? " price-free" : "")}>
+            {g.pricing === "paid" ? g.priceCkb + " CKB" : "FREE"}
+          </span>
         </span>
       </button>
-      <div className="game-card-info">
-        <div>
-          <button className="card-title" onClick={() => onDetails(g)}>
-            <h3>{g.title}</h3>
-          </button>
-          <p>{g.subtitle}</p>
-        </div>
-        <span className={"price" + (g.pricing !== "paid" ? " price-free" : "")}>
-          {g.pricing === "paid" ? g.priceCkb + " CKB" : "FREE"}
-        </span>
-      </div>
       <GameCredits game={g} compact />
       <div className="card-meta">
         <span>
@@ -223,13 +217,6 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
                 ? "View & buy"
                 : "Play now"}
           <ArrowUpRight size={15} />
-        </button>
-        <button
-          className="card-details"
-          onClick={() => onDetails(g)}
-          aria-label={"View " + g.title + " details"}
-        >
-          Details
         </button>
       </div>
       {updated && (

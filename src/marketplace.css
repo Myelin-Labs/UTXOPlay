@@ -1,38 +1,3 @@
-.publisher-banner {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  background: linear-gradient(110deg, #173323, #14231c);
-  border: 1px solid #67f18a36;
-  border-radius: 16px;
-  padding: 30px;
-  margin: 30px 0;
-}
-.publisher-icon {
-  color: #8bf4b9;
-  display: grid;
-  place-items: center;
-  min-width: 64px;
-  height: 64px;
-  border: 1px solid #70ed8d30;
-  border-radius: 17px;
-  background: #88ffbb09;
-}
-.publisher-banner h2 {
-  font-size: 27px;
-  letter-spacing: -0.7px;
-  margin: 10px 0;
-}
-.publisher-banner p {
-  color: #a6bdae;
-  font-size: 14px;
-  line-height: 1.7;
-  max-width: 600px;
-}
-.publisher-banner > .primary {
-  flex-shrink: 0;
-  margin-left: auto;
-}
 .publish-steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -630,12 +595,6 @@
   line-height: 1.7;
 }
 @media (max-width: 1100px) {
-  .publisher-banner {
-    flex-wrap: wrap;
-  }
-  .publisher-banner > .primary {
-    margin-left: 88px;
-  }
   .vendor-play {
     grid-template-columns: 1fr;
   }
@@ -648,20 +607,6 @@
   }
 }
 @media (max-width: 700px) {
-  .publisher-banner {
-    padding: 22px;
-    gap: 17px;
-  }
-  .publisher-banner h2 {
-    font-size: 25px;
-  }
-  .publisher-banner > .primary {
-    margin: 0;
-    width: 100%;
-  }
-  .publisher-icon {
-    display: none;
-  }
   .publish-steps {
     gap: 14px;
     grid-template-columns: 1fr;

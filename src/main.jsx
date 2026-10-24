@@ -30,22 +30,13 @@ import {
   Wallet,
   X,
   ShieldCheck,
-  RefreshCw,
   LogOut,
-  Plus,
-  Terminal,
-  Globe,
-  Clock,
   Menu,
-  ExternalLink,
   Settings2,
   Copy,
   Download,
   Users,
   Sparkles,
-  Monitor,
-  ChevronLeft,
-  BookOpen,
   CheckCircle2,
   WifiOff,
 } from "lucide-react";
@@ -570,17 +561,6 @@ function App({ walletApi }) {
       );
     }
   }
-  function browseGenre(value) {
-    setGenre(value);
-    setQuery("");
-    setMode("all");
-    go("/");
-    requestAnimationFrame(() =>
-      document
-        .getElementById("collection")
-        ?.scrollIntoView({ behavior: reduced ? "instant" : "smooth" }),
-    );
-  }
   function resetFilters() {
     setQuery("");
     setGenre("All games");
@@ -600,7 +580,6 @@ function App({ walletApi }) {
   ];
   const navContent = (
     <>
-      <p className="sidebar-label">PLAY SOMETHING GOOD</p>
       <nav aria-label="Main navigation">
         {navItems.map(([p, label, Icon]) => (
           <button
@@ -617,29 +596,7 @@ function App({ walletApi }) {
           </button>
         ))}
       </nav>
-      <div className="side-rule" />
-      <p className="sidebar-label">YOUR KIND OF PLAY</p>
-      <nav aria-label="Genres">
-        {genres.map((g) => (
-          <button
-            key={g}
-            aria-pressed={page === "/" && genre === g}
-            onClick={() => browseGenre(g)}
-          >
-            <span className={"genre-dot " + g.toLowerCase().split(" ")[0]} />
-            {g}
-          </button>
-        ))}
-      </nav>
       <div className="sidebar-bottom">
-        <div className="build-note">
-          <Code2 size={22} />
-          <strong>Make the next great game.</strong>
-          <p>A small studio. A big playground.</p>
-          <button onClick={() => go("/developers")}>
-            Start building <ArrowUpRight size={14} />
-          </button>
-        </div>
         <button
           className="preference-link"
           onClick={() => {
@@ -650,14 +607,6 @@ function App({ walletApi }) {
           <Settings2 size={15} />
           Display preferences
         </button>
-        <a
-          className="source-link"
-          href="https://github.com/Myelin-Labs/UTXOPlay"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Built in the open <ArrowUpRight size={12} />
-        </a>
       </div>
     </>
   );
@@ -691,13 +640,8 @@ function App({ walletApi }) {
             <BrandIcon />
             <span>
               UTXO<span className="brand-light">Play</span>
-              <small>YOUR OPEN PLAYGROUND</small>
             </span>
           </button>
-          <div className="top-context">
-            <span className="status-dot" />
-            Good games. Zero downloads.
-          </div>
           <div className="top-right">
             <button
               className="top-search icon-btn"
@@ -753,22 +697,7 @@ function App({ walletApi }) {
             >
               {page === "/" ? (
                 <>
-                  <PageHeading
-                    eyebrow="PRESS PLAY. FEEL SOMETHING."
-                    title={
-                      <>
-                        Your next <em>good time.</em>
-                      </>
-                    }
-                    description="Independent worlds. No downloads. A lot of ‘one more round’."
-                  >
-                    <div className="edition">
-                      <span>CURATED COLLECTION</span>
-                      <b>
-                        VOL. 01 <i>↗</i>
-                      </b>
-                    </div>
-                  </PageHeading>
+                  <h1 className="sr-only">Discover games</h1>
                   <section
                     className={"hero " + hero.id}
                     aria-label="Featured game"
@@ -787,33 +716,18 @@ function App({ walletApi }) {
                       />
                     </AnimatePresence>
                     <div className="hero-shade" />
-                    <div className="hero-orbit" aria-hidden="true" />
                     <div className="hero-content">
                       <span className="pill">
                         <Sparkles size={12} />
-                        {hero.runtime === "arcade"
-                          ? "NEW ON THE PLAYGROUND"
-                          : "IN THE SPOTLIGHT"}
+                        FEATURED · {hero.genre}
                       </span>
                       <motion.div
                         key={hero.id}
                         initial={{ opacity: 0, y: reduced ? 0 : 12 }}
                         animate={{ opacity: 1, y: 0 }}
                       >
-                        <p className="hero-game-name">
-                          {hero.title} <span>／ {hero.genre}</span>
-                        </p>
-                        <h2>
-                          {hero.headline.split("|").map((line, i) => (
-                            <React.Fragment key={line}>
-                              {i > 0 && <br />}
-                              {line}
-                            </React.Fragment>
-                          ))}
-                        </h2>
-                        <p className="hero-description">
-                          {hero.heroDescription}
-                        </p>
+                        <h2>{hero.title}</h2>
+                        <p className="hero-description">{hero.subtitle}</p>
                       </motion.div>
                       <div className="hero-actions">
                         <button
@@ -835,13 +749,13 @@ function App({ walletApi }) {
                           className="hero-details"
                           onClick={() => setDetails(hero)}
                         >
-                          Take a look <ArrowRight size={17} />
+                          Details <ArrowRight size={17} />
                         </button>
                       </div>
                       <div className="hero-trust">
                         <span>
                           <Check size={13} />
-                          Always free
+                          Free to play
                         </span>
                         <span>
                           <Check size={13} />
@@ -851,7 +765,6 @@ function App({ walletApi }) {
                     </div>
                     <div className="hero-bottom">
                       <span className="hero-caption">
-                        {gameMeta[hero.id]?.tag}
                         {hero.myelin?.based && <span className="myelin-badge"><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN</span>}
                       </span>
                       <span className="hero-index">
@@ -877,50 +790,10 @@ function App({ walletApi }) {
                       </button>
                     </div>
                   </section>
-                  <div
-                    className="feature-rail"
-                    aria-label="Choose featured game"
-                  >
-                    {featuredGames.map((g, i) => (
-                      <button
-                        key={g.id}
-                        aria-pressed={hero.id === g.id}
-                        onClick={() => setFeatured(g.id)}
-                        className={hero.id === g.id ? "active" : ""}
-                      >
-                        <img src={g.cover} alt="" />
-                        <span>
-                          <small>
-                            {String(i + 1).padStart(2, '0')} / {g.genre}
-                          </small>
-                          <b>{g.title}</b>
-                        </span>
-                        {hero.id === g.id && (
-                          <motion.i
-                            layoutId="featured-mark"
-                            className="featured-mark"
-                          />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="benefits">
-                    <span>
-                      <Globe size={16} />
-                      Open a tab. Start a game.
-                    </span>
-                    <span>
-                      <Wallet size={16} />A wallet when you want one.
-                    </span>
-                    <span>
-                      <ShieldCheck size={16} />A replay you can keep.
-                    </span>
-                  </div>
                   {libraryGames.length > 0 && (
                     <section className="recent-strip">
                       <div>
-                        <span className="eyebrow">BACK FOR ANOTHER ROUND?</span>
-                        <h2>Jump back in.</h2>
+                        <h2>Continue playing</h2>
                       </div>
                       <button
                         className="recent-game"
@@ -945,17 +818,14 @@ function App({ walletApi }) {
                   <section className="collection" id="collection">
                     <div className="section-head">
                       <div>
-                        <span className="eyebrow">FIND YOUR NEXT FAVORITE</span>
-                        <h2>
-                          Small collection. <span>Big play energy.</span>
-                        </h2>
+                        <h2>Browse games</h2>
                       </div>
                       <label className="search">
                         <Search size={18} />
                         <input
                           ref={searchRef}
                           aria-label="Search games"
-                          placeholder="Search your next obsession"
+                          placeholder="Search games"
                           value={query}
                           onChange={(e) => setQuery(e.target.value)}
                         />
@@ -988,7 +858,6 @@ function App({ walletApi }) {
                             onClick={() => setGenre(g)}
                           >
                             {g}
-                            {g === "All games" && <span>{games.length}</span>}
                           </button>
                         ))}
                       </div>
@@ -1041,28 +910,6 @@ function App({ walletApi }) {
                         </button>
                       </div>
                     )}
-                  </section>
-                  <section className="wallet-banner">
-                    <div className="wallet-art" aria-hidden="true">
-                      <BrandIcon />
-                      <span>
-                        <Check size={13} />
-                      </span>
-                    </div>
-                    <div>
-                      <span className="eyebrow">SAME YOU. ANY SCREEN.</span>
-                      <h2>Your games, wherever you land.</h2>
-                      <p>
-                        Connect a CKB-compatible wallet for a library you can
-                        return to.
-                        <br />
-                        Just here to play? A guest session works too.
-                      </p>
-                    </div>
-                    <button className="outline" onClick={connect}>
-                      {signedIn ? "Your account" : "Meet your wallet library"}
-                      <ArrowUpRight size={17} />
-                    </button>
                   </section>
                 </>
               ) : page === "/library" ? (
@@ -1289,17 +1136,7 @@ function App({ walletApi }) {
               )}
             </Suspense>
             <footer className="footer">
-              <div>
-                <button className="brand" onClick={() => go("/")}>
-                  <BrandIcon />
-                  <span>
-                    UTXO<span className="brand-light">Play</span>
-                  </span>
-                </button>
-                <p>A little more play in your day.</p>
-              </div>
               <nav aria-label="Footer navigation">
-                <button onClick={() => go("/developers")}>Studio</button>
                 <a
                   href="https://github.com/Myelin-Labs/UTXOPlay"
                   target="_blank"
@@ -1309,9 +1146,6 @@ function App({ walletApi }) {
                 </a>
                 <a href="/about.html">About</a>
                 <a href="/privacy.html">Privacy</a>
-                <button onClick={() => setDialog("preferences")}>
-                  Preferences
-                </button>
               </nav>
               <span>© {new Date().getFullYear()} UTXOPlay</span>
             </footer>

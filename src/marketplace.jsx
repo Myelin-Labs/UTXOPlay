@@ -114,33 +114,13 @@ export function Studio({ user, onConnect, onCatalogChange }) {
     <>
       <PageHeading
         eyebrow="UTXOPLAY / STUDIO"
-        title={
-          <>
-            Your game. <em>Your playground.</em>
-          </>
-        }
-        description="Host your Myelin instance. Publish for free. Bring something worth playing."
-      />
-      <section className="publisher-banner">
-        <div className="publisher-icon">
-          <Gift size={32} />
-        </div>
-        <div>
-          <div className="eyebrow">FREE IS A GREAT PLACE TO START</div>
-          <h2>Share the fun. Keep the friction out.</h2>
-          <p>
-            No listing fee. Free games go straight from connection check to the
-            store. If you sell access, you keep 80% of each purchase.
-          </p>
-        </div>
-        <button
-          className="primary"
-          onClick={() => (signed ? setEditor({ new: true }) : onConnect())}
-        >
-          <Plus size={17} />
-          Publish a game
+        title="Publishing studio"
+        description="Host your Myelin game. No listing fee. Keep 80% of paid sales."
+      >
+        <button className="primary" onClick={() => (signed ? setEditor({ new: true }) : onConnect())}>
+          <Plus size={17} /> Publish a game
         </button>
-      </section>
+      </PageHeading>
       <div className="publish-steps">
         <div>
           <b>01</b>
@@ -287,11 +267,8 @@ export function Studio({ user, onConnect, onCatalogChange }) {
       ) : (
         <div className="empty">
           <Gift size={36} />
-          <h2>Start free. Find your audience.</h2>
-          <p>Every great collection starts with someone sharing a game.</p>
-          <button className="primary" onClick={() => setEditor({ new: true })}>
-            Create your first listing <ArrowRight size={17} />
-          </button>
+          <h2>No games published yet.</h2>
+          <p>Choose “Publish a game” above to create your first listing.</p>
         </div>
       )}
       {editor && (
