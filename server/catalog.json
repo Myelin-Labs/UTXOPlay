@@ -187,5 +187,93 @@
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
     }
+  },
+  {
+    "id": "rune-foundry",
+    "title": "Rune Foundry",
+    "subtitle": "A little order. A beautiful chain.",
+    "genre": "Puzzle",
+    "mode": "Single-player",
+    "runtime": "atelier",
+    "description": "Connect four matching runes. Chain reactions earn energy; spend three to reforge the bottom row. Clear 288 runes across twelve increasingly fast stages.",
+    "cover": "/assets/rune-foundry-keyart.webp",
+    "version": "0.1.0",
+    "controls": "\u2190 \u2192 move \u00b7 \u2191 rotate \u00b7 \u2193 drop \u00b7 Space reforge. On touch, use the in-scene controls or swipe; tap the board to rotate.",
+    "players": "1 player",
+    "headline": "A little order.|A beautiful chain.",
+    "heroDescription": "Connect four matching runes. Chain reactions earn energy; spend three to reforge the bottom row. Clear 288 runes across twelve increasingly fast stages.",
+    "caption": "RUNE FOUNDRY \u00b7 THE ALCHEMIST\u2019S WORKSHOP",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
+    }
+  },
+  {
+    "id": "lumen-weave",
+    "title": "Lumen Weave",
+    "subtitle": "Two rotations. One living circuit.",
+    "genre": "Puzzle",
+    "mode": "Single-player",
+    "runtime": "atelier",
+    "description": "Light all 36 nodes from the golden source. Every clockwise rotation turns the opposite node counterclockwise. Restore twenty-four different, solvable networks.",
+    "cover": "/assets/lumen-weave-keyart.webp",
+    "version": "0.1.0",
+    "controls": "Tap any tile to rotate its linked pair. Arrows select a tile; Space rotates it. The gold source is always the top-left node.",
+    "players": "1 player",
+    "headline": "Two rotations.|One living circuit.",
+    "heroDescription": "Light all 36 nodes from the golden source. Every clockwise rotation turns the opposite node counterclockwise. Restore twenty-four different, solvable networks.",
+    "caption": "LUMEN WEAVE \u00b7 THE TWIN-LIGHT OBSERVATORY",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
+    }
+  },
+  {
+    "id": "orbit-courier",
+    "title": "Orbit Courier",
+    "subtitle": "Precious cargo. Perfect timing.",
+    "genre": "Arcade",
+    "mode": "Single-player",
+    "runtime": "atelier",
+    "description": "Collect up to three capsules on the outer orbits and deliver them to the golden inner dock. Hop rings, vary your speed and phase across the planet to survive twelve routes.",
+    "cover": "/assets/orbit-courier-keyart.webp",
+    "version": "0.1.0",
+    "controls": "\u2190 \u2192 hop inward / outward \u00b7 \u2191 brake \u00b7 \u2193 boost \u00b7 Space phase-hop for two energy. Touch controls stay inside the scene.",
+    "players": "1 player",
+    "headline": "Precious cargo.|Perfect timing.",
+    "heroDescription": "Collect up to three capsules on the outer orbits and deliver them to the golden inner dock. Hop rings, vary your speed and phase across the planet to survive twelve routes.",
+    "caption": "ORBIT COURIER \u00b7 SPECIAL DELIVERY / OUTER WORLDS",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
+    }
+  },
+  {
+    "id": "mosslight",
+    "title": "Mosslight",
+    "subtitle": "Leave a light. Lead them home.",
+    "genre": "Strategy",
+    "mode": "Single-player",
+    "runtime": "atelier",
+    "description": "Gather every golden seed in twelve gardens. Guards move when you move. Plant a lantern for two energy: it lures guards into four rays of light for three turns. Stone blocks the light.",
+    "cover": "/assets/mosslight-keyart.webp",
+    "version": "0.1.0",
+    "controls": "WASD / arrows move one tile. Space plants a lantern. Swipe or use the in-scene direction buttons. Think before you move: the world waits for you.",
+    "players": "1 player",
+    "headline": "Leave a light.|Lead them home.",
+    "heroDescription": "Gather every golden seed in twelve gardens. Guards move when you move. Plant a lantern for two energy: it lures guards into four rays of light for three turns. Stone blocks the light.",
+    "caption": "MOSSLIGHT \u00b7 THE LANTERN GARDENS",
+    "myelin": {
+      "based": true,
+      "version": "0.31.0",
+      "evidence": "host-replay",
+      "logo": "/assets/myelin-logo.png?v=0.7.1"
+    }
   }
 ]

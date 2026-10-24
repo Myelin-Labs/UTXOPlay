@@ -46,6 +46,10 @@ export function apiError(error) {
   return error?.message || "Something went wrong. Please try again.";
 }
 export const gameMeta = {
+  'rune-foundry': {accent:'#ffcd8d',tag:'THE ALCHEMIST’S WORKSHOP',length:'12 escalating stages',input:'Keyboard + touch',note:'Match runes. Build chains. Reforge your fate.',repo:'UTXOPlay'},
+  'lumen-weave': {accent:'#a8e5ff',tag:'TWIN-LIGHT OBSERVATORY',length:'24 solvable networks',input:'Keyboard + touch',note:'Two rotations. One living circuit.',repo:'UTXOPlay'},
+  'orbit-courier': {accent:'#a9efe7',tag:'SPECIAL DELIVERY',length:'12 orbital routes',input:'Keyboard + touch',note:'Precious cargo. Perfect timing.',repo:'UTXOPlay'},
+  mosslight: {accent:'#c7ebaf',tag:'THE LANTERN GARDENS',length:'12 living gardens',input:'Keyboard + touch',note:'Leave a light. Lead them home.',repo:'UTXOPlay'},
   "neon-miner": {accent:"#ffd075",tag:"THE UNDERCITY",length:"60 sectors to explore",input:"One-button + touch",note:"Time the swing. Take the gold. Upgrade your rig.",repo:"UTXOPlay"},
   "prism-breaker": {"accent": "#b7a2ff", "tag": "REFRACTION LAB", "length": "24 crystal sectors", "input": "Keyboard + touch", "note": "Bend light. Rewrite the angle.", "repo": "UTXOPlay"},
   "neon-coil": {"accent": "#84efba", "tag": "LIVING CIRCUIT", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Grow a circuit. Close it. Cash it in.", "repo": "UTXOPlay"},

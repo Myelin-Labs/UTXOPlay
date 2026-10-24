@@ -1,0 +1,64 @@
+{
+  "generator": "Built-in image_gen",
+  "date": "2026-10-24",
+  "assets": [
+    {
+      "name": "foundry_bg",
+      "prompt": "Production in-game environment plate for RUNE FOUNDRY. One 1536x1024 landscape image, no words or UI. Exquisite miniature alchemical jeweler's workshop, warm amber glass furnace, brushed copper machinery, plum velvet shadows, suspended tiny gems and tools only at far left and right margins, centrally a quiet dark blue-black polished slate material with subtle worn gold inlays, unobstructed central 60% width and 80% height for falling game pieces. Straight-on softly elevated orthographic camera. Premium tactile 3D art with realistic materials, intricate craftsmanship, cinematic warm light, elegant colorful atmosphere. Full image to edges, no embedded frame or mockup.",
+      "source": "assets/atelier-source/foundry_bg.png",
+      "web": "games/atelier/web/art/foundry_bg.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-a5a95138-092b-4972-829e-95fb3df814ea.png"
+    },
+    {
+      "name": "weave_bg",
+      "prompt": "Production in-game environment plate for LUMEN WEAVE. One 1536x1024 landscape image, no words or UI. Strict overhead view of a beautiful ancient optical machine in a moonlit conservatory, white porcelain and midnight cobalt enamel, delicate silver bridges, cyan light carried through fine fiber optic filaments, sculpted celestial ornaments at outer edges. Central 65% square dark smooth cobalt stone surface completely empty for a six by six circuit puzzle, no drawn grid. Museum quality intricate 3D manufactured materials and subtle blue iridescence, luminous but restrained, exquisite details, full screen environment rather than application frame.",
+      "source": "assets/atelier-source/weave_bg.png",
+      "web": "games/atelier/web/art/weave_bg.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-16cab0f4-b1b1-4611-9475-9295eae60111.png"
+    },
+    {
+      "name": "orbit_bg",
+      "prompt": "Production in-game environment plate for ORBIT COURIER. One 1536x1024 landscape image, no words or UI. A magnificent peach and turquoise gas giant at exact center 50% x50% diameter about22% of image height, soft illuminated atmosphere, seen from above an orbital delivery network. Deep ink blue space with subtle starfields, tiny remote dock structures limited to extreme corners, restrained colorful nebula, wide clean dark space all around planet for three playable orbital rings. Sophisticated cinematic physically grounded 3D illustration, joyous retrofuturist logistics, no spaceships in playfield, no drawn orbit lines, no text, no central UI or frame.",
+      "source": "assets/atelier-source/orbit_bg.png",
+      "web": "games/atelier/web/art/orbit_bg.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-fb4584b0-c5bd-42d8-9588-55f8bfab56ee.png",
+      "refinement_prompt": "Edit this production game environment plate. Keep the exquisite starfield, nebula and corner dock buildings. The central planet is MUCH too large for the game's orbital tracks. Make the planet exactly 150 pixels in diameter in this 1536x1024 image (only about 15% of image height), place its center precisely at image x=768 y=512. Fill its old large area seamlessly with dark empty starfield. Preserve detailed peach/turquoise planet materials at the smaller size and subtle atmosphere. No orbit rings, no UI, no text. Lots of calm dark space around the tiny central planet is essential.",
+      "refinement_generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-d01c6cfd-6b57-4c52-87d5-34d75bff1109.png"
+    },
+    {
+      "name": "moss_bg",
+      "prompt": "Production in-game environment plate for MOSSLIGHT, a luxurious miniature garden tactics game. One1536x1024 landscape image no text or UI. Strict straight-down orthographic view. A lush nocturnal enchanted greenhouse at edges, carved wood, tiny golden lanterns, ferns, flowers, glass dew and warm forest firefly bokeh. Central65% width and80% height is empty dark moss-green weathered stone and soft earth with very subtle material variation, flat and clear for a square tile grid. Beautiful tactile cozy realistic 3D materials, hand-crafted high-end board game environment, readable calm center, whimsical sophistication, no characters, no visible grid, no menu frame.",
+      "source": "assets/atelier-source/moss_bg.png",
+      "web": "games/atelier/web/art/moss_bg.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-2825dbe1-805d-4623-911f-4f3cb1dca04c.png"
+    },
+    {
+      "name": "foundry_atlas",
+      "prompt": "One production 1536x1024 RGBA sprite atlas with REAL transparent background. Exactly 3 columns and 2 rows, each cell512x512. One isolated object per cell, centered with60px clear margin, no grid lines, no text, no shadows outside silhouettes. Consistent orthographic view, luxurious tactile realistic 3D miniature materials, crisp silhouette. RUNE FOUNDRY six enchanting alchemical gemstone tiles, each rounded square in gold cage, each unique visible rune carved as pictogram not letters. Top row: ruby red fire-drop gem, sapphire blue wave gem, emerald green leaf gem. Bottom row: violet crescent gem, amber sun gem, white opal star gem. Strict straight top down view. All six similar size320x320. Distinct shape and color for accessibility. Exquisitely bevelled glass, polished gold corner clasps, internal colored light, dark outlines for readability.",
+      "source": "assets/atelier-source/foundry_atlas.png",
+      "web": "games/atelier/web/art/foundry_atlas.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-4f0e7e58-580e-4c40-909a-82bc0745d7fa.png"
+    },
+    {
+      "name": "weave_atlas",
+      "prompt": "One production 1536x1024 RGBA sprite atlas with REAL transparent background. Exactly 3 columns and 2 rows, each cell512x512. One isolated object per cell, centered with60px clear margin, no grid lines, no text, no shadows outside silhouettes. Consistent orthographic view, luxurious tactile realistic 3D miniature materials, crisp silhouette. LUMEN WEAVE optical circuit puzzle. Straight overhead. White porcelain, cobalt enamel, brushed silver, cyan and violet energy. Top row left: exquisite compact circular optical node diameter300 with a cyan faceted glass heart; middle: same compact node with violet heart; right: circular solar power source silver surround and brilliant gold glass center. Bottom row left: luxurious square beveled cobalt ceramic tile with silver corners, dark calm flat center; middle: luminous cyan crystal firework puff as a soft compact burst; right: small precious silver and pearl linkage ring, elegant paired orbital motif. Entirely separate real-alpha sprites, no UI labels.",
+      "source": "assets/atelier-source/weave_atlas.png",
+      "web": "games/atelier/web/art/weave_atlas.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-30654ba0-d451-4c62-ae06-4413ed65baa7.png"
+    },
+    {
+      "name": "orbit_atlas",
+      "prompt": "One production 1536x1024 RGBA sprite atlas with REAL transparent background. Exactly 3 columns and 2 rows, each cell512x512. One isolated object per cell, centered with60px clear margin, no grid lines, no text, no shadows outside silhouettes. Consistent orthographic view, luxurious tactile realistic 3D miniature materials, crisp silhouette. ORBIT COURIER orbital logistics game. Straight overhead orthographic. Top row left: charming exquisite ivory and turquoise courier shuttle, nose UP, copper engine pods, compact triangular silhouette; middle: red copper spherical sentinel drone with three spikes, restrained red thruster light; right: radiant amber cargo capsule with glass vial and metal cage. Bottom row left: beautiful compact orbital delivery dock, ivory ceramic ring and mint landing pad; middle: circular cyan phase-warp halo with open center; right: small compact warm explosion sparkle puff. Premium retrofuturism, readable separated colors, detailed machined materials.",
+      "source": "assets/atelier-source/orbit_atlas.png",
+      "web": "games/atelier/web/art/orbit_atlas.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-86be0020-0104-45b1-9da7-c2176f16606f.png"
+    },
+    {
+      "name": "moss_atlas",
+      "prompt": "One production 1536x1024 RGBA sprite atlas with REAL transparent background. Exactly 3 columns and 2 rows, each cell512x512. One isolated object per cell, centered with60px clear margin, no grid lines, no text, no shadows outside silhouettes. Consistent orthographic view, luxurious tactile realistic 3D miniature materials, crisp silhouette. MOSSLIGHT miniature forest tactics. Strict overhead orthographic view for ALL objects. Top row left: adorable small forest guardian with cream mushroom cap, mint cloak and tiny amber lantern, facing DOWN, visible cap and shoulders; middle: sinister but cute round violet thorn sprite with dark glowing eyes and berry spikes; right: exquisite glowing golden seed in transparent amber shell with two emerald leaves. Bottom row left: square moss-covered carved stone obstacle, tactile damp stone and ferns; middle: ornate tiny warm amber garden lantern made of wood and brass, top-down glass light; right: small blooming flower with luminous mint petals and gold stamens. Detailed handcrafted 3D materials, warm/cool lighting contrast, friendly premium game assets.",
+      "source": "assets/atelier-source/moss_atlas.png",
+      "web": "games/atelier/web/art/moss_atlas.webp",
+      "generated": "/home/arthur/.codex/generated_images/01a16888-e8f1-7fc2-b64e-d988b30e21e7/exec-c2123d67-dda2-42dd-952f-5e199ff72e42.png"
+    }
+  ]
+}

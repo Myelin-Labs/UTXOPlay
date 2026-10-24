@@ -847,8 +847,8 @@ function App({ walletApi }) {
                         {hero.myelin?.based && <span className="myelin-badge"><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN</span>}
                       </span>
                       <span className="hero-index">
-                        0{featuredGames.findIndex((g) => g.id === hero.id) + 1}
-                        <i> / 0{featuredGames.length}</i>
+                        {String(featuredGames.findIndex((g) => g.id === hero.id) + 1).padStart(2, '0')}
+                        <i> / {String(featuredGames.length).padStart(2, '0')}</i>
                       </span>
                       <button
                         className="hero-next icon-btn"
@@ -883,7 +883,7 @@ function App({ walletApi }) {
                         <img src={g.cover} alt="" />
                         <span>
                           <small>
-                            0{i + 1} / {g.genre}
+                            {String(i + 1).padStart(2, '0')} / {g.genre}
                           </small>
                           <b>{g.title}</b>
                         </span>

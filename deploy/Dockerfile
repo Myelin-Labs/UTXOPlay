@@ -16,6 +16,11 @@ COPY games/prism-breaker/web ./games/prism-breaker/web
 COPY games/neon-coil/web ./games/neon-coil/web
 COPY games/starfall/web ./games/starfall/web
 COPY games/drift-run/web ./games/drift-run/web
+COPY games/atelier/web ./games/atelier/web
+COPY games/rune-foundry/web ./games/rune-foundry/web
+COPY games/lumen-weave/web ./games/lumen-weave/web
+COPY games/orbit-courier/web ./games/orbit-courier/web
+COPY games/mosslight/web ./games/mosslight/web
 COPY deploy/bin ./bin
 RUN find /app/dist /app/games -type d -exec chmod 755 {} + && find /app/dist /app/games -type f -exec chmod 644 {} +
 RUN mkdir /app/data && chown node:node /app/data
