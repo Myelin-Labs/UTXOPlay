@@ -1,22 +1,43 @@
-import {viewport,backingRatio,pointerInViewport} from './viewport.mjs';
+import {
+  art,
+  guidePoints,
+  flightMedal,
+  sceneRegion,
+  renderRatio,
+  pullVector,
+} from "./presentation.mjs";
+import { viewport, backingRatio, pointerInViewport } from "./viewport.mjs";
 import { startRenderLoop, startPolling, setText } from "./performance.mjs";
-import { toggleSound, volume, sound, startSound, audioState } from "./audio.js?v=0.9.0";
+import {
+  toggleSound,
+  volume,
+  sound,
+  startSound,
+  audioState,
+} from "./audio.js?v=0.9.0";
 globalThis.UTXOPlayLoader?.boot();
 const $ = (s) => document.querySelector(s),
   canvas = $("#world"),
   ctx = canvas.getContext("2d");
-let selectedPower = "normal", lastCoins = 0, shopMessage = "", confirmingNew = false, needsSync = false;
+let selectedPower = "normal",
+  lastCoins = 0,
+  shopMessage = "",
+  confirmingNew = false,
+  needsSync = false;
 let data,
   busy = false,
   drag = null,
   flight = null,
   particles = [],
   toastTimer;
+let menuOpen = false,
+  pausedAt = null,
+  backgroundKey = "",
+  lastQuietFrame = "";
 let effects = [],
   shake = 0,
   aim = null,
-  hovered = -1,
-  hiddenAt = 0;
+  hovered = -1;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 $("#gentle-effects").checked = reducedMotion.matches;
 const gentle = () => $("#gentle-effects").checked;
@@ -62,6 +83,8 @@ function impact(x, y, kind, hp) {
     text: hp > 0 ? "CRACK!" : kind === "sprite" ? "+500 · FREED!" : "+100",
     color: kind === "sprite" ? "#fff7bb" : "#ffffff",
   });
+  particles = particles.slice(-240);
+  effects = effects.slice(-64);
   shake = gentle() ? 0 : 8;
   feedback(
     hp > 0
@@ -94,36 +117,44 @@ function beginFlight(replay = false) {
   };
   effects = [];
   particles = [];
+  if (menuOpen || document.hidden) pausedAt = performance.now();
   feedback(replay ? "Replaying your last flight" : "Pip is away!");
 }
-addEventListener("visibilitychange", () => {
-  if (document.hidden) hiddenAt = performance.now();
-  else if (flight && hiddenAt) {
-    flight.start += performance.now() - hiddenAt;
-    hiddenAt = 0;
+function pausePlayback() {
+  const paused = menuOpen || document.hidden;
+  if (paused && pausedAt === null) pausedAt = performance.now();
+  else if (!paused && pausedAt !== null) {
+    if (flight) flight.start += performance.now() - pausedAt;
+    pausedAt = null;
   }
+}
+addEventListener("visibilitychange", () => {
+  cancelPull();
+  pausePlayback();
 });
 const bg = new Image();
-bg.src = "/games/sling/assets/islands.webp";
-const scenery = document.createElement("canvas");
-scenery.width = 1100;
-scenery.height = 560;
-const sceneryContext = scenery.getContext("2d", { alpha: false });
+bg.src = art.worlds;
+const scenery = document.createElement("canvas"),
+  sceneryContext = scenery.getContext("2d", { alpha: false });
 let sceneryReady = false;
 bg.onload = () => {
-  sceneryContext.drawImage(bg, 0, 0, 1100, 560);
   sceneryReady = true;
+  backgroundKey = "";
 };
 if (bg.complete && bg.naturalWidth) bg.onload();
 const sprites = new Image();
-sprites.src = "/games/sling/assets/characters.webp";
-globalThis.UTXOPlayLoader?.images([bg,sprites]);
+sprites.onload = () => {
+  lastQuietFrame = "";
+};
+sprites.src = art.sprites;
+globalThis.UTXOPlayLoader?.images([bg, sprites]);
 async function api(path, body) {
   const r = await fetch(
     path,
     body === undefined
-      ? {}
+      ? { signal: AbortSignal.timeout(12000) }
       : {
+          signal: AbortSignal.timeout(12000),
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -142,74 +173,140 @@ function toast(text) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => ($("#toast").hidden = true), 4500);
 }
+// Authored atlas regions exclude transparent margins; collision dimensions stay native.
+const spriteCells = [
+  [
+    [20, 10, 335, 380],
+    [400, 5, 355, 390],
+    [858, 15, 145, 375],
+    [1185, 0, 185, 395],
+  ],
+  [
+    [35, 397, 300, 322],
+    [380, 415, 350, 304],
+    [764, 430, 286, 284],
+    [1060, 410, 388, 310],
+  ],
+  [
+    [20, 727, 340, 348],
+    [377, 725, 333, 335],
+    [724, 742, 344, 300],
+    [1062, 755, 380, 319],
+  ],
+];
+
 function sprite(col, row, x, y, w, h, angle = 0) {
   if (!sprites.complete || !sprites.naturalWidth) return;
   ctx.save();
   ctx.translate(x + w / 2, y + h / 2);
   ctx.rotate(angle);
-  ctx.drawImage(
-    sprites,
-    (col * sprites.width) / 4,
-    (row * sprites.height) / 2,
-    sprites.width / 4,
-    sprites.height / 2,
-    -w / 2,
-    -h / 2,
-    w,
-    h,
-  );
+  const [sx, sy, sw, sh] = spriteCells[row][col];
+  ctx.drawImage(sprites, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
   ctx.restore();
 }
 function ui() {
   if (!data) return;
   const g = data.game;
+  const medal = flightMedal(g);
+  $("#result-medal").textContent = g.won
+    ? "★".repeat(medal.stars) + "☆".repeat(3 - medal.stars)
+    : "↗";
+  $("#result-stats").textContent =
+    `${medal.used} flight${medal.used === 1 ? "" : "s"} · ${g.score.toLocaleString()} points · ${g.coins} coins`;
+  $("#skip-flight").hidden = !flight;
+  $("#skip-flight").textContent = flight?.replay
+    ? "Finish replay ↗"
+    : "Finish flight ↗";
+  $("#scene-region").textContent = g.region;
+  $("#island-progress").textContent =
+    `ISLAND ${String(g.level).padStart(2, "0")} / ${g.total_levels}`;
+  document.querySelectorAll(".region-dot").forEach((el, i) => {
+    el.classList.toggle("active", i === sceneRegion(g.level));
+    el.classList.toggle("complete", i < sceneRegion(g.level));
+  });
   $("#targets-left").textContent =
     `${g.remaining} sprite${g.remaining === 1 ? "" : "s"} to free`;
-  $("#replay-shot").disabled = busy || !!flight || !g.trace.length;
+  $("#replay-shot").disabled = $("#quick-replay").disabled =
+    busy || !!flight || !g.trace.length;
   $("#level").textContent = String(g.level).padStart(2, "0");
   $("#level-name").textContent = g.level_name;
   $("#total-levels").textContent = g.total_levels;
   $("#region").textContent = g.region;
   $("#journey").value = g.level - (g.won ? 0 : 1);
   $("#journey").max = g.total_levels;
-  $("#journey-label").textContent = `${g.level} / ${g.total_levels} islands · ${g.region}`;
-  if (selectedPower !== "normal" && !g.inventory[selectedPower]) selectedPower = "normal";
+  $("#journey-label").textContent =
+    `${g.level} / ${g.total_levels} islands · ${g.region}`;
+  if (selectedPower !== "normal" && !g.inventory[selectedPower])
+    selectedPower = "normal";
   for (const button of document.querySelectorAll("[data-power]")) {
     const kind = button.dataset.power;
-    button.disabled = busy || needsSync || !!flight || g.won || g.lost || (kind !== "normal" && !g.inventory[kind]);
+    button.disabled =
+      busy ||
+      needsSync ||
+      !!flight ||
+      g.won ||
+      g.lost ||
+      (kind !== "normal" && !g.inventory[kind]);
     button.setAttribute("aria-pressed", String(kind === selectedPower));
     const count = button.querySelector(".item-count");
     if (count) count.textContent = g.inventory[kind];
   }
-  $("#extra-flight").disabled = busy || needsSync || !!flight || g.won || !g.inventory.extra || g.extra_used >= g.extra_limit;
+  $("#extra-flight").disabled =
+    busy ||
+    needsSync ||
+    !!flight ||
+    g.won ||
+    !g.inventory.extra ||
+    g.extra_used >= g.extra_limit;
   $("#extra-count").textContent = g.inventory.extra;
-  $("#rescue-flight").hidden = !g.lost || !g.inventory.extra || g.extra_used >= g.extra_limit;
+  $("#rescue-flight").hidden =
+    !g.lost || !g.inventory.extra || g.extra_used >= g.extra_limit;
   $("#rescue-shop").hidden = !g.lost || g.extra_used >= g.extra_limit;
   $("#shop-open").disabled = busy;
   $("#shop-reconnect").hidden = !needsSync;
   $("#shop-reconnect").disabled = busy;
   setText("coins", g.coins);
   setText("shop-coins", g.coins);
-  setText("shop-feedback", shopMessage || "Earn coins by playing. Buying adds to your satchel; equip or use an owned item below.");
+  setText(
+    "shop-feedback",
+    shopMessage ||
+      "Earn coins by playing. Buying adds to your satchel; equip or use an owned item below.",
+  );
   for (const item of g.shop.items) {
     const card = document.querySelector(`[data-item="${item.id}"]`);
-    card.querySelector('.item-description').textContent = item.description;
-    card.querySelector('[data-stock]').textContent = item.owned;
-    card.querySelector('.stock-limit').textContent = g.shop.stock_limit;
-    const buy = card.querySelector('[data-buy]');
+    card.querySelector(".item-description").textContent = item.description;
+    card.querySelector("[data-stock]").textContent = item.owned;
+    card.querySelector(".stock-limit").textContent = g.shop.stock_limit;
+    const buy = card.querySelector("[data-buy]");
     buy.textContent = `Buy · ${item.price} coins`;
     buy.disabled = busy || needsSync || !!flight || !item.can_buy;
-    card.querySelector('[data-buy-reason]').textContent = busy ? "Saving…" : flight ? "Wait for the flight to finish" : item.unavailable || "Adds one to your satchel";
-    const equip = card.querySelector('[data-equip]');
-    if (equip) equip.textContent = item.id === selectedPower ? "Equipped · return to play" : item.owned ? "Equip owned item" : "None owned";
+    card.querySelector("[data-buy-reason]").textContent = busy
+      ? "Saving…"
+      : flight
+        ? "Wait for the flight to finish"
+        : item.unavailable || "Adds one to your satchel";
+    const equip = card.querySelector("[data-equip]");
+    if (equip)
+      equip.textContent =
+        item.id === selectedPower
+          ? "Equipped · return to play"
+          : item.owned
+            ? "Equip owned item"
+            : "None owned";
   }
   $("#rescue-flight").disabled = busy || needsSync || !!flight;
   $("#continue").disabled = busy || needsSync || !!flight;
   $("#rescue-shop").disabled = busy || !!flight;
-  $("#item-hint").textContent = selectedPower === "burst" ? "Bloom bomb · bursts on first impact, clearing nearby targets." : selectedPower === "pierce" ? "Star feather · breaks stone in one hit and keeps its speed." : "Classic flight equipped · no item consumed.";
+  $("#item-hint").textContent =
+    selectedPower === "burst"
+      ? "Bloom bomb · bursts on first impact, clearing nearby targets."
+      : selectedPower === "pierce"
+        ? "Star feather · breaks stone in one hit and keeps its speed."
+        : "Classic flight equipped · no item consumed.";
   document.body.dataset.region = String(Math.floor((g.level - 1) / 3));
   $("#score").textContent = String(flight?.score ?? g.score).padStart(4, "0");
-  $("#shots").textContent = "● ".repeat(g.shots) + "○ ".repeat(Math.max(0, 4 - g.shots));
+  $("#shots").textContent =
+    "● ".repeat(g.shots) + "○ ".repeat(Math.max(0, 4 - g.shots));
   $("#level-result").hidden = !!flight || (!g.won && !g.lost);
   $("#launch").disabled = busy || needsSync || !!flight || g.won || g.lost;
   $("#new").disabled = busy || needsSync || !!flight;
@@ -258,28 +355,80 @@ function burst(x, y) {
   }
 }
 function render(now, elapsed, ratio) {
-  const w=canvas.clientWidth||1100,h=canvas.clientHeight||560,pixel=backingRatio(w,h,ratio),v=viewport(w,h,'sling');
-  const pw=Math.floor(w*pixel),ph=Math.floor(h*pixel);if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
-  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#c5e5d9';ctx.fillRect(0,0,pw,ph);
-  if(sceneryReady){const ground=(v.y+480*v.scale)*pixel,cover=Math.max(pw/1100,ground/480,(ph-ground)/80);ctx.drawImage(scenery,(pw-1100*cover)/2,ground-480*cover,1100*cover,560*cover);}
-  ctx.setTransform(v.scale*pixel,0,0,v.scale*pixel,v.x*pixel,v.y*pixel);
-
-  const delta = Math.min(2, elapsed / 16.667);
-
-  if (!sceneryReady) {
-    ctx.fillStyle = "#c5e5d9";
-    ctx.fillRect(-v.x/v.scale, -v.y/v.scale, w/v.scale, h/v.scale);
+  if (pausedAt !== null) now = pausedAt;
+  const w = canvas.clientWidth || 1100,
+    h = canvas.clientHeight || 560,
+    pixel = renderRatio(w, h, backingRatio(w, h, ratio)),
+    v = viewport(w, h, "sling");
+  const pw = Math.floor(w * pixel),
+    ph = Math.floor(h * pixel);
+  if (canvas.width !== pw || canvas.height !== ph) {
+    canvas.width = pw;
+    canvas.height = ph;
   }
-  if (!data) return;
-  const region = Math.floor((data.game.level - 1) / 3);
-  if (region) {
-    ctx.fillStyle = ["", "#f6b85220", "#8580df26", "#10285666"][region];
-    ctx.fillRect(-v.x/v.scale, -v.y/v.scale, w/v.scale, h/v.scale);
-    if (region === 3) {
-      ctx.fillStyle = "#fff5cacc";
-      for (let i=0;i<26;i++) { ctx.beginPath(); ctx.arc(30+(i*137)%1040, 24+(i*43)%215, i%3===0?2:1, 0, Math.PI*2); ctx.fill(); }
+  const region = sceneRegion(data?.game.level),
+    key = [pw, ph, region, sceneryReady].join(":");
+  if (key !== backgroundKey) {
+    backgroundKey = key;
+    scenery.width = pw;
+    scenery.height = ph;
+    sceneryContext.fillStyle = ["#b4dedb", "#e8c990", "#c0badb", "#233d5e"][
+      region
+    ];
+    sceneryContext.fillRect(0, 0, pw, ph);
+    if (sceneryReady) {
+      const ground = (v.y + 480 * v.scale) * pixel,
+        sw = Math.floor(bg.naturalWidth / 2),
+        sh = Math.floor(bg.naturalHeight / 2),
+        groundRatio = 0.78,
+        cover = Math.max(
+          pw / sw,
+          ground / (sh * groundRatio),
+          (ph - ground) / (sh * (1 - groundRatio)),
+        );
+      sceneryContext.drawImage(
+        bg,
+        (region % 2) * sw,
+        Math.floor(region / 2) * (sh + 1),
+        sw,
+        sh,
+        (pw - sw * cover) / 2,
+        ground - sh * groundRatio * cover,
+        sw * cover,
+        sh * cover,
+      );
     }
   }
+  const quietKey = [
+    key,
+    data?.session.block_hash,
+    selectedPower,
+    $("#angle").value,
+    $("#power").value,
+    $("#aim-guide").checked,
+    hovered,
+    !!flight,
+    menuOpen,
+  ].join(":");
+  if (
+    ((gentle() && !flight && !drag && !particles.length && !effects.length) ||
+      menuOpen) &&
+    lastQuietFrame === quietKey
+  )
+    return;
+  lastQuietFrame = quietKey;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(scenery, 0, 0);
+  ctx.setTransform(
+    v.scale * pixel,
+    0,
+    0,
+    v.scale * pixel,
+    v.x * pixel,
+    v.y * pixel,
+  );
+  const delta = pausedAt !== null ? 0 : Math.min(2, elapsed / 16.667);
+  if (!data) return;
   ctx.save();
   if (shake > 0) {
     ctx.translate(
@@ -315,13 +464,13 @@ function render(now, elapsed, ratio) {
     for (const hit of g.hits) {
       if (hit[0] <= step) {
         targets[hit[1]].hp = hit[2];
-        if (!flight.fired.has(hit[1])) {
-          flight.fired.add(hit[1]);
+        if (!flight.fired.has(hit[0] + ":" + hit[1])) {
+          flight.fired.add(hit[0] + ":" + hit[1]);
           const target = targets[hit[1]];
           if (g.last_power === "burst" && !flight.burst) {
             flight.burst = true;
-            const [x,y] = g.trace[hit[0]].map(v => v / 1000);
-            effects.push({x,y,life:45,kind:"bloom",color:"#ffdd91"});
+            const [x, y] = g.trace[hit[0]].map((v) => v / 1000);
+            effects.push({ x, y, life: 45, kind: "bloom", color: "#ffdd91" });
             sound("win");
           }
           impact(
@@ -339,7 +488,8 @@ function render(now, elapsed, ratio) {
       }
     }
     if (step === g.trace.length - 1) {
-      const replay = flight.replay, earnedCoins = flight.coins;
+      const replay = flight.replay,
+        earnedCoins = flight.coins;
       flight = null;
       ui();
       $("#score").classList.remove("score-pop");
@@ -361,7 +511,8 @@ function render(now, elapsed, ratio) {
             burst(280 + i * 100, 120 + Math.random() * 100);
       }
       if (replay) feedback("Replay finished · no flights or coins spent");
-      else if (earnedCoins) feedback(`${$("#flight-status").textContent} · +${earnedCoins} coins`);
+      else if (earnedCoins)
+        feedback(`${$("#flight-status").textContent} · +${earnedCoins} coins`);
     }
   }
   for (const [targetIndex, target] of targets.entries()) {
@@ -387,7 +538,7 @@ function render(now, elapsed, ratio) {
       );
     } else if (w > h) {
       sprite(
-        2,
+        target.kind === "stone" ? 3 : 2,
         0,
         x + w / 2 - (h + 16) / 2,
         y + h / 2 - (w + 8) / 2,
@@ -435,23 +586,14 @@ function render(now, elapsed, ratio) {
   }
   aim = drag || aimFromControls();
   if ($("#aim-guide").checked && !flight && step < 0 && !g.won && !g.lost) {
-    let x = 180000,
-      y = 360000,
-      vx = -aim.dx * 135,
-      vy = -aim.dy * 135;
-    for (let i = 0; i < 130; i++) {
-      vy += 110;
-      x += Math.trunc(vx / 2);
-      y += Math.trunc(vy / 2);
-      if (y > 460000) break;
-      if (i % 9 === 0) {
-        ctx.fillStyle = `rgba(255,255,235,${0.8 - i / 170})`;
-        ctx.beginPath();
-        ctx.arc(x / 1000, y / 1000, 3.5, 0, 7);
-        ctx.fill();
-      }
+    for (const dot of guidePoints(aim.dx, aim.dy)) {
+      ctx.fillStyle = `rgba(255,255,235,${dot.alpha})`;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
+
   if (step >= 0 && !gentle()) {
     ctx.lineCap = "round";
     for (let i = Math.max(1, step - 22); i <= step; i++) {
@@ -464,7 +606,7 @@ function render(now, elapsed, ratio) {
     }
   }
   if (drag) {
-    const power = Math.min(1, Math.hypot(drag.dx, drag.dy) / 119);
+    const power = Math.min(1, Math.hypot(drag.dx, drag.dy) / 120);
     ctx.lineWidth = 6;
     ctx.strokeStyle = "#ffffff70";
     ctx.beginPath();
@@ -476,12 +618,16 @@ function render(now, elapsed, ratio) {
     ctx.stroke();
   }
   const visiblePower = step >= 0 ? g.last_power : selectedPower;
-  if (visiblePower !== "normal" && (step >= 0 || !g.won && !g.lost)) {
+  if (visiblePower !== "normal" && (step >= 0 || (!g.won && !g.lost))) {
     ctx.strokeStyle = visiblePower === "burst" ? "#ffc15c" : "#b5eeff";
     ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(px,py,32,0,Math.PI*2); ctx.stroke();
-    ctx.fillStyle = ctx.strokeStyle; ctx.font = "bold 20px Georgia"; ctx.textAlign = "center";
-    ctx.fillText(visiblePower === "burst" ? "✹" : "✦",px,py-40);
+    ctx.beginPath();
+    ctx.arc(px, py, 32, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.font = "bold 20px Georgia";
+    ctx.textAlign = "center";
+    sprite(visiblePower === "burst" ? 0 : 1, 2, px - 18, py - 66, 36, 36);
   }
   if (step >= 0 || (!g.won && !g.lost))
     sprite(
@@ -491,7 +637,20 @@ function render(now, elapsed, ratio) {
       py - 29,
       56,
       56,
-      step >= 0 ? Math.min(step * 0.035, 8) : 0,
+      step > 0
+        ? Math.max(
+            -0.6,
+            Math.min(
+              0.65,
+              Math.atan2(
+                g.trace[step][1] - g.trace[step - 1][1],
+                g.trace[step][0] - g.trace[step - 1][0],
+              ),
+            ),
+          )
+        : drag
+          ? -0.12
+          : 0,
     );
   for (let i = 0; i < Math.min(g.shots - (step < 0 ? 1 : 0), 3); i++)
     sprite(0, 0, 65 + i * 33, 440, 38, 38);
@@ -523,7 +682,13 @@ function render(now, elapsed, ratio) {
       ctx.strokeStyle = e.color;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(e.x, e.y, 10 + (45 - e.life) * (e.kind === "bloom" ? 2.1 : 1.25), 0, 7);
+      ctx.arc(
+        e.x,
+        e.y,
+        10 + (45 - e.life) * (e.kind === "bloom" ? 2.1 : 1.25),
+        0,
+        7,
+      );
       ctx.stroke();
     } else {
       ctx.font = "bold 20px system-ui";
@@ -540,19 +705,38 @@ function render(now, elapsed, ratio) {
   ctx.globalAlpha = 1;
   ctx.restore();
 }
-function point(e) {return pointerInViewport(e.clientX,e.clientY,canvas.getBoundingClientRect(),'sling');}
-function pull(p) {
-  let dx = Math.min(-8, Math.max(-120, Math.round(p.x - 180))),
-    dy = Math.min(100, Math.max(-20, Math.round(p.y - 360)));
-  const length = Math.hypot(dx, dy);
-  if (length > 119) {
-    dx = Math.trunc((dx * 119) / length);
-    dy = Math.trunc((dy * 119) / length);
-  }
-  return { dx, dy };
+function point(e) {
+  return pointerInViewport(
+    e.clientX,
+    e.clientY,
+    canvas.getBoundingClientRect(),
+    "sling",
+  );
 }
+function pull(p) {
+  return pullVector(p.x, p.y);
+}
+function cancelPull() {
+  if (!drag) return;
+  const id = drag.id;
+  drag = null;
+  if (canvas.hasPointerCapture?.(id)) canvas.releasePointerCapture(id);
+  feedback("Pull cancelled. No flight spent.");
+}
+addEventListener("blur", cancelPull);
 canvas.onpointerdown = (e) => {
-  if (!data || busy || needsSync || flight || data.game.won || data.game.lost) return;
+  if (
+    !data ||
+    busy ||
+    needsSync ||
+    flight ||
+    drag ||
+    menuOpen ||
+    e.button !== 0 ||
+    data.game.won ||
+    data.game.lost
+  )
+    return;
   const p = point(e);
   canvas.focus({ preventScroll: true });
   if (Math.hypot(p.x - 180, p.y - 360) > 65) {
@@ -573,14 +757,27 @@ canvas.onpointerdown = (e) => {
     return;
   }
   canvas.setPointerCapture(e.pointerId);
-  drag = pull(p);
+  drag = {
+    ...pull(p),
+    id: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    moved: false,
+  };
 };
 canvas.onpointermove = (e) => {
   const p = point(e);
   if (drag) {
-    drag = pull(p);
+    if (e.pointerId !== drag.id) return;
+    drag = {
+      ...drag,
+      ...pull(p),
+      moved:
+        drag.moved ||
+        Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 6,
+    };
     feedback(
-      `Pull power ${Math.round(Math.hypot(drag.dx, drag.dy) / 1.19)}% · release to fly · Esc to cancel`,
+      `Pull power ${Math.round(Math.hypot(drag.dx, drag.dy) / 1.2)}% · release to fly · Esc to cancel`,
     );
   } else if (data && !flight)
     hovered = data.game.targets.findIndex(
@@ -593,28 +790,43 @@ canvas.onpointermove = (e) => {
     );
 };
 canvas.onpointerup = async (e) => {
-  if (!drag) return;
+  if (!drag || e.pointerId !== drag.id) return;
+  if (!drag.moved) {
+    cancelPull();
+    return;
+  }
   document.dispatchEvent(new Event("utxoplay:game-start"));
-  const a = drag;
+  const a = pull(point(e));
   drag = null;
   if (canvas.hasPointerCapture(e.pointerId))
     canvas.releasePointerCapture(e.pointerId);
   await act({ type: "launch", ...a }, true);
 };
-canvas.onpointercancel = () => {
-  drag = null;
-  feedback("Pull cancelled. Ready when you are.");
+canvas.onpointercancel = (e) => {
+  if (drag?.id === e.pointerId) cancelPull();
+};
+canvas.onlostpointercapture = (e) => {
+  if (drag?.id === e.pointerId) cancelPull();
 };
 canvas.onpointerleave = () => {
   hovered = -1;
 };
 async function act(action, animate = false) {
   if (!data || busy || needsSync || flight) return;
-  if (action.type === "launch") { action.power = selectedPower; void startSound(); }
+  if (action.type === "launch") {
+    action.power = selectedPower;
+    void startSound();
+  }
   busy = true;
   const before = data;
   if (action.type === "buy") shopMessage = "Saving your purchase…";
-  feedback(action.type === "buy" ? "Restocking your satchel…" : action.type === "extra" ? "One more flight…" : "Preparing your flight…");
+  feedback(
+    action.type === "buy"
+      ? "Restocking your satchel…"
+      : action.type === "extra"
+        ? "One more flight…"
+        : "Preparing your flight…",
+  );
   ui();
   try {
     data = await api("/games/sling/api/action", {
@@ -624,27 +836,42 @@ async function act(action, animate = false) {
     });
     lastCoins = Math.max(0, data.game.coins_earned - before.game.coins_earned);
     if (action.type === "buy") {
-      const item = data.game.shop.items.find(item => item.id === action.item);
+      const item = data.game.shop.items.find((item) => item.id === action.item);
       shopMessage = `${item.name} added · ${item.price} coins spent · ${item.owned} owned. Equip or use it when ready.`;
       sound("move");
     } else if (action.type === "extra") {
-      sound("move");feedback("Extra flight ready. Find your arc!");
-      document.dispatchEvent(new CustomEvent('utxoplay:close-menu'));
-    } else {selectedPower = "normal";shopMessage = "";}
+      sound("move");
+      feedback("Extra flight ready. Find your arc!");
+      document.dispatchEvent(new CustomEvent("utxoplay:close-menu"));
+    } else {
+      selectedPower = "normal";
+      shopMessage = "";
+    }
     if (animate) {
       beginFlight();
       sound("launch");
+    } else if (action.type === "next" || action.type === "retry") {
+      feedback(`${data.game.level_name} · find your arc.`);
     }
     ui();
   } catch (e) {
     let recovered = false;
     try {
       const current = await api("/games/sling/api/state");
-      recovered = current.session.block_hash !== before.session.block_hash || current.session.id !== before.session.id;
-      data = current;needsSync = false;
+      recovered =
+        current.session.block_hash !== before.session.block_hash ||
+        current.session.id !== before.session.id;
+      data = current;
+      needsSync = false;
       if (recovered) selectedPower = "normal";
-    } catch {needsSync = true;}
-    shopMessage = needsSync ? "Could not confirm the save. Reconnect to check your balance before buying or playing again." : recovered ? "Connection interrupted after saving. Latest balance and inventory restored; check your satchel before buying again." : e.message;
+    } catch {
+      needsSync = true;
+    }
+    shopMessage = needsSync
+      ? "Could not confirm the save. Reconnect to check your balance before buying or playing again."
+      : recovered
+        ? "Connection interrupted after saving. Latest balance and inventory restored; check your satchel before buying again."
+        : e.message;
     setText("shop-feedback", shopMessage);
     feedback(shopMessage);
     toast(shopMessage);
@@ -656,22 +883,40 @@ async function act(action, animate = false) {
 for (const button of document.querySelectorAll("[data-power]")) {
   button.onclick = () => {
     if (!data || busy || flight || button.disabled) return;
-    selectedPower = button.dataset.power;ui();sound("move");
+    selectedPower = button.dataset.power;
+    ui();
+    sound("move");
     feedback($("#item-hint").textContent);
-    if(button.closest('#item-store'))document.dispatchEvent(new CustomEvent('utxoplay:close-menu'));
-    canvas.focus({preventScroll:true});
+    if (button.closest("#item-store"))
+      document.dispatchEvent(new CustomEvent("utxoplay:close-menu"));
+    canvas.focus({ preventScroll: true });
   };
 }
 $("#shop-reconnect").onclick = async () => {
   if (busy) return;
-  busy = true;ui();
-  try {data = await api("/games/sling/api/state");needsSync = false;shopMessage = "Latest balance and inventory restored.";}
-  catch (e) {shopMessage = e.message;}
-  finally {busy = false;ui();}
+  busy = true;
+  ui();
+  try {
+    data = await api("/games/sling/api/state");
+    needsSync = false;
+    shopMessage = "Latest balance and inventory restored.";
+  } catch (e) {
+    shopMessage = e.message;
+  } finally {
+    busy = false;
+    ui();
+  }
 };
-$("#shop-open").onclick = $("#rescue-shop").onclick = () => document.dispatchEvent(new CustomEvent('utxoplay:open-menu',{detail:{view:'items'}}));
-for (const button of document.querySelectorAll('[data-buy]'))button.onclick = () => {if(!button.disabled)return act({type:'buy',item:button.dataset.buy});};
-$("#extra-flight").onclick = $("#rescue-flight").onclick = () => act({type:"extra"});
+$("#shop-open").onclick = $("#rescue-shop").onclick = () =>
+  document.dispatchEvent(
+    new CustomEvent("utxoplay:open-menu", { detail: { view: "items" } }),
+  );
+for (const button of document.querySelectorAll("[data-buy]"))
+  button.onclick = () => {
+    if (!button.disabled) return act({ type: "buy", item: button.dataset.buy });
+  };
+$("#extra-flight").onclick = $("#rescue-flight").onclick = () =>
+  act({ type: "extra" });
 $("#launch").onclick = () =>
   act({ type: "launch", ...aimFromControls() }, true);
 for (const name of ["angle", "power"])
@@ -684,11 +929,15 @@ for (const name of ["angle", "power"])
   };
 async function newGame() {
   if (busy || needsSync || flight) return;
-  busy = true;ui();
+  busy = true;
+  ui();
   try {
     data = await api("/games/sling/api/new", {});
-    selectedPower = "normal";shopMessage = "";lastCoins = 0;cancelNew();
-    document.dispatchEvent(new CustomEvent('utxoplay:close-menu'));
+    selectedPower = "normal";
+    shopMessage = "";
+    lastCoins = 0;
+    cancelNew();
+    document.dispatchEvent(new CustomEvent("utxoplay:close-menu"));
     $("#verification").textContent = "";
     particles = [];
     effects = [];
@@ -696,11 +945,22 @@ async function newGame() {
     feedback("A fresh garden. Find your arc.");
     ui();
   } catch (e) {
-    try {data = await api("/games/sling/api/state");needsSync = false;cancelNew();}
-    catch {needsSync = true;}
-    shopMessage = e.message + (needsSync ? " Reconnect in Item Store before continuing." : " Latest adventure restored.");
-    $("#new-warning").textContent = shopMessage;$("#new-warning").hidden = false;
-    feedback(shopMessage);toast(shopMessage);
+    try {
+      data = await api("/games/sling/api/state");
+      needsSync = false;
+      cancelNew();
+    } catch {
+      needsSync = true;
+    }
+    shopMessage =
+      e.message +
+      (needsSync
+        ? " Reconnect in Item Store before continuing."
+        : " Latest adventure restored.");
+    $("#new-warning").textContent = shopMessage;
+    $("#new-warning").hidden = false;
+    feedback(shopMessage);
+    toast(shopMessage);
   } finally {
     busy = false;
     ui();
@@ -709,29 +969,37 @@ async function newGame() {
 function cancelNew() {
   confirmingNew = false;
   $("#new").textContent = "Start a new adventure";
-  $("#cancel-new").hidden = true;$("#new-warning").hidden = true;
+  $("#cancel-new").hidden = true;
+  $("#new-warning").hidden = true;
 }
 $("#cancel-new").onclick = cancelNew;
 $("#new").onclick = () => {
   if (busy || flight) return;
   if (confirmingNew) return newGame();
   confirmingNew = true;
-  $("#new-warning").textContent = "Starting over resets this adventure’s coins and progress. Export your current adventure first if you want a copy.";
+  $("#new-warning").textContent =
+    "Starting over resets this adventure’s coins and progress. Export your current adventure first if you want a copy.";
   $("#new").textContent = "Reset coins & start over";
-  $("#cancel-new").hidden = false;$("#new-warning").hidden = false;
+  $("#cancel-new").hidden = false;
+  $("#new-warning").hidden = false;
 };
 $("#continue").onclick = () => {
-  if (data.game.won && data.game.level === data.game.total_levels) return newGame();
+  if (data.game.won && data.game.level === data.game.total_levels)
+    return newGame();
   return act({ type: data.game.won ? "next" : "retry" });
 };
 $("#verify").onclick = async () => {
   if (busy || flight) return;
   $("#verify").disabled = true;
+  $("#verification").textContent = "Checking saved adventure…";
   try {
     const r = await api("/games/sling/api/replay", {});
+    if (r.verified !== true)
+      throw Error("The saved adventure could not be verified.");
     $("#verification").textContent =
       "✓ " + r.frames + " frames replayed. Every state root matches.";
   } catch (e) {
+    $("#verification").textContent = "Verification failed: " + e.message;
     toast(e.message);
   } finally {
     $("#verify").disabled = false;
@@ -743,38 +1011,62 @@ $("#replay-shot").onclick = () => {
     toast("Take your first flight to replay it.");
     return;
   }
+  document.dispatchEvent(new CustomEvent("utxoplay:close-menu"));
   beginFlight(true);
   ui();
 };
+$("#quick-replay").onclick = () => $("#replay-shot").click();
+$("#skip-flight").onclick = () => {
+  if (!flight) return;
+  flight.start =
+    (pausedAt ?? performance.now()) -
+    (data.game.trace.length * 8.333) / flight.speed;
+};
 function syncAudio() {
   const state = audioState();
-  $("#sound").textContent = state.playing ? "♫ Music on" : state.enabled ? "♫ Play music" : "♫ Music off";
+  $("#sound").textContent = state.playing
+    ? "♫ Music on"
+    : state.enabled
+      ? "♫ Play music"
+      : "♫ Music off";
   $("#sound").setAttribute("aria-pressed", String(state.enabled));
   $("#volume").value = Math.round(state.volume * 100);
 }
 document.addEventListener("skyward:audio", syncAudio);
 syncAudio();
-$("#sound").onclick = async () => { await toggleSound(); syncAudio(); };
+$("#sound").onclick = async () => {
+  await toggleSound();
+  syncAudio();
+};
 // Unlock audio on a real interaction, including touch/keyboard; respect a saved mute.
-for (const name of ["pointerdown", "keydown"]) document.addEventListener(name, (event) => {
-  if (event.target.closest?.("#sound") || audioState().playing) return;
-  void startSound();
-}, {capture:true});
+for (const name of ["pointerdown", "keydown"])
+  document.addEventListener(
+    name,
+    (event) => {
+      if (event.target.closest?.("#sound") || audioState().playing) return;
+      void startSound();
+    },
+    { capture: true },
+  );
 $("#volume").oninput = (e) => volume(+e.target.value / 100);
 $("#credits-open").onclick = () => $("#credits").showModal();
 $("#credits-close").onclick = () => $("#credits").close();
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && drag) {
-    drag = null;
-    feedback("Pull cancelled.");
+    cancelPull();
   }
 });
 document.addEventListener("utxoplay:menu", (e) => {
-  if (e.detail.open && drag) {drag = null;feedback("Pull cancelled.");}
-  if (!e.detail.open) {cancelNew();canvas.focus({preventScroll:true});}
+  menuOpen = e.detail.open;
+  if (menuOpen) cancelPull();
+  pausePlayback();
+  if (!e.detail.open) {
+    cancelNew();
+    canvas.focus({ preventScroll: true });
+  }
 });
 canvas.onkeydown = (e) => {
-  if (busy || needsSync || flight) return;
+  if (busy || needsSync || flight || menuOpen) return;
   if (e.code === "Space") {
     e.preventDefault();
     $("#launch").click();
@@ -817,7 +1109,8 @@ startPolling(
       const d = await api("/games/sling/api/state");
       if (busy || flight || drag || data !== before || document.hidden) return;
       if (
-        needsSync || d.session.block_hash !== data?.session.block_hash ||
+        needsSync ||
+        d.session.block_hash !== data?.session.block_hash ||
         d.session.id !== data?.session.id
       ) {
         data = d;

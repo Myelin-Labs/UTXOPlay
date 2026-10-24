@@ -14,7 +14,7 @@ const dom=new JSDOM(readFileSync(root+'/games/sling/web/index.html','utf8'),{pre
 const {window}=dom,errors=[];
 window.addEventListener('error',e=>errors.push(e.error));
 const bitmaps={};
-for(const name of ['islands','characters'])bitmaps[`/games/sling/assets/${name}.webp`]=await loadImage(root+`/games/sling/web/assets/${name}.webp`);
+for(const name of ['garden-worlds','garden-sprites'])bitmaps[`/games/sling/assets/${name}.webp`]=await loadImage(root+`/games/sling/web/assets/${name}.webp`);
 globalThis.Image=class {set src(src){this.native=bitmaps[src];this.width=this.naturalWidth=this.native.width;this.height=this.native.height;this.complete=true;queueMicrotask(()=>this.onload?.());}};
 window.HTMLCanvasElement.prototype.getContext=function(){
  if(this.testContext)return this.testContext;
@@ -28,8 +28,9 @@ globalThis.window=window;globalThis.matchMedia=()=>({matches:false});globalThis.
 // Audio lifecycle is checked independently; this test keeps the player's saved mute.
 localStorage.setItem('skyward:audio',JSON.stringify({enabled:false,volume:0.3}));
 globalThis.Audio=class extends EventTarget{play(){return Promise.resolve();}pause(){}};
-let failed=false,hold=false,release,dropCommittedBuy=false,failRecovery=false;
+let failed=false,hold=false,release,dropCommittedBuy=false,failRecovery=false,rejectReplay=false;
 globalThis.fetch=async(url,options={})=>{
+ if(String(url).endsWith('/replay')&&rejectReplay)return new Response(JSON.stringify({verified:false,frames:999}),{status:200});
  if(String(url).endsWith('/state')&&failRecovery){failRecovery=false;throw Error('Recovery offline');}
  if(String(url).endsWith('/action')&&failed){failed=false;throw Error('Test interrupted connection');}
  const response=await realFetch(new URL(url,base),{...options,headers:{...options.headers,Origin:base,Cookie:cookie}});
@@ -51,6 +52,15 @@ $('.game-menu-toggle').click();assert.equal($('#game-menu').open,true);
 $('#game-menu .game-menu-close').click();assert.equal($('#game-menu').open,false);
 assert.equal($('#total-levels').textContent,'12');assert.equal($('#level-name').textContent,'First flight');
 assert.equal($('#sound').textContent,'♫ Music off');
+// Tap, cancellation and a second finger cannot spend a flight.
+const {viewport}=await import(root+'/games/sling/web/viewport.mjs');
+const view=viewport(1100,560,'sling'),pointer=(id,x=180,y=360)=>({button:0,pointerId:id,clientX:view.x+x*view.scale,clientY:view.y+y*view.scale});
+const initial=(await state()).session.block_hash;
+$('#world').onpointerdown(pointer(1));await $('#world').onpointerup(pointer(1));
+$('#world').onpointerdown(pointer(1));$('#world').onpointermove(pointer(1,75,410));await $('#world').onpointerup(pointer(2,75,410));
+$('#world').onpointercancel(pointer(1));await $('#world').onpointerup(pointer(1,75,410));
+assert.equal((await state()).session.block_hash,initial,'cancelled/tap/multi-touch gestures are inert');
+
 $('[data-power="burst"]').click();await $('#extra-flight').onclick();
 assert.equal((await state()).game.shots,5);assert.equal($('#extra-flight').disabled,true);
 assert.equal($('[data-power="burst"]').getAttribute('aria-pressed'),'true');
@@ -61,11 +71,18 @@ assert.equal($('[data-power="burst"]').getAttribute('aria-pressed'),'true');
 // Guard against double launch while awaiting the authoritative response.
 hold=true;const firing=$('#launch').onclick();for(let i=0;i<100&&!release;i++)await sleep(10);assert.ok(release);
 await $('#launch').onclick();hold=false;release();await firing;
-await pump(600);
+// Opening the overlay pauses playback, and closing it does not jump ahead.
+await pump(2);$('.game-menu-toggle').click();
+await pump(900);assert.equal($('#skip-flight').hidden,false,'flight remains paused under menu');
+$('#game-menu .game-menu-close').click();await pump(1);
+assert.equal($('#skip-flight').hidden,false,'resume preserves playback position');
+$('#skip-flight').onclick();await pump(2);
+assert.equal($('#skip-flight').hidden,true,'skip finishes presentation only');
 let saved=await state();assert.equal(saved.game.inventory.burst,0);assert.equal(saved.session.actions,2);assert.equal(saved.game.last_power,'burst');
 assert.equal($('[data-power="normal"]').getAttribute('aria-pressed'),'true');
 await $('#replay-shot').onclick();await pump(600);assert.equal((await state()).session.block_hash,saved.session.block_hash);
 await $('#verify').onclick();assert.match($('#verification').textContent,/Every state root matches/);
+rejectReplay=true;await $('#verify').onclick();assert.match($('#verification').textContent,/Verification failed/);rejectReplay=false;
 if(saved.game.won){await $('#continue').onclick();assert.equal($('#level-name').textContent,'Stone & sky');assert.equal((await state()).game.level,2);}
 // Earn coins through real play, then buy inside the same game menu.
 await $('#new').onclick();$('#cancel-new').click();assert.equal((await state()).session.id,saved.session.id,'cancel new campaign preserves save');
@@ -103,8 +120,23 @@ assert.equal($('#rescue-flight').hidden,false);assert.equal($('#level-result').h
 await $('#rescue-flight').onclick();assert.equal($('#level-result').hidden,true);assert.equal((await state()).game.shots,1);
 await $('#launch').onclick();await pump(600);assert.equal($('#rescue-flight').hidden,true);
 await $('#continue').onclick();assert.deepEqual((await state()).game.inventory,{burst:1,pierce:1,extra:1});
+// Complete all twelve islands through the actual pointer controller, using native solutions.
+const solutions=JSON.parse(readFileSync(root+'/tests/skyward-solutions.json','utf8'));
+for(let level=1;level<=12;level++){
+ assert.equal((await state()).game.level,level);
+ for(const [dx,dy] of solutions[level]){
+  $('#world').onpointerdown(pointer(71));
+  $('#world').onpointermove(pointer(71,180+dx,360+dy));
+  await $('#world').onpointerup(pointer(71,180+dx,360+dy));
+  $('#skip-flight').onclick();await pump(2);
+ }
+ assert.equal((await state()).game.won,true,'pointer campaign island '+level);
+ assert.equal($('#level-result').hidden,false);
+ if(level<12)await $('#continue').onclick();
+}
+await $('#verify').onclick();assert.match($('#verification').textContent,/Every state root matches/);
 await pump(2);
 mkdirSync(root+'/artifacts/skyward',{recursive:true});writeFileSync(root+'/artifacts/skyward/first-island.png',$('#world').native.toBuffer('image/png'));
 assert.deepEqual(errors,[]);
-console.log('Skyward: earn/buy/equip, duplicate purchase guard, committed-response loss and reconnect, reset cancellation, item use, signed replay, next island and rescue passed.');
+console.log('Skyward: earn/buy/equip, duplicate purchase guard, committed-response loss and reconnect, reset cancellation, pointer ownership/tap cancellation, menu pause/resume, skip flight, failed verification, item use, twelve-island pointer campaign, signed replay, next island and rescue passed.');
 window.close();process.exit(0);

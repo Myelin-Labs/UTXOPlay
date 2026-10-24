@@ -9,7 +9,7 @@
       'neon-coil':['Neon Coil','LIVING CIRCUIT','136 233 183','/assets/neon-coil-keyart.webp'],
       starfall:['Starfall','ORBITAL COMMAND','133 211 244','/assets/starfall-keyart.webp'],
       'drift-run':['Drift Run','AFTER HOURS','244 172 132','/assets/drift-run-keyart.webp'],
-      sling:['Skyward','THE FLOATING GARDENS','237 205 145','/assets/sling-cover.webp'],
+      sling:['Skyward','THE FLOATING GARDENS','237 205 145','/assets/sling-cover.webp?v=0.22.0'],
       chess:['The Quiet Board','THE CONSERVATORY','233 207 157','/assets/chess-cover.webp?v=0.21.0'],
       teeworlds:['Teeworlds','GRASSLAND ARENA','192 221 135','/assets/teeworlds-cover.svg'],
       openstrike:['OpenStrike','SUNLIT HARBOR','155 220 198','/games/openstrike/art/harbor-keyart.webp']

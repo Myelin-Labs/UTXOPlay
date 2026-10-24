@@ -72,7 +72,7 @@ export const gameMeta = {
     tag: "THE FLOATING GARDENS",
     length: "Play at your pace",
     input: "Mouse or touch",
-    note: "Twelve islands, three helpful items, and a sky full of music.",
+    note: "Four garden worlds, twelve islands, and a satchel full of possibilities.",
     repo: "myelin-sling",
   },
   chess: {

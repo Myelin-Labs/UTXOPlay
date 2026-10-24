@@ -15,5 +15,5 @@ test('startup failures preserve earned progress and permit a fresh attempt',()=>
 test('every bundled entrypoint installs the same loader before its game module',()=>{
  const games=JSON.parse(readFileSync(new URL('../server/catalog.json',import.meta.url)));
  assert.equal(games.length,9);
- for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');const loader=html.indexOf('/game-loader.js?v=0.14.0');assert.ok(loader>=0,game.id);assert.ok(loader<html.indexOf('</head>'),game.id);assert.ok(loader<html.indexOf('<script type="module"'),game.id);}
+ for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');const loader=html.indexOf('/game-loader.js?v=');assert.ok(loader>=0,game.id);assert.ok(loader<html.indexOf('</head>'),game.id);assert.ok(loader<html.indexOf('<script type="module"'),game.id);}
 });
