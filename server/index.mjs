@@ -10,6 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { digest, verifyWallet } from './auth.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const version=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8')).version;
 export const games=JSON.parse(readFileSync(path.join(root,'server/catalog.json'),'utf8'));
 
 export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'), origin=process.env.PUBLIC_ORIGIN||'http://127.0.0.1:8790', verify=verifyWallet, runtimeFetch=fetch, marketplaceOptions={}}={}) {
@@ -45,7 +46,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   next();
  });
  app.use(express.json({limit:'64kb'}));
- app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.22.0'}));
+ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version}));
  app.get('/api/games',(_req,res)=>res.json({games:[...games,...marketplace.catalog()]}));
  app.get('/api/me',(req,res)=>res.json({user:userView(account(req))}));
  app.post('/api/guest',(req,res)=>{
