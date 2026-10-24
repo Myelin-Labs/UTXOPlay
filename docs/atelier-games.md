@@ -39,3 +39,11 @@ Store and the new atelier service use image `utxoplay:0.25.0`. Atelier listens o
 Portable executable SHA-256: `bf20228a36c25316cdaaec9add0450f27639522719ff7b32040eaf936e747b3d`.
 
 Back up the platform SQLite database using its online backup API. Recreate only `store` and add `atelier`; all existing game containers remain running. Rollback restores the previous store image/Compose release and stops the atelier service, retaining its data for inspection. Existing game data and the shared TLS proxy are not changed.
+
+## Published verification — 2026-10-24
+
+Implementation revision `d1cd4d8` is deployed in `/data/utxoplay/releases/20261024-store-0.25.0`. Public HTTPS health reports 0.25.0; the catalog contains thirteen games. All 23 new entrypoint/module/style/art/cover responses match local SHA-256 bytes. Four independent public sessions passed action prediction, stale-head and invalid-input rejection, replay and offline export verification with the deployed executable. Lumen reached chapter two, Orbit banked cargo, and Mosslight earned seed/guard points.
+
+Store `a5183b13f997` and atelier `2e78fb3d433d` report healthy. Existing arcade `4badf0b94d1c`, Prism `b62dbea6ecdc`, OpenStrike `aa321074b80f`, miner `8015e934c159`, Skyward `c9b7360f156d`, Teeworlds `81a5c89592bf` and chess `9d5665a43c9b` retain their container identities; the old arcade and Prism executable hashes also match their prior releases. The online SQLite backup passed `quick_check` before replacement.
+
+Browser DOM checks confirm full-viewport canvases and unclipped controls at all six required sizes, including actual 3840×2160 CSS dimensions. Local rendered scenes, touch rotation, save status and the translucent menu were inspected. The desktop browser's public-domain navigation/inspection timed out; public HTTP, byte-integrity, gameplay and signature checks passed independently. This browser limitation is not counted as a public visual acceptance pass.

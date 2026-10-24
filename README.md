@@ -1,6 +1,6 @@
 # UTXOPlay
 
-A deployed browser game store at https://store.utxoplay.io. The collection adds four Myelin arcade games—Prism Breaker, Neon Coil, Starfall and Drift Run—alongside The Quiet Board (same-device two-player chess), Skyward (single-player slingshot), Teeworlds (online duels and practice), and OpenStrike (first-person online duels and practice).
+A deployed browser game store at https://store.utxoplay.io, with thirteen bundled games. Store 0.25.0 adds Rune Foundry, Lumen Weave, Orbit Courier and Mosslight: four original mechanics with generated production artwork, full-scene controls, keyboard/touch play, music and Myelin signed saves. See [the Atelier collection](docs/atelier-games.md) for rules, validation and deployment details.
 
 Store 0.18.0 adds a themed in-game overlay to all nine games: a translucent scrim, game artwork, section navigation, styled actions and responsive layouts. Existing controls retain their handlers and save formats. Keyboard input stays inside the menu; OpenStrike releases background inertness synchronously before recapturing the mouse. Multiplayer rounds continue while the overlay is open. Low-power rendering disables the backdrop blur, and reduced-motion settings disable its entrance animation. The shared fullscreen action now works in standalone games and same-origin embeds.
 
@@ -118,3 +118,7 @@ Every bundled game now owns a full-screen scene with controls inside it, widescr
 ## Player community and item store
 
 Wallet users can choose a public username in the account panel. `/community` contains player recommendations, ratings, helpful votes and reply threads for every bundled game. `/items` contains the Miner and Skyward item catalogs and account inventory snapshots; buying and equipping stay inside each game. See [the item economy and Spore / DOB integration design](docs/item-economy-spore-dob-myelin-ckb.md) for implemented scope, the proposed CKB integration and moderation operations.
+
+## Store 0.25.0 — Atelier collection
+
+Rune Foundry combines falling runes, chain clears and an earned-energy reforge. Lumen Weave links opposing rotations across 24 solvable circuit puzzles. Orbit Courier combines three-track logistics, cargo banking and phase hops. Mosslight uses turn-based garden movement and lanterns that lure guards into light. The independent `myelin-atelier` service listens on 8788 (`ATELIER_URL`); the existing nine games retain their runtime images and saves. Run `npm run dev:platform` after building all eight native/game services and the store.
