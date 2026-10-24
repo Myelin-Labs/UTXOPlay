@@ -753,3 +753,16 @@
 .receipt-credits { margin: 24px 0; }
 .receipt-credits h3 { font-size: 12px; font-weight: 500; color: #a2b2a7; }
 .receipt-credits .game-credits { margin: 12px 0; }
+
+.publisher-fields { display: flex; flex-direction: column; gap: 19px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.publisher-fields:disabled { cursor: progress; }
+.credit-field-error { color: #efc391; font-size: 12px; line-height: 1.6; }
+.publisher-form input[aria-invalid="true"] { border-color: #e3a76c; }
+.credit-changes { border-top: 1px solid #94bb9e33; margin-top: 20px; padding-top: 16px; }
+.credit-changes h4 { margin: 0; font-size: 13px; }
+.credit-changes dl { display: grid; gap: 14px; }
+.credit-changes dt { color: #c4d6ca; font-size: 11px; margin-bottom: 8px; }
+.credit-changes dd { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.credit-changes dd span { min-width: 0; overflow-wrap: anywhere; font-size: 12px; color: #c6d9cc; line-height: 1.6; }
+.credit-changes small { display: block; margin-bottom: 3px; color: #8ea396; text-transform: uppercase; letter-spacing: .07em; font-size: 9px; }
+@media(max-width:560px) { .credit-changes dd { grid-template-columns: minmax(0,1fr); gap: 10px; } }

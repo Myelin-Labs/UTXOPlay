@@ -108,3 +108,22 @@ export function creatorCollection(games, role, gameId) {
   if (!key) return null;
   return { person: anchor[role], anchor, games: games.filter(game => creatorKey(game, role) === key) };
 }
+
+export function creatorRoleLinks(games, role, gameId) {
+  const current = creatorCollection(games, role, gameId);
+  if (!current) return [];
+  return ["developer", "publisher"].flatMap(target => {
+    const anchor = target === role ? current.anchor : current.person.address && games.find(game =>
+      game[target]?.address === current.person.address &&
+      !!game.vendor === !!current.anchor.vendor &&
+      (!game.vendor || game.publisher?.address === current.anchor.publisher?.address));
+    const collection = anchor && creatorCollection(games, target, anchor.id);
+    return collection ? [{role:target, href:creatorHref(anchor,target), count:collection.games.length}] : [];
+  });
+}
+export function filterCreatorGames(games, {query="", genre="All games", freeOnly=false, sort="store"}={}) {
+  const filtered = selectGames(games, {query,genre,freeOnly});
+  if (["az", "za"].includes(sort)) filtered.sort((a,b) =>
+    (sort === "az" ? 1 : -1) * (a.title.localeCompare(b.title, "en", {sensitivity:"base",numeric:true}) || a.id.localeCompare(b.id)));
+  return filtered;
+}

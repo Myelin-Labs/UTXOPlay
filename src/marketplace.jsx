@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./marketplace.css";
+import {sameDraft, reconcileSavedDraft, creditChanges, missingCreditNames} from "./publishing-model.mjs";
 const loadCcc = () => import("@ckb-ccc/connector-react").then((m) => m.ccc);
 import {
   Plus,
@@ -240,7 +241,7 @@ export function Studio({ user, onConnect, onCatalogChange }) {
                 <Server size={25} />
               </div>
               <GameCredits game={p.liveCredits || p} compact linked={false}/>
-              {p.live && JSON.stringify(p.live) !== JSON.stringify(p.draft) && (
+              {p.live && !sameDraft(p.live, p.draft) && (
                 <p className="fine">
                   Saved draft changes · Republish to update the live game
                 </p>
@@ -322,22 +323,25 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
     [price, setPrice] = useState(null),
     [unlist, setUnlist] = useState(false);
   const [discard, setDiscard] = useState(false);
-  const savedDraft = useRef(
-    JSON.stringify(
-      { ...emptyDraft, payoutAddress: user.address || "", publisherName: user.username || "", ...initial.draft },
-    ),
-  );
+  const savedDraft = useRef({ ...emptyDraft, payoutAddress: user.address || "", publisherName: user.username || "", ...initial.draft });
+  const busyRef=useRef(false), [creditValidation,setCreditValidation]=useState(false);
+  const changes=creditChanges(project?.live,draft), missing=missingCreditNames(draft);
   function requestClose() {
-    if (JSON.stringify(draft) !== savedDraft.current) setDiscard(true);
+    if (!sameDraft(draft, savedDraft.current)) setDiscard(true);
     else onClose();
   }
   const formRef = useRef(null);
+  useEffect(() => {
+    if (creditValidation && step === 0)
+      formRef.current?.querySelector('[aria-invalid="true"]')?.focus();
+  }, [creditValidation, step]);
   const field = (k, v) => {
     setDraft((d) => ({ ...d, [k]: v }));
     setNotice("");
     setPrice(null);
   };
   async function save() {
+    const submitted=draft;
     const p = await marketApi(
       project
         ? `/api/developer/projects/${project.id}/save`
@@ -345,11 +349,13 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
       project ? { revision: project.revision, draft } : draft,
     );
     setProject(p);
-    savedDraft.current = JSON.stringify(draft);
+    savedDraft.current = p.draft;
+    setDraft(current=>reconcileSavedDraft(current,submitted,p.draft));
     return p;
   }
   async function action(name, fn) {
-    if (busy) return;
+    if (busyRef.current) return;
+    busyRef.current=true;
     setBusy(name);
     setError("");
     setNotice("");
@@ -358,6 +364,7 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
     } catch (e) {
       setError(e.message);
     } finally {
+      busyRef.current=false;
       setBusy("");
     }
   }
@@ -426,6 +433,8 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
           next();
         }}
       >
+        <fieldset className="publisher-fields" disabled={!!busy}>
+        <legend className="sr-only">Listing editor</legend>
         {step === 0 && (
           <>
             <label>
@@ -443,9 +452,10 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
               <legend>Developer & publisher</legend>
               <p className="fine">Credit the people who made the game separately from the publisher responsible for this listing. Leave an unknown developer wallet blank.</p>
               <div className="form-columns">
-                <label>Developer name<input value={draft.developerName} maxLength={80} onChange={e => field("developerName", e.target.value)} placeholder="Original creator or studio" /></label>
-                <label>Publisher name<input value={draft.publisherName} maxLength={80} onChange={e => field("publisherName", e.target.value)} placeholder="Your publishing name" /></label>
+                <label>Developer name<input id="credit-developer-name" aria-invalid={creditValidation&&missing.includes("developerName")||undefined} aria-describedby={creditValidation&&missing.includes("developerName")?"credit-name-help":undefined} value={draft.developerName} maxLength={80} onChange={e => field("developerName", e.target.value)} placeholder="Original creator or studio" /></label>
+                <label>Publisher name<input id="credit-publisher-name" aria-invalid={creditValidation&&missing.includes("publisherName")||undefined} aria-describedby={creditValidation&&missing.includes("publisherName")?"credit-name-help":undefined} value={draft.publisherName} maxLength={80} onChange={e => field("publisherName", e.target.value)} placeholder="Your publishing name" /></label>
               </div>
+              {creditValidation&&missing.length>0&&<p id="credit-name-help" className="credit-field-error" role="alert">Add both the original developer and publisher names before publishing. Unknown developer wallets may stay blank.</p>}
               <label>Developer CKB wallet (optional)<input value={draft.developerAddress} maxLength={300} onChange={e => field("developerAddress", e.target.value)} placeholder="ckb1… · Leave blank if unknown" spellCheck={false} /></label>
               <label>Original project website (optional)<input type="url" value={draft.developerSourceUrl} maxLength={500} onChange={e => field("developerSourceUrl", e.target.value)} placeholder="https://github.com/creator/original-game" /></label>
               <label>Publisher CKB wallet<input readOnly value={project?.publisher?.address || user.address || ""} onFocus={e => e.target.select()} /></label>
@@ -820,6 +830,7 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
                 your game on your domain. You are responsible for hosting,
                 support and fulfilling access.
               </p>
+              {!!changes.length&&<section className="credit-changes" aria-label="Credit changes to publish"><h4>Credit changes to publish</h4><p>These changes affect the listing after publication. Previous order credits stay as recorded.</p><dl>{changes.map(change=><div key={change.key}><dt>{change.label}</dt><dd><span><small>Live</small>{change.before||"Not provided"}</span><span><small>Draft</small>{change.after||"Not provided"}</span></dd></div>)}</dl></section>}
               {project?.live && (
                 <p>
                   Edits stay in draft until republished. Existing purchases keep
@@ -865,13 +876,14 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
             Save draft
           </button>
           {step < 2 ? (
-            <button className="primary" disabled={!!busy}>
+            <button key="continue" type="button" className="primary" disabled={!!busy} onClick={next}>
               {busy ? <Spinner /> : null}
               {busy || "Save & continue"}
               {!busy && <ArrowRight size={16} />}
             </button>
           ) : (
             <button
+              key="publish"
               type="button"
               className="primary"
               disabled={
@@ -879,6 +891,7 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
                 (draft.pricing === "paid" && config && !config.configured)
               }
               onClick={() => {
+                if(missing.length){setCreditValidation(true);setStep(0);setError("Complete the highlighted credit names before publishing.");return;}
                 if (formRef.current.reportValidity())
                   action("Checking & publishing", async () => {
                     const p = await save();
@@ -932,6 +945,7 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
             )}
           </div>
         )}
+        </fieldset>
       </form>
     </Modal>
   );

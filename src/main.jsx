@@ -1138,7 +1138,7 @@ function App({ walletApi }) {
                   )}
                 </>
               ) : page.startsWith("/creators/") ? (
-                <CreatorCollection loading={catalogStatus.loading} error={catalogStatus.error} onRetry={refreshCatalog} games={games} role={page.split("/")[2]} gameId={page.split("/")[3]} onPlay={launch} onDetails={setDetails} launching={launching}/>
+                <CreatorCollection key={page} loading={catalogStatus.loading} error={catalogStatus.error} onRetry={refreshCatalog} games={games} role={page.split("/")[2]} gameId={page.split("/")[3]} onPlay={launch} onDetails={setDetails} launching={launching}/>
               ) : page === "/community" || page.startsWith("/community/") ? (
                 <CommunityPage games={featuredGames} gameId={page.split("/")[2]} user={user} onConnect={connect} onPlay={launch} onChoose={id=>go("/community/"+id)}/>
               ) : page === "/items" ? (

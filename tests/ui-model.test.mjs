@@ -66,3 +66,26 @@ test('creator collections use wallet identity and do not merge unknown or cross-
  assert.deepEqual(creatorCollection(all,'developer','unknown1').games.map(g=>g.id),['unknown1']);
  assert.equal(creatorHref(games[0],'publisher'),'/creators/publisher/neon-miner');
 });
+
+
+test('creator role navigation follows the same identity without crossing publisher claims',async()=>{
+ const {creatorRoleLinks}=await import('../src/ui-model.mjs');
+ assert.deepEqual(creatorRoleLinks(games,'publisher','openstrike').map(x=>[x.role,x.count]),[['developer',11],['publisher',13]]);
+ assert.deepEqual(creatorRoleLinks(games,'developer','openstrike').map(x=>[x.role,x.count]),[['developer',1]]);
+ assert.deepEqual(creatorRoleLinks(games,'publisher','missing'),[]);
+ const claim={id:'claim',vendor:true,developer:games[0].developer,publisher:{name:'Other publisher',address:'other-wallet'}};
+ assert.deepEqual(creatorRoleLinks([...games,claim],'developer','claim').map(x=>x.role),['developer']);
+ const own={...claim,id:'own',developer:claim.publisher};
+ assert.deepEqual(creatorRoleLinks([...games,claim,own],'publisher','claim').map(x=>[x.role,x.count]),[['developer',1],['publisher',2]]);
+});
+test('collection search combines filters, sorts titles naturally and preserves store order',async()=>{
+ const {filterCreatorGames}=await import('../src/ui-model.mjs');
+ const sample=[{id:'z',title:'Sector 10',genre:'Arcade',pricing:'free'},{id:'a',title:'Sector 2',genre:'Arcade',pricing:'free'},{id:'b',title:'Sector 1',genre:'Puzzle',pricing:'paid'}];
+ const original=structuredClone(sample);
+ assert.deepEqual(filterCreatorGames(sample,{query:'  sector ',genre:'Arcade',freeOnly:true,sort:'az'}).map(g=>g.id),['a','z']);
+ assert.deepEqual(filterCreatorGames(sample,{sort:'za'}).map(g=>g.id),['z','a','b']);
+ assert.deepEqual(filterCreatorGames(sample,{genre:'Puzzle',freeOnly:true}),[]);
+ assert.deepEqual(filterCreatorGames(games,{query:'Retric'}).map(g=>g.id),['openstrike']);
+ assert.deepEqual(filterCreatorGames(sample).map(g=>g.id),['z','a','b']);
+ assert.deepEqual(sample,original);
+});
