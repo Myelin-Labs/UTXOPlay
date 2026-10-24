@@ -5,7 +5,7 @@ const require=createRequire(resolve(process.env.ARCADE_TEST_MODULES,'../package.
 globalThis.document={createElement:()=>createCanvas(1000,1000)};
 const images=Object.fromEntries(await Promise.all(prismNames.map(async name=>[name,await loadImage(`games/prism-breaker/web/art/${name}.webp`)])));
 const output='artifacts/prism';mkdirSync(output,{recursive:true});
-const canvas=createCanvas(1000,1000);canvas.clientWidth=1000;const renderer=new PrismRenderer(canvas);renderer.art=images;const g=createGame('prism-breaker');let previous=structuredClone(g);
+const canvas=createCanvas(1000,1000);canvas.clientWidth=1920;canvas.clientHeight=1080;const renderer=new PrismRenderer(canvas);renderer.art=images;const g=createGame('prism-breaker');let previous=structuredClone(g);
 for(let n=0;n<160;n++){previous=structuredClone(g);const bit=g.bodies[0].x<g.x-12?1:g.bodies[0].x>g.x+12?2:0;step(g,bit);renderer.tick(g);renderer.draw(g,previous,.5,1000/60,1,{running:true,reduced:false,low:false});}
 writeFileSync(output+'/gameplay.png',canvas.toBuffer('image/png'));
 const samples=[];for(let n=0;n<100;n++){renderer.dirty=true;const start=performance.now();renderer.draw(g,previous,.5,16,1,{running:true,reduced:false,low:false});canvas.getContext('2d').getImageData(0,0,1,1);samples.push(performance.now()-start);}samples.sort((a,b)=>a-b);
@@ -13,6 +13,6 @@ for(let n=0;n<100;n++)renderer.event({type:'brick',x:300,y:135,value:40});assert
 for(let n=0;n<120;n++)renderer.draw(g,previous,1,16,1,{running:false,reduced:true,low:true});assert.equal(renderer.draw(g,previous,1,16,1,{running:false,reduced:true,low:true}),false);
 assert.equal(renderer.draw(g,previous,1,16,1,{running:false,reduced:false,low:false}),true,'quality and motion changes invalidate idle frames');
 renderer.setLens(false);assert.equal(renderer.draw(g,previous,1,16,1,{running:false,reduced:true,low:true}),true);assert.equal(renderer.draw(g,previous,1,16,1,{running:false,reduced:true,low:true}),false);
-canvas.clientWidth=390;assert.equal(renderer.draw(g,previous,1,16,2,{running:false,reduced:true,low:true}),true);assert.equal(canvas.width,780);
+canvas.clientWidth=390;canvas.clientHeight=844;assert.equal(renderer.draw(g,previous,1,16,2,{running:false,reduced:true,low:true}),true);assert.equal(canvas.width,780);
 g.level=3;renderer.dirty=true;renderer.draw(g,g,1,16,2,{running:false,reduced:false,low:false});writeFileSync(output+'/aurora.png',canvas.toBuffer('image/png'));
 const metrics={medianMs:+samples[50].toFixed(3),p95Ms:+samples[95].toFixed(3),note:'Native Canvas CPU microbenchmark, not browser FPS'};writeFileSync(output+'/metrics.json',JSON.stringify(metrics,null,2));console.log('Prism render/effect/idle/resize checks passed',metrics);

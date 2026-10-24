@@ -1,3 +1,4 @@
+import {viewport,backingRatio} from './viewport.mjs';
 import {clamp, lerp, roadPoint, previousBody, EffectPool} from './presentation.mjs';
 
 // Geometry follows the collision shapes; detail, lighting and motion are visual only.
@@ -11,9 +12,9 @@ export class ArcadeRenderer {
     this.scenery = document.createElement('canvas');
     this.bricks = null;
     this.layerSize = 0; this.brickCells = null; this.lastGame = null;
-    this.cssWidth = canvas.clientWidth;
+    this.cssWidth = canvas.clientWidth;this.cssHeight=canvas.clientHeight||this.cssWidth;
     if (typeof ResizeObserver !== 'undefined') {
-      this.observer = new ResizeObserver(entries => { this.cssWidth = entries[0].contentRect.width; });
+      this.observer = new ResizeObserver(entries => { this.cssWidth = entries[0].contentRect.width;this.cssHeight=entries[0].contentRect.height; });
       this.observer.observe(canvas);
     }
   }
@@ -44,16 +45,16 @@ export class ArcadeRenderer {
     this.scenery.width=this.scenery.height=size;
     const original=this.c;this.c=this.scenery.getContext('2d',{alpha:false});
     this.c.setTransform(size/1000,0,0,size/1000,0,0);this.c.drawImage(this.backdrop,0,0);
-    if(this.kind==='drift-run')this.runnerScenery();
+
     this.c=original;
     if(this.bricks){this.bricks.width=size;this.bricks.height=Math.ceil(size*.43);this.brickCells=null;}
   }
-  runnerScenery() {
+  runnerScenery(bounds={left:0,right:1000,top:0}) {
     const c=this.c;
-    c.fillStyle=this.gradient(0,0,0,400,['#221b3d','#58324b','#121526']);c.fillRect(0,0,1000,430);
+    c.fillStyle=this.gradient(0,0,0,400,['#221b3d','#58324b','#121526']);c.fillRect(bounds.left,bounds.top,bounds.right-bounds.left,430-bounds.top);
     this.glow('#e9a4aa',35);this.circle(500,140,88,this.gradient(0,50,0,230,['#ffdbad','#dc82a9']));c.shadowBlur=0;
     for(let i=0;i<5;i++)this.line(400,170+i*12,600,170+i*12,'#41243e',2+i);
-    for(let n=0;n<22;n++){const x=n*49,h=45+(n*67)%160;this.rect(x,270-h,42,h,1,'#0e1426');for(let row=0;row<Math.floor(h/18);row++)for(let col=0;col<3;col++)if((row+col+n)%3)this.rect(x+6+col*10,278-h+row*16,3,5,1,(n+row)%2?'#d994ab48':'#9a9ffb32');}
+    for(let n=0;n<Math.ceil((bounds.right-bounds.left)/49);n++){const x=bounds.left+n*49,h=45+(n*67)%160;this.rect(x,270-h,42,h,1,'#0e1426');for(let row=0;row<Math.floor(h/18);row++)for(let col=0;col<3;col++)if((row+col+n)%3)this.rect(x+6+col*10,278-h+row*16,3,5,1,(n+row)%2?'#d994ab48':'#9a9ffb32');}
     this.poly([[440,180],[560,180],[1000,1000],[0,1000]],this.gradient(0,180,0,1000,['#171a2a','#101426']));
     for(let n=0;n<4;n++){const edge=n===0||n===3;this.glow(edge?'#bc7ca3':'#000',edge?8:0);this.line(500+(n-1.5)*30,180,500+(n-1.5)*340,1000,edge?'#ce8cb3':'#81729650',edge?4:2);}c.shadowBlur=0;
   }
@@ -67,15 +68,23 @@ export class ArcadeRenderer {
   tick() {}
   draw(g,before,alpha,delta,ratio,{running,reduced,low}) {
     this.reduced=reduced;this.low=low;this.time+=running&&!reduced?delta:0;
-    const width=this.observer?this.cssWidth:this.canvas.clientWidth;
-    const c=this.c,size=Math.max(1,Math.round(width*ratio));
+    const width=this.observer?this.cssWidth:this.canvas.clientWidth,height=this.observer?this.cssHeight:(this.canvas.clientHeight||width),v=viewport(width,height,this.kind,globalThis.matchMedia?.('(pointer:coarse)').matches),pixel=backingRatio(width,height,ratio);
+    const c=this.c,size=Math.max(1,Math.round(1000*v.scale*pixel)),pw=Math.floor(width*pixel),ph=Math.floor(height*pixel);
     const settled=!this.effects.items.length&&!this.rings.length&&!this.labels.length&&this.hit===0;
-    if(!running&&!this.lastRunning&&settled&&this.lastGame===g&&this.lastTick===g.tick&&this.layerSize===size&&this.layerLow===low&&this.layerReduced===reduced)return false;
+    if(!running&&!this.lastRunning&&settled&&this.lastGame===g&&this.lastTick===g.tick&&this.canvas.width===pw&&this.canvas.height===ph&&this.layerSize===size&&this.layerLow===low&&this.layerReduced===reduced)return false;
     this.lastGame=g;this.lastTick=g.tick;this.lastRunning=running;
-    if(this.canvas.width!==size){this.canvas.width=this.canvas.height=size;}
-    this.prepareLayers(size);
-    c.setTransform(size/1000,0,0,size/1000,0,0);c.globalAlpha=1;c.shadowBlur=0;
-    c.drawImage(this.scenery,0,0,1000,1000);this.effects.advance(delta/1000);this.hit=Math.max(0,this.hit-delta/1000);
+    if(this.canvas.width!==pw||this.canvas.height!==ph){this.canvas.width=pw;this.canvas.height=ph;}
+    this.prepareLayers(size);c.setTransform(1,0,0,1,0,0);c.globalAlpha=1;c.shadowBlur=0;
+    // Cover the entire monitor with the environment; never stretch the play geometry.
+    const cover=Math.max(pw,ph);c.drawImage(this.scenery,(pw-cover)/2,(ph-cover)/2,cover,cover);c.fillStyle='#060b1960';c.fillRect(0,0,pw,ph);
+    c.setTransform(v.scale*pixel,0,0,v.scale*pixel,v.x*pixel,v.y*pixel);
+    if(this.kind==='neon-coil'){c.drawImage(this.scenery,0,0,1000,1000);c.strokeStyle='#b1ccdf40';c.lineWidth=2;c.strokeRect(0,0,1000,1000);}
+    if(this.kind==='drift-run'){
+      const key=[pw,ph,low,reduced].join('/');
+      if(this.wideKey!==key){this.wideKey=key;this.wideScenery??=document.createElement('canvas');this.wideScenery.width=pw;this.wideScenery.height=ph;const original=this.c;this.c=this.wideScenery.getContext('2d');this.c.setTransform(v.scale*pixel,0,0,v.scale*pixel,v.x*pixel,v.y*pixel);this.runnerScenery({left:-v.x/v.scale,right:(width-v.x)/v.scale,top:-v.y/v.scale});this.c=original;}
+      c.setTransform(1,0,0,1,0,0);c.drawImage(this.wideScenery,0,0);c.setTransform(v.scale*pixel,0,0,v.scale*pixel,v.x*pixel,v.y*pixel);
+    }
+    this.effects.advance(delta/1000);this.hit=Math.max(0,this.hit-delta/1000);
     const blend=(a,b)=>lerp(a,b,running?alpha:1);
     const body=b=>{const p=before.level===g.level&&before.lives===g.lives?previousBody(b,before):null;return p?{...b,x:blend(p.x,b.x),y:blend(p.y,b.y)}:b;};
     if(this.kind==='neon-coil')this.coil(g,before,blend);

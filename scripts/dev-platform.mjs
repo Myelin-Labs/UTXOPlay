@@ -1,4 +1,4 @@
-// Run the local store and all six runtimes together; never leave an empty game iframe.
+// Run the local store and all seven runtimes together; never leave an empty game iframe.
 import {spawn} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 import {existsSync, mkdirSync} from 'node:fs';
@@ -13,10 +13,11 @@ const specs=[
  ['openstrike',8784,process.execPath,[path.join(strike,'service/server.mjs')]],
  ['teeworlds',8783,process.execPath,[path.join(tee,'service/server.mjs')]],
  ['miner',8786,path.join(root,'deploy/bin/myelin-neon-miner'),[]],
+ ['prism',8787,path.join(root,'deploy/bin/myelin-prism-breaker'),[]],
  ['arcade',8785,path.join(root,'deploy/bin/myelin-arcade'),[]],
  ['store',8790,process.execPath,[path.join(root,'server/index.mjs')]],
 ];
-for(const file of ['dist/index.html','deploy/bin/myelin-chess','deploy/bin/myelin-sling','deploy/bin/myelin-arcade','deploy/bin/myelin-neon-miner'])if(!existsSync(path.join(root,file)))throw Error(`Missing ${file}. Build the store and game binaries first.`);
+for(const file of ['dist/index.html','deploy/bin/myelin-chess','deploy/bin/myelin-sling','deploy/bin/myelin-arcade','deploy/bin/myelin-neon-miner','deploy/bin/myelin-prism-breaker'])if(!existsSync(path.join(root,file)))throw Error(`Missing ${file}. Build the store and game binaries first.`);
 if(!existsSync(path.join(tee,'service/server.mjs')))throw Error('Set TEEWORLDS_ROOT to your myelin-teeworlds checkout with its built release artifacts.');
 for(const [,port] of specs)await new Promise((resolve,reject)=>{const s=createServer();s.once('error',()=>reject(Error(`Port ${port} is already in use. Stop the existing local platform before starting this command.`)));s.listen(port,'127.0.0.1',()=>s.close(resolve));});
 const token=process.env.RUNTIME_TOKEN||randomBytes(32).toString('hex');
@@ -28,4 +29,4 @@ for(const [name,port,cmd,args] of specs){
  children.push(child);child.on('error',error=>{console.error(`${name}: ${error.message}`);stop(1);});child.on('exit',code=>{if(!stopping){console.error(`${name} exited (${code}); stopping the local platform.`);stop(code||1);}});
 }
 process.on('SIGINT',()=>stop());process.on('SIGTERM',()=>stop());
-console.log('Local UTXOPlay: http://127.0.0.1:8790 — Ctrl+C stops all seven services.');
+console.log('Local UTXOPlay: http://127.0.0.1:8790 — Ctrl+C stops all eight services.');

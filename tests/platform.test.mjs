@@ -64,7 +64,7 @@ test('persistent quotas retain counts and reset only after expiry',async()=>{
   const guest=await req('/api/guest',{});
   for(const id of ['prism-breaker','neon-coil','starfall','drift-run']){
    const r=await req(`/games/${id}/api/state`,undefined,guest.cookie,{'X-UTXOPlay-Account':'f'.repeat(64)});assert.equal(r.status,200);
-   const call=calls.at(-1);assert.equal(call.url,`http://127.0.0.1:8785/${id}/api/state`);assert.equal(call.options.headers['X-UTXOPlay-Account'],guest.data.user.id);
+   const call=calls.at(-1);assert.equal(call.url,`http://127.0.0.1:${id==='prism-breaker'?8787:8785}/${id}/api/state`);assert.equal(call.options.headers['X-UTXOPlay-Account'],guest.data.user.id);
   }
  });
 

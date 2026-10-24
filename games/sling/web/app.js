@@ -1,3 +1,4 @@
+import {viewport,backingRatio,pointerInViewport} from './viewport.mjs';
 import { startRenderLoop, startPolling, setText } from "./performance.mjs";
 import { toggleSound, volume, sound, startSound, audioState } from "./audio.js?v=0.9.0";
 globalThis.UTXOPlayLoader?.boot();
@@ -256,19 +257,24 @@ function burst(x, y) {
     });
   }
 }
-function render(now, elapsed) {
+function render(now, elapsed, ratio) {
+  const w=canvas.clientWidth||1100,h=canvas.clientHeight||560,pixel=backingRatio(w,h,ratio),v=viewport(w,h,'sling');
+  const pw=Math.floor(w*pixel),ph=Math.floor(h*pixel);if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
+  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#c5e5d9';ctx.fillRect(0,0,pw,ph);
+  if(sceneryReady){const ground=(v.y+480*v.scale)*pixel,cover=Math.max(pw/1100,ground/480,(ph-ground)/80);ctx.drawImage(scenery,(pw-1100*cover)/2,ground-480*cover,1100*cover,560*cover);}
+  ctx.setTransform(v.scale*pixel,0,0,v.scale*pixel,v.x*pixel,v.y*pixel);
+
   const delta = Math.min(2, elapsed / 16.667);
-  ctx.clearRect(0, 0, 1100, 560);
-  if (sceneryReady) ctx.drawImage(scenery, 0, 0);
-  else {
+
+  if (!sceneryReady) {
     ctx.fillStyle = "#c5e5d9";
-    ctx.fillRect(0, 0, 1100, 560);
+    ctx.fillRect(-v.x/v.scale, -v.y/v.scale, w/v.scale, h/v.scale);
   }
   if (!data) return;
   const region = Math.floor((data.game.level - 1) / 3);
   if (region) {
     ctx.fillStyle = ["", "#f6b85220", "#8580df26", "#10285666"][region];
-    ctx.fillRect(0, 0, 1100, 560);
+    ctx.fillRect(-v.x/v.scale, -v.y/v.scale, w/v.scale, h/v.scale);
     if (region === 3) {
       ctx.fillStyle = "#fff5cacc";
       for (let i=0;i<26;i++) { ctx.beginPath(); ctx.arc(30+(i*137)%1040, 24+(i*43)%215, i%3===0?2:1, 0, Math.PI*2); ctx.fill(); }
@@ -534,13 +540,7 @@ function render(now, elapsed) {
   ctx.globalAlpha = 1;
   ctx.restore();
 }
-function point(e) {
-  const r = canvas.getBoundingClientRect();
-  return {
-    x: ((e.clientX - r.left) * 1100) / r.width,
-    y: ((e.clientY - r.top) * 560) / r.height,
-  };
-}
+function point(e) {return pointerInViewport(e.clientX,e.clientY,canvas.getBoundingClientRect(),'sling');}
 function pull(p) {
   let dx = Math.min(-8, Math.max(-120, Math.round(p.x - 180))),
     dy = Math.min(100, Math.max(-20, Math.round(p.y - 360)));

@@ -1,3 +1,4 @@
+import {brickPoint} from './prism-engine.mjs';
 // Presentation and input helpers. Never mutate a signed/predicted game state.
 export const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export const lerp = (a, b, t) => a + (b - a) * clamp(t, 0, 1);
@@ -40,7 +41,7 @@ export function runSummary(game, previousBest) {
     starfall: 'Keep moving between gaps. Auto fire lets you focus on dodging.',
     'drift-run': 'One swipe changes one lane. Line up early for the next opening.'
   };
-  return {title: game.tick >= 18000 ? 'Ten minutes complete!' : game.score > previousBest ? 'New device best!' : 'One more run?', duration, tip: tips[game.kind]};
+  return {title: game.kind==='prism-breaker'&&game.over&&game.level===24&&!game.cells.some(Boolean)?'Spectrum restored!': game.tick >= (game.kind==='prism-breaker'?108000:18000) ? (game.kind==='prism-breaker'?'Campaign time limit reached!':'Ten minutes complete!') : game.score > previousBest ? 'New device best!' : 'One more run?', duration, tip: tips[game.kind]};
 }
 
 export class InputBuffer {
@@ -88,10 +89,10 @@ export function feedback(before, after) {
   const kind = after.kind;
   if (kind === 'prism-breaker') {
     before.cells.forEach((v, i) => {
-      if (v && !after.cells[i]) events.push({type: 'brick', x: 70 + i % 8 * 110, y: 135 + Math.floor(i / 8) * 48, value: after.score - before.score});
+      if (v && !after.cells[i]) events.push({type: 'brick', ...brickPoint(before,i), value: after.score - before.score});
     });
     const a = before.bodies[0], b = after.bodies[0];
-    if (a.vy > 0 && b.vy < 0 && b.y >= 850 && after.lives === before.lives) events.push({type: 'bounce', x: b.x, y: 880});
+    if (a && b && a.vy > 0 && b.vy < 0 && b.y >= 540 && after.lives === before.lives) events.push({type: 'bounce', x: b.x, y: 563});
   } else if (kind === 'neon-coil' && after.score > before.score) {
     events.push({type: 'collect', x: before.x * 50 + 25, y: before.y * 50 + 25, value: after.score - before.score});
   } else if (kind === 'starfall') {

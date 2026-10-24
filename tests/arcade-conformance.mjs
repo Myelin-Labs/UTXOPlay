@@ -15,7 +15,7 @@ for(const kind of kinds){
    if(trial===12&&kind==='neon-coil'){const [x,y]=g.trail[0];i=y===0&&x<19?2:x===19&&y<19?8:y===19&&x>0?1:x===0&&y>0?4:2;}
    inputs.push(i);step(g,i);
   }
-  const result=spawnSync(bin,['simulate'],{input:JSON.stringify({kind,inputs}),encoding:'utf8'});
+  const result=spawnSync(kind==='prism-breaker'?(process.env.PRISM_BIN||'deploy/bin/myelin-prism-breaker'):bin,['simulate'],{input:JSON.stringify({kind,inputs}),encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);assert.deepEqual(JSON.parse(result.stdout),g,`${kind} trial ${trial}`);count++;
  }
 }

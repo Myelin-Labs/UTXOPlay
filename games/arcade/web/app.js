@@ -1,3 +1,5 @@
+import {PERKS,levels} from './prism-engine.mjs';
+import {pointerInViewport} from './viewport.mjs';
 import {createGame,step,kinds} from './engine.mjs';
 import {InputBuffer,BoardGesture,feedback,runSummary} from './presentation.mjs';
 import {ArcadeRenderer} from './renderer.mjs';
@@ -6,7 +8,7 @@ import {setText,startRenderLoop,readQuality} from './performance.mjs';
 globalThis.UTXOPlayLoader?.boot();
 const id=location.pathname.split('/')[2];
 const config={
- 'prism-breaker':{title:'Prism Breaker',label:'01 / REFRACTION LAB',accent:'#b7a2ff',intro:'Find the angle. Break the spectrum.',goal:'Shatter all 48 crystals. Chain hits between paddle returns for up to 8× resonance. A new realm appears every two waves.',keys:['←','→','A','D'],tip:'Mouse, arrows or touch drag steer the paddle. F toggles Focus Lens: a projected path and landing marker with the paddle held still. Aim with the edges to change the return angle.'},
+ 'prism-breaker':{title:'Prism Breaker',label:'01 / REFRACTION LAB',accent:'#b7a2ff',intro:'Find the angle. Break the spectrum.',goal:'Conquer 24 distinct crystal sectors. Collect six capsule types, break armoured and explosive gems, and choose a permanent perk after every sector. Space fires a column pulse every 12 seconds.',keys:['←','→','A','D'],tip:'Mouse, arrows or touch drag steer the paddle. F toggles Focus Lens: a projected path and landing marker with the paddle held still. Aim with the edges to change the return angle.'},
  'neon-coil':{title:'Neon Coil',label:'02 / LIVING CIRCUIT',accent:'#84efba',intro:'A little hunger. A longer circuit.',goal:'Collect the glowing nodes. Grow your circuit without crossing yourself or touching the edge.',keys:['↑','←','↓','→'],tip:'Arrow keys or WASD to turn. Swipe on the board or use the direction buttons. The pace increases as you grow.'},
  'starfall':{title:'Starfall',label:'03 / ORBITAL DEFENCE',accent:'#7edaff',intro:'Hold the line. Light up the night.',goal:'Break through each descending formation. Dodge return fire and survive the next wave.',keys:['←','→','SPACE'],tip:'Move the mouse, use A/D, or drag to steer. Auto fire is on by default; turn it off to fire manually with Space or FIRE.'},
  'drift-run':{title:'Drift Run',label:'04 / AFTER HOURS',accent:'#ffbc83',intro:'Three lanes. One way forward.',goal:'Slip between the barriers. Catch amber energy rings as the city rushes past.',keys:['←','→','A','D'],tip:'Tap left or right to change lanes. Swipe sideways on the road, or use the touch arrows. Stay clear of the coral barriers.'}
@@ -33,6 +35,15 @@ if(id==='prism-breaker'){
 async function prepareArtwork(){if(id==='prism-breaker'&&!artworkReady){await renderer.load($('#cover'));artworkReady=true;}}
 const hud={};
 function updateHud(){
+  if(id==='prism-breaker'){
+    setText('prism-sector',levels[predicted.level-1].name);
+    setText('prism-owned',predicted.perks.map((rank,i)=>rank?PERKS[i].name+' '+rank+'/4':'').filter(Boolean).join(' · ')||'Clear a sector to choose your first perk.');
+    setText('prism-pulse',predicted.cooldown?'PULSE '+Math.ceil(predicted.cooldown/30)+'s':'PULSE · SPACE');
+    $('#prism-pulse').setAttribute('aria-disabled',String(!running||predicted.cooldown>0));
+    const effects=[predicted.wide?'LONGBOARD '+Math.ceil(predicted.wide/30)+'s':'',predicted.slow?'SLOW '+Math.ceil(predicted.slow/30)+'s':'',predicted.pierce?'PHASE '+Math.ceil(predicted.pierce/30)+'s':'',predicted.shield?'SHIELD ×'+predicted.shield:''].filter(Boolean);
+    setText('prism-effects',effects.join(' · ')||'Catch capsules · Space to pulse');
+  }
+
   if(hud.score!==predicted.score){hud.score=predicted.score;setText('score',predicted.score.toLocaleString());}
   if(hud.level!==predicted.level){hud.level=predicted.level;setText('level',String(predicted.level).padStart(2,'0'));}
   if(hud.lives!==predicted.lives){
@@ -52,15 +63,15 @@ function clearInput(){input.clear();gesture.clear();hoverX=null;document.querySe
 function syncView(){previous=structuredClone(predicted);renderer.reset();accumulator=0;}
 function showOverlay(title,text,button,art=false){overlayAction='play';$('#cancel-restart').hidden=true;$('#run-stats').hidden=true;setText('overlay-title',title);setText('overlay-text',text);setText('launch',button);$('#overlay').dataset.art=String(art);$('#overlay').hidden=false;$('#countdown').hidden=true;countdown=0;}
 function refreshButtons(){
-  $('#launch').disabled=busy||stopping;
-  for(const name of ['restart','replay','pause'])$('#'+name).disabled=busy||stopping||!loaded;
+  $('#launch').disabled=busy||stopping||drafting;
+  for(const name of ['restart','replay','pause'])$('#'+name).disabled=busy||stopping||drafting||!loaded;
   $('#cancel-restart').disabled=busy||stopping;
   $('#export').setAttribute('aria-disabled',String(busy||stopping||!loaded));
 }
 function focusLaunch(){if(!document.hidden&&!$('#launch').disabled)$('#launch').focus({preventScroll:true});}
 function toast(text){setText('notice',text);$('#notice').hidden=false;noticeTime=1800;announce(text);}
 function rememberBest(){if(confirmed.game.score>best){best=confirmed.game.score;write(`utxoplay:best:${id}`,best);}setText('best',best.toLocaleString());}
-function begin(){clearInput();syncView();$('#notice').hidden=true;noticeTime=0;$('#overlay').hidden=true;$('#pause').textContent='Pause';countdown=1800;lastCount=0;$('#countdown').hidden=false;setText('countdown','3');canvas.focus();}
+function begin(){if(predicted.draft){void showPerks();return;}clearInput();syncView();$('#notice').hidden=true;noticeTime=0;$('#overlay').hidden=true;$('#pause').textContent='Pause';countdown=1800;lastCount=0;$('#countdown').hidden=false;setText('countdown','3');canvas.focus();}
 document.documentElement.style.setProperty('--accent',config.accent);document.documentElement.dataset.game=id;document.title=config.title+' · UTXOPlay';
 document.documentElement.style.setProperty('--key-art',`url('/assets/${id}-keyart.webp${id==='prism-breaker'?'?v=0.15.0':''}')`);
 setText('title',config.title);setText('eyebrow',config.label);setText('intro',config.intro);setText('goal',config.goal);setText('controls',config.tip);setText('best',best.toLocaleString());
@@ -103,6 +114,26 @@ async function finish(){
   catch{}finally{stopping=false;refreshButtons();focusLaunch();}
 }
 function showStats(game){const summary=runSummary(game,runBest);$('#run-stats').hidden=false;setText('result-score',game.score.toLocaleString());setText('result-time',summary.duration);setText('result-best',best.toLocaleString());}
+
+let drafting=false;
+async function showPerks(){
+ if(drafting)return;drafting=true;refreshButtons();running=false;countdown=0;clearInput();$('#countdown').hidden=true;
+ showOverlay('Sector restored','Saving your clear…','Saving…');$('#launch').disabled=true;
+ try{await saveAll();if(!confirmed.game.draft)return;predicted=structuredClone(confirmed.game);syncView();$('#overlay').hidden=true;const panel=$('#prism-draft');panel.hidden=false;setText('prism-draft-title','Sector '+predicted.level+' complete');const cards=$('#prism-perks');cards.replaceChildren();
+ for(const choice of predicted.offers){const perk=PERKS[choice],button=document.createElement('button');button.className='perk-card';const img=document.createElement('img');img.src='/games/prism-breaker/art/'+perk.icon+'.webp';img.alt='';const title=document.createElement('strong');title.textContent=perk.name;const desc=document.createElement('span');desc.textContent=perk.detail;const rank=document.createElement('small');rank.textContent='RANK '+(predicted.perks[choice]+1)+' / 4';button.append(img,rank,title,desc);button.onclick=()=>void selectPerk(choice);cards.append(button);}
+ cards.querySelector('button')?.focus({preventScroll:true});announce('Sector complete. Choose one permanent perk.');
+ }catch(e){status(e.message);}finally{drafting=false;refreshButtons();}
+}
+async function selectPerk(choice){
+ if(busy||!confirmed?.game.draft)return;busy=true;refreshButtons();$('#prism-perks').querySelectorAll('button').forEach(b=>b.disabled=true);
+ try{const state=await api('action',{session_id:confirmed.session.id,expected_block:confirmed.session.block_hash,action:{type:'perk',choice}});confirmed=state;predicted=structuredClone(state.game);syncView();$('#prism-draft').hidden=true;showOverlay('Sector '+predicted.level+' · '+levels[predicted.level-1].name,'Upgrade installed. Your new build is saved.','Enter sector');}
+ catch(e){status(e.message);try{confirmed=await api('state');predicted=structuredClone(confirmed.game);syncView();$('#prism-draft').hidden=true;if(predicted.draft)await showPerks();else showOverlay('Upgrade saved','Your run is ready.','Enter sector');}catch{loaded=false;$('#prism-draft').hidden=true;showOverlay('Connection paused','Reconnect to recover your confirmed upgrade.','Reconnect');}}
+ finally{busy=false;refreshButtons();$('#prism-perks').querySelectorAll('button').forEach(b=>b.disabled=false);}
+}
+if(id==='prism-breaker'){
+ const pulse=$('#prism-pulse');pulse.addEventListener('pointerdown',e=>{if(!running)return;e.preventDefault();pulse.setPointerCapture(e.pointerId);input.press('pulse',16,predicted);});for(const event of ['pointerup','pointercancel','lostpointercapture'])pulse.addEventListener(event,()=>input.release('pulse'));pulse.addEventListener('click',e=>{if(e.detail===0&&running){input.press('pulse-key',16,predicted);setTimeout(()=>input.release('pulse-key'),100);}});
+}
+
 async function boot(){
   try{const [state]=await Promise.all([api('state').then(state=>{globalThis.UTXOPlayLoader?.session();return state;},error=>{globalThis.UTXOPlayLoader?.fail('session');throw error;}),prepareArtwork()]);confirmed=state;predicted=structuredClone(confirmed.game);syncView();updateHud();loaded=true;runBest=best;rememberBest();
     showOverlay(predicted.over?'Your last run':config.title,predicted.tick?`${predicted.score} points saved. ${predicted.over?'Ready for another run?':'Pick up where you left off.'}`:config.intro,predicted.over?'Play again':predicted.tick?'Continue run':'Start playing',true);
@@ -133,7 +164,7 @@ $('#pause').onclick=()=>{if(busy||stopping)return;if(overlayAction==='restart')r
 $('#restart').onclick=async()=>{
   if(stopping||busy||!loaded)return;
   busy=true;refreshButtons();
-  try{await pause();await saveAll();showOverlay('Start a new run?',`Your current ${predicted.score.toLocaleString()}-point run will end.`,'Start new run');overlayAction='restart';$('#cancel-restart').hidden=false;}
+  try{await pause();await saveAll();if(id==='prism-breaker')$('#prism-draft').hidden=true;showOverlay('Start a new run?',`Your current ${predicted.score.toLocaleString()}-point run will end.`,'Start new run');overlayAction='restart';$('#cancel-restart').hidden=false;}
   catch(e){status(e.message);}
   finally{busy=false;refreshButtons();if(!document.hidden)$('#cancel-restart').hidden?focusLaunch():$('#cancel-restart').focus({preventScroll:true});}
 };
@@ -165,7 +196,7 @@ for(const b of document.querySelectorAll('[data-input]')){
   b.addEventListener('keyup',e=>{if(e.code==='Space'||e.code==='Enter'){e.preventDefault();input.release('button'+b.dataset.input);b.classList.remove('pressed');}});
   b.addEventListener('blur',()=>{input.release('button'+b.dataset.input);b.classList.remove('pressed');});
 }
-function pointerPosition(e){const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*1000,y:(e.clientY-r.top)/r.height*1000};}
+function pointerPosition(e){return pointerInViewport(e.clientX,e.clientY,canvas.getBoundingClientRect(),id,matchMedia('(pointer:coarse)').matches);}
 canvas.addEventListener('pointerdown',e=>{
   if((!running&&!countdown)||e.button!==0)return;e.preventDefault();
   const p=pointerPosition(e);if(!gesture.begin(e.pointerId,p.x,p.y,e.pointerType==='mouse'?p.x:predicted.x))return;
@@ -195,7 +226,7 @@ function frame(now,delta,ratio){
       if(pending.length>=60){running=false;clearInput();showOverlay('Saving your run','Waiting for your connection to catch up.','Resume');break;}
       previous=structuredClone(predicted);const bits=controls();pending.push(bits);step(predicted,bits);input.stepped(previous,predicted);renderer.tick(predicted);
       for(const e of feedback(previous,predicted)){renderer.event(e);audio.play(e.type);if(e.type==='wave')toast((id==='neon-coil'||id==='drift-run'?'Pace ':'Wave ')+e.value);if(e.type==='damage'&&!predicted.over)toast(predicted.lives+' lives left');}
-      accumulator-=1000/30;if(predicted.over){void finish();break;}
+      accumulator-=1000/30;if(predicted.draft){void showPerks();break;}if(predicted.over){void finish();break;}
     }
     saveTimer+=delta;if(saveTimer>=1000){saveTimer=0;void flush().catch(()=>{});}
   }

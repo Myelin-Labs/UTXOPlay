@@ -1,3 +1,4 @@
+import {backingRatio} from './viewport.mjs';
 import {startRenderLoop,setText} from './performance.mjs';
 import {CharacterMotion,constrainCharacter,followCamera} from './motion.mjs';
 globalThis.UTXOPlayLoader?.boot();
@@ -81,7 +82,7 @@ async function sendInput(force=false){
  sending=true;try{await api(body);$('#network').textContent=Math.round(performance.now()-now)+' ms · HTTP fallback';}catch(e){if(performance.now()-lastInput>5000){notice(e.message);lastInput=performance.now();}}finally{sending=false;}
 }
 setInterval(()=>{if(!document.hidden)sendInput();},20);
-function zoom(){return canvas.clientWidth<650?.85:1.12;}
+function zoom(){return Math.max(.65,Math.min(3,canvas.clientHeight/800));}
 function sprite(img,sx,sy,sw,sh,x,y,w,h){if(img?.complete)ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);}
 const weaponSprites=[[2,1,4,3],[2,4,4,2],[2,6,8,2],[2,8,7,2],[2,12,7,3]];
 function weapon(kind,x,y,angle,size=42){const s=weaponSprites[Math.max(0,Math.min(4,kind))];ctx.save();ctx.translate(x,y);ctx.rotate(angle);if(Math.cos(angle)<0)ctx.scale(1,-1);sprite(images.game,...s.map(n=>n*32),-8,-size*s[3]/s[2]/2,size,size*s[3]/s[2]);ctx.restore();}
@@ -114,7 +115,7 @@ function terrainChunk(cx,cy){
  terrain.set(key,image);if(terrain.size>32)terrain.delete(terrain.keys().next().value);return image;
 }
 
-function render(now,elapsed,dpr){const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);const dt=elapsed;
+function render(now,elapsed,dpr){const w=canvas.clientWidth,h=canvas.clientHeight;dpr=backingRatio(w,h,dpr);if(canvas.width!==Math.floor(w*dpr)||canvas.height!==Math.floor(h*dpr)){canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);const dt=elapsed;
  const state=current,scale=zoom();const chars=motion?.sample(now)||[];
  const me=chars.find(i=>i[1]===room?.slot)?.[2];
  if(room&&me){const snap=!hadCharacter||Math.hypot(me[1]-camera.x,me[2]-camera.y)>250;camera=followCamera(camera,me,dt,snap);hadCharacter=true;}

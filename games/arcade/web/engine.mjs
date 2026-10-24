@@ -1,3 +1,4 @@
+import {createPrism,prismStep} from './prism-engine.mjs';
 // Predictive rendering only. The Rust executor recomputes every accepted input tape.
 export const kinds=['prism-breaker','neon-coil','starfall','drift-run'];
 const body=(x,y,vx,vy,tag)=>({x,y,vx,vy,tag});
@@ -6,30 +7,21 @@ const rand=g=>(g.rng=(g.rng*16807)%2147483647);
 function food(g){for(let i=0;i<500;i++){const n=rand(g)%400,p=[n%20,Math.floor(n/20)];if(!g.trail.some(t=>t[0]===p[0]&&t[1]===p[1])){[g.x,g.y]=p;return;}}for(let y=0;y<20;y++)for(let x=0;x<20;x++)if(!g.trail.some(t=>t[0]===x&&t[1]===y)){g.x=x;g.y=y;return;}g.over=true;}
 function wave(g){g.bodies=[];for(let row=0;row<4;row++)for(let col=0;col<8;col++)g.bodies.push(body(160+col*90,110+row*70,2+Math.min(g.level,5),0,1));}
 export function createGame(kind){
+ if(kind==='prism-breaker')return createPrism();
  if(!kinds.includes(kind))throw Error('Unknown arcade game');
  const g={kind,tick:0,score:0,lives:3,level:1,over:false,x:500,y:750,vx:7,vy:-10,dir:1,next_dir:1,cooldown:0,combo:0,rng:73129,bodies:[],trail:[],cells:[]};
- if(kind==='prism-breaker'){g.y=700;g.cells=Array(48).fill(1);g.bodies=[body(500,700,7,-10,0)];}
  if(kind==='neon-coil'){g.trail=[[10,12],[9,12],[8,12]];g.lives=1;food(g);}
  if(kind==='starfall')wave(g);
  if(kind==='drift-run'){g.x=1;g.lives=1;}
  return g;
 }
 export function step(g,i){
+ if(g.kind==='prism-breaker')return prismStep(g,i);
  if(g.over)return;g.tick++;
- if(g.kind==='prism-breaker')breaker(g,i);
- else if(g.kind==='neon-coil')snake(g,i);
+ if(g.kind==='neon-coil')snake(g,i);
  else if(g.kind==='starfall')shooter(g,i);
  else runner(g,i);
  if(g.tick>=18000)g.over=true;
-}
-function breaker(g,i){
- g.x=clamp(g.x+((i&1)?-24:0)+((i&2)?24:0),90,910);
- let b={...g.bodies[0]},oldY=b.y;b.x+=b.vx;b.y+=b.vy;
- if(b.x<20){b.x=20;b.vx=Math.abs(b.vx);}if(b.x>980){b.x=980;b.vx=-Math.abs(b.vx);}if(b.y<25){b.y=25;b.vy=Math.abs(b.vy);}
- if(b.vy>0&&oldY<865&&b.y>=865&&Math.abs(b.x-g.x)<108){b.y=864;b.vy=-(11+Math.min(g.level,8));b.vx=clamp(Math.trunc((b.x-g.x)/10),-10,10);if(b.vx===0)b.vx=3;g.combo=0;}
- for(let n=0;n<48;n++){if(!g.cells[n])continue;const x=70+(n%8)*110,y=135+Math.floor(n/8)*48;if(Math.abs(b.x-x)<57&&Math.abs(b.y-y)<30){g.cells[n]=0;b.vy=-b.vy;g.combo++;g.score+=10*Math.min(g.combo,8);break;}}
- if(b.y>1020){g.lives--;g.combo=0;if(g.lives===0)g.over=true;b=body(g.x,700,7,-10,0);}
- if(g.cells.every(v=>v===0)){g.level++;g.cells.fill(1);g.score+=500;b=body(g.x,700,7,-(10+Math.min(g.level,8)),0);}g.bodies[0]=b;
 }
 function snake(g,i){
  const d=(i&4)?0:(i&2)?1:(i&8)?2:(i&1)?3:g.next_dir;if((d+2)%4!==g.dir)g.next_dir=d;

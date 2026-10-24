@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.16.0
+    image: utxoplay:0.17.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -9,6 +9,7 @@ services:
       VIRTUAL_HOST: store.utxoplay.io,utxoplay.io,www.utxoplay.io
       VIRTUAL_PORT: '8790'
       MINER_URL: http://utxoplay-miner:8786
+      PRISM_URL: http://utxoplay-prism:8787
       ARCADE_URL: http://utxoplay-arcade:8785
       CHESS_URL: http://utxoplay-chess:8781
       SLING_URL: http://utxoplay-sling:8782
@@ -163,6 +164,30 @@ services:
     logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:8786/neon-miner/api/state',{headers:{'X-Runtime-Token':process.env.RUNTIME_TOKEN,'X-UTXOPlay-Account':'0'.repeat(64)}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  prism:
+    image: utxoplay:0.17.0
+    container_name: utxoplay-prism
+    restart: unless-stopped
+    init: true
+    command: [/app/bin/myelin-prism-breaker]
+    environment: {PORT: '8787', BIND: 0.0.0.0}
+    env_file: /data/utxoplay/shared/runtime.env
+    volumes:
+      - /data/utxoplay/shared/prism-crystal-campaign:/app/data
+    networks: [games]
+    mem_limit: 384m
+    cpus: '0.75'
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp:size=64m]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8787/prism-breaker/api/state',{headers:{'X-Runtime-Token':process.env.RUNTIME_TOKEN,'X-UTXOPlay-Account':'0'.repeat(64)}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -73,7 +73,7 @@ export class MinerRenderer {
     if(!this.cache||g.level!==this.level) {
       this.background(g);this.particles=[];this.labels=[];this.rings=[];this.prev=null;this.forecast=null;
     }
-    const cover=Math.max(w/1000,h/700);x.setTransform(1,0,0,1,0,0);x.drawImage(this.cache,(w-1000*cover)/2,(h-700*cover)/2,1000*cover,700*cover);const cssW=this.canvas.clientWidth||1000,cssH=this.canvas.clientHeight||700,pixel=w/cssW,top=cssW<=600?198:cssH<=540?100:134,bottom=cssW<=600?130:76,scale=Math.min(cssW/1000,Math.max(100,cssH-top-bottom)/700);x.setTransform(scale*pixel,0,0,scale*pixel,(cssW-1000*scale)/2*pixel,(top+(cssH-top-bottom-700*scale)/2)*pixel);
+    const cover=Math.max(w/1000,h/700);x.setTransform(1,0,0,1,0,0);x.drawImage(this.cache,(w-1000*cover)/2,(h-700*cover)/2,1000*cover,700*cover);const cssW=this.canvas.clientWidth||1000,cssH=this.canvas.clientHeight||700,pixel=w/cssW,ui=Math.max(1,Math.min(2,cssH/1080)),top=cssW<=600?198:cssH<=540?100:134*ui,bottom=cssW<=600?130:76*ui,scale=Math.min(cssW/1000,Math.max(100,cssH-top-bottom)/700);x.setTransform(scale*pixel,0,0,scale*pixel,(cssW-1000*scale)/2*pixel,(top+(cssH-top-bottom-700*scale)/2)*pixel);
     const color=accents[tier(g)], [tx,ty]=tip(g),[oldX,oldY]=tip(previous);
     const smooth=previous.level===g.level&&previous.phase===g.phase&&!this.reduced;
     const hx=smooth?oldX+(tx-oldX)*alpha:tx,hy=smooth?oldY+(ty-oldY)*alpha:ty;

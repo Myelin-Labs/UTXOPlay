@@ -58,7 +58,7 @@ The gateway injects the authenticated account, enforces same-origin writes, and 
 
 ### Local platform
 
-Build with `npm run build`, then run `npm run dev:platform` to start the store and all six game runtimes together. Stop any existing processes on ports 8781–8786 and 8790 first. The launcher requires the Chess/Skyward/Arcade/Neon Prospector binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`), plus a built sibling `myelin-openstrike` checkout (`OPENSTRIKE_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
+Build with `npm run build`, then run `npm run dev:platform` to start the store and all seven game runtimes together. Stop any existing processes on ports 8781–8787 and 8790 first. The launcher requires the Chess/Skyward/Arcade/Neon Prospector/Prism Breaker binaries in `deploy/bin/` and a built sibling `myelin-teeworlds` checkout (or set `TEEWORLDS_ROOT`), plus a built sibling `myelin-openstrike` checkout (`OPENSTRIKE_ROOT`). It uses separate persistent local game directories under `data/`. Ctrl+C stops every child service; if any runtime fails, the launcher stops the platform rather than leaving an apparently playable, disconnected page.
 
 Games enter immersive mode on a Play/Start click and request browser fullscreen in that user gesture. Browsers that reject fullscreen retain the immersive page layout. Exit or Escape restores the store. The shared first-party game shell validates the sender and origin of frame messages.
 
@@ -104,3 +104,9 @@ Store 0.11.0 adds Skyward's in-game Item Store. Earn coins through play, buy ext
 ## Neon Prospector — store 0.12.0
 
 A cyberpunk Gold Miner game with 60 sectors, five contract types, moving ore, hazardous mines, armored vaults, earned-credit equipment and controls embedded in the mine canvas. Its isolated Myelin runtime executes inputs, score, inventory and purchases; the browser never supplies a score or balance. See [current release and verification notes](docs/neon-miner-deep-expedition.md).
+
+## Store 0.17.0 — crystal campaign and wide displays
+
+Prism Breaker now has 24 distinct authored sectors, armoured / explosive / supply crystals, six falling capsule effects, a rechargeable column pulse, and six permanent perk paths chosen between sectors. Its dedicated `myelin-prism-breaker` service listens on 8787 (`PRISM_URL`) and binds the exact Rust source, session executor, lockfile and authored level data. New crystal campaign saves use their own directory; the previous Prism records and all other game runtimes remain intact.
+
+Every bundled game now owns a full-screen scene with controls inside it, widescreen / ultrawide presentation, large-display HUD scaling and bounded render resolution. The ongoing contract is in [AGENTS.md](AGENTS.md). See [release and validation notes](docs/prism-campaign-widescreen.md).

@@ -28,8 +28,8 @@ test('releasing one control does not release another input source',()=>{
  input.release('touch1');assert.equal(input.read(game),17);input.clear();assert.equal(input.read(game),0);
 });
 test('collision effects follow the brick and pickup, not the screen centre',()=>{
- const a=createGame('prism-breaker');a.bodies[0]={x:70,y:100,vx:0,vy:10,tag:0};const b=structuredClone(a);step(b,0);
- assert.deepEqual(feedback(a,b).find(e=>e.type==='brick'),{type:'brick',x:70,y:135,value:10});
+ const a=createGame('prism-breaker');a.cells[0]=1;a.bodies[0]={x:71,y:90,vx:0,vy:10,tag:0};const b=structuredClone(a);step(b,0);
+ assert.deepEqual(feedback(a,b).find(e=>e.type==='brick'),{type:'brick',x:71,y:115,value:10});
  const s=createGame('neon-coil');s.tick=5;s.x=11;s.y=12;const t=structuredClone(s);step(t,0);
  assert.deepEqual(feedback(s,t)[0],{type:'collect',x:575,y:625,value:10});
 });
