@@ -44,3 +44,7 @@ Run `npm test` for model, geometry and platform checks. Run `node --test tests/p
 - Browser inspection: 1920×1080, 2560×1080, 2560×1440, 390×844 and 844×390 filled the viewport without horizontal overflow or fatal renderer errors. A same-origin 3840×2160 frame and a direct 3840×2160 viewport validated actual 4K canvas sizing, enlarged HUD bounds and the 8,294,400 backing-pixel cap. Touch play and portrait weapon framing were inspected in the real client.
 
 These checks do not establish a sustained GPU frame-rate guarantee or physical-device coverage. The in-app browser throttles rendering, so its FPS readout is not a representative performance benchmark. Three difficulty policies were exercised against scripted inputs; extended human playtesting remains useful for further balance tuning.
+
+### Deployment
+
+Published as UTXOPlay 0.20.0 and `myelin-openstrike:0.2.0`. Public asset responses match the built client byte-for-byte. The production signed-login/two-player combat test passed, and the downloaded production export was verified again locally with the retained binary pair. Store and runtime health checks pass; the other game containers were not recreated. A consistent SQLite backup and OpenStrike data archive were retained before replacement.

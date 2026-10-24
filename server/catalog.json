@@ -117,7 +117,7 @@
     "description": "A sunlit harbor, charming robots and a clean first-person duel. Train at three difficulty levels or invite a friend. Original OpenStrike rules with native Myelin replay verification.",
     "cover": "/games/openstrike/art/harbor-keyart.webp",
     "version": "0.1.0",
-    "controls": "WASD to move, mouse to aim, left click to fire, Shift to walk, R to reload. Click Enter arena to capture your mouse; Escape opens the menu. Free practice or a private 90-second duel. Desktop keyboard and mouse recommended.",
+    "controls": "Choose Rookie, Standard or Veteran training, or invite a friend for a 90-second duel. WASD moves, mouse aims, click fires, Shift walks and R reloads. Escape opens the in-game menu. Touch controls, field of view and sensitivity are adjustable in Your setup.",
     "players": "1\u20132 players online",
     "headline": "One arena.|One clean shot.",
     "heroDescription": "Find your angle in Neon Divide. A quick first-person duel, with every round ready to replay.",
