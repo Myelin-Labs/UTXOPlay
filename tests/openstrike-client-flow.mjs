@@ -24,7 +24,9 @@ try{
  const trigger=d.getElementById('touch-fire');trigger.dispatchEvent(pointer('pointerdown',3));assert.equal(input().fire,true);trigger.dispatchEvent(pointer('pointercancel',3));assert.equal(input().fire,false);
  socket.onmessage({data:JSON.stringify({type:'state',room:{...room,tick:20,state:{players:room.state.players.map(p=>({...p,health:80}))}}})});
  socket.onmessage({data:JSON.stringify({type:'state',room:{...room,tick:19}})});assert.equal(d.getElementById('health').textContent,'80','a late frame must not restore old health');
+ socket.onmessage({data:JSON.stringify({type:'state',room:{...room,tick:21,status:'finished',proof:{verified:true},stats:[{shots:1,hits:0,damage:0}],state:{...room.state,phase:{Ended:{winner:null}}}}})});
+ socket.onmessage({data:JSON.stringify({type:'error',error:'No active match'})});assert.equal(d.getElementById('status').textContent,'Ready for another round.','a final in-flight input rejection must not overwrite the completed result');
  socket.close();assert.equal(d.getElementById('panel').hidden,false);
  assert.equal(d.getElementById('status').classList.contains('error'),false);
- console.log('PASS shipped OpenStrike controller: fast taps, blur/disconnect release, touch ownership/cancellation, persisted touch option, stale-frame rejection');
+ console.log('PASS shipped OpenStrike controller: fast taps, blur/disconnect release, touch ownership/cancellation, persisted touch option, stale-frame rejection, completed-round input race');
 }finally{w.dispatchEvent(new w.Event('pagehide'));w.close();}

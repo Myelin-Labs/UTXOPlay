@@ -9,7 +9,7 @@ const material=(color,roughness=.65,metalness=.05)=>new THREE.MeshStandardMateri
 export async function makeScene(canvas,map,onAsset=()=>{}){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
  const scene=new THREE.Scene();scene.background=new THREE.Color(0xa7d5db);scene.fog=new THREE.Fog(0xb4d9d9,1100,3500);
  const camera=new THREE.PerspectiveCamera(76,1,.5,5000);camera.rotation.order='YXZ';scene.add(camera);
  const environment=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer),environmentMap=pmrem.fromScene(environment,.04);
