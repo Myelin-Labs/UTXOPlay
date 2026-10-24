@@ -68,6 +68,7 @@ import {
   apiError,
 } from "./ui-model.mjs";
 import "./style.css";
+import {createWalletSession, disconnectWallet} from "./wallet-session.mjs";
 import {ItemStore} from "./item-store.jsx";
 import {CommunityPage,UsernameEditor} from "./community.jsx";
 import {GameFrame} from "./game-frame.jsx";
@@ -235,10 +236,9 @@ function App({ walletApi }) {
     isOpen = false,
     prepareWallet,
   } = walletApi;
+  const [auth] = useState(() => createWalletSession(api));
   const previousSigner = useRef(null),
     signing = useRef(false),
-    authEpoch = useRef(0),
-    authTransition = useRef(Promise.resolve()),
     launchLock = useRef(false),
     searchRef = useRef(null),
     mainRef = useRef(null),
@@ -294,14 +294,12 @@ function App({ walletApi }) {
   const loadAccount = useCallback(async () => {
     setLoadingUser(true);
     setAccountError("");
-    try {
-      setUser((await api("/api/me")).user);
-    } catch (e) {
-      setAccountError(apiError(e));
-    } finally {
-      setLoadingUser(false);
-    }
-  }, []);
+    const result = await auth.readAccount();
+    if (result.stale) return;
+    if (result.error) setAccountError(apiError(result.error));
+    else setUser(result.data.user);
+    setLoadingUser(false);
+  }, [auth]);
   function exitFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   }
@@ -407,23 +405,25 @@ function App({ walletApi }) {
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
   }, [page, dialog, details, isOpen, reduced]);
-  // Serialize wallet changes before a new challenge to prevent a late logout revoking the new account.
+  // Revoke after any in-flight verification, before another wallet can sign in.
   useEffect(() => {
     if (previousSigner.current && previousSigner.current !== signer) {
       cancelSignature.current?.();
-      authEpoch.current++;
+      setLoadingUser(false);
       setUser(null);
       setFrameKey((k) => k + 1);
-      authTransition.current = authTransition.current
-        .catch(() => {})
-        .then(() => api("/api/auth/logout", {}));
-      authTransition.current.catch((e) => notify(apiError(e), "error"));
+      auth.logout().catch((e) => {
+        setWalletError(apiError(e));
+        notify(apiError(e), "error");
+      });
     }
     previousSigner.current = signer;
-  }, [signer, notify]);
+  }, [signer, notify, auth]);
   async function signIn() {
     if (!signer || signing.current) return;
-    const epoch = authEpoch.current;
+    const epoch = auth.invalidate();
+    setLoadingUser(false);
+    setAccountError("");
     signing.current = true;
     setWalletBusy(true);
     setWalletPhase("signature");
@@ -435,29 +435,29 @@ function App({ walletApi }) {
     });
     cancellation.catch(() => {});
     try {
-      await authTransition.current;
-      if (epoch !== authEpoch.current) return;
+      await auth.settled();
+      if (!auth.current(epoch)) return;
       const address = await Promise.race([
         signer.getRecommendedAddress(),
         cancellation,
       ]);
-      const challenge = await api("/api/auth/challenge", { address });
-      if (epoch !== authEpoch.current) return;
+      const challenge = await auth.challenge(epoch, address);
+      if (!auth.current(epoch)) return;
       const proof = await Promise.race([
         signer.signMessage(challenge.message),
         cancellation,
       ]);
-      if (epoch !== authEpoch.current) return;
+      if (!auth.current(epoch)) return;
       setWalletPhase("verifying");
       cancelSignature.current = null;
-      const d = await api("/api/auth/verify", { id: challenge.id, proof });
-      if (epoch !== authEpoch.current) return;
+      const d = await auth.verify(epoch, { id: challenge.id, proof });
+      if (!auth.current(epoch)) return;
       setUser(d.user);
       setDialog(null);
       setFrameKey((k) => k + 1);
       notify("You’re signed in. Your wallet library is ready.");
     } catch (e) {
-      if (epoch === authEpoch.current) setWalletError(apiError(e));
+      if (auth.current(epoch)) setWalletError(apiError(e));
     } finally {
       cancelSignature.current = null;
       setWalletBusy(false);
@@ -510,16 +510,21 @@ function App({ walletApi }) {
     setWalletBusy(true);
     setWalletPhase("logout");
     try {
-      authEpoch.current++;
-      await api("/api/auth/logout", {});
-      previousSigner.current = null;
-      await disconnect();
       setIntent(false);
+      cancelSignature.current?.();
+      await auth.logout();
+      previousSigner.current = null;
       setUser(null);
+      setLoadingUser(false);
+      setAccountError("");
+      setWalletError("");
       setFrameKey((k) => k + 1);
       setDialog(null);
       go("/");
-      notify("Signed out. Your saved games are kept for your next visit.");
+      const disconnected = await disconnectWallet(disconnect);
+      notify(disconnected
+        ? "Signed out. Your saved games are kept for your next visit."
+        : "Signed out of UTXOPlay. Your wallet is still connected; disconnect it in your wallet if needed.");
     } catch (e) {
       setWalletError(apiError(e));
     } finally {
@@ -528,11 +533,16 @@ function App({ walletApi }) {
     }
   }
   async function launch(id) {
-    if (launchLock.current || loadingUser) return;
+    if (launchLock.current || loadingUser || walletBusy || isOpen) return;
     launchLock.current = true;
     setLaunching(id);
     try {
-      if (!user) setUser((await api("/api/guest", {})).user);
+      if (!user) {
+        const ticket = auth.invalidate();
+        const result = await auth.guest(ticket);
+        if (!auth.current(ticket)) return;
+        setUser(result.user);
+      }
       setDetails(null);
       go("/play/" + id);
     } catch (e) {
@@ -1329,7 +1339,7 @@ function App({ walletApi }) {
             onClose={() => {
               if (!walletBusy || walletPhase === "signature") {
                 if (walletBusy) {
-                  authEpoch.current++;
+                  auth.invalidate();
                   cancelSignature.current?.();
                 }
                 setDialog(null);

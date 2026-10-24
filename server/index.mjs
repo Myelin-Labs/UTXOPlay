@@ -25,6 +25,8 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
  const lookupAccount=db.prepare('SELECT a.* FROM sessions s JOIN accounts a ON a.id=s.account WHERE s.token=? AND s.expires>?');
  const recordPlay=db.prepare('INSERT INTO plays VALUES(?,?,?) ON CONFLICT(account,game) DO UPDATE SET updated=excluded.updated WHERE ? OR excluded.updated-plays.updated>=60000');
  const countLimit=db.prepare('INSERT INTO limits VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN limits.expires<? THEN 1 ELSE limits.count+1 END, expires=CASE WHEN limits.expires<? THEN excluded.expires ELSE limits.expires END RETURNING count');
+ // In-flight verification belongs to this server process and cannot survive a restart.
+ const pendingLogins=new Set();
  const app=express(); app.disable('x-powered-by'); app.set('trust proxy',1);
  const secure=origin.startsWith('https:');
  const cookie=(res,name,value,maxAge)=>res.cookie(name,value,{httpOnly:true,secure,sameSite:'lax',path:'/',maxAge});
@@ -43,7 +45,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   next();
  });
  app.use(express.json({limit:'64kb'}));
- app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.19.0'}));
+ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.19.1'}));
  app.get('/api/games',(_req,res)=>res.json({games:[...games,...marketplace.catalog()]}));
  app.get('/api/me',(req,res)=>res.json({user:userView(account(req))}));
  app.post('/api/guest',(req,res)=>{
@@ -61,6 +63,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   db.prepare('INSERT INTO challenges VALUES(?,?,?,?,?)').run(id,digest(browser),message,address,expires);cookie(res,'utxoplay_login',browser,300000);res.json({id,message,expires});
  });
  app.post('/api/auth/verify',async(req,res)=>{
+  let pending;
   try {
    if(limited('verify:'+req.ip,20,60000))return res.status(429).json({error:'Please try again in a minute.'});
    const id=req.body?.id;if(typeof id!=='string')throw new Error('Missing login challenge');
@@ -69,13 +72,23 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
    if(!challenge||challenge.expires<Date.now()||!browser||digest(browser)!==challenge.browser)throw new Error('Login challenge expired. Please connect again.');
    // Claim before awaiting verification. Concurrent submissions cannot reuse a nonce.
    db.prepare('DELETE FROM challenges WHERE id=?').run(id);
+   pending={browser:challenge.browser,session:cookies(req).utxoplay_session,cancelled:false};
+   pendingLogins.add(pending);
    const verified=await verify(challenge.message,req.body.proof,challenge.address);
+   if(pending.cancelled)throw new Error('Sign-in cancelled. Please connect again.');
    db.prepare('INSERT INTO accounts VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET address=excluded.address,scheme=excluded.scheme').run(verified.id,verified.address,verified.scheme,Date.now());
    const old=cookies(req).utxoplay_session;if(old)db.prepare('DELETE FROM sessions WHERE token=?').run(digest(old));
    session(res,verified.id);cookie(res,'utxoplay_login','',0);res.json({user:userView(verified)});
   }catch(e){res.status(401).json({error:e.message||'Unable to verify wallet'});}
+  finally{if(pending)pendingLogins.delete(pending);}
  });
- app.post('/api/auth/logout',(req,res)=>{const t=cookies(req).utxoplay_session;if(t)db.prepare('DELETE FROM sessions WHERE token=?').run(digest(t));cookie(res,'utxoplay_session','',0);res.json({ok:true});});
+ app.post('/api/auth/logout',(req,res)=>{
+  const {utxoplay_session:t,utxoplay_login:browser}=cookies(req),binding=browser?digest(browser):null;
+  if(t)db.prepare('DELETE FROM sessions WHERE token=?').run(digest(t));
+  if(binding)db.prepare('DELETE FROM challenges WHERE browser=?').run(binding);
+  for(const pending of pendingLogins)if((binding&&pending.browser===binding)||(t&&pending.session===t))pending.cancelled=true;
+  cookie(res,'utxoplay_session','',0);cookie(res,'utxoplay_login','',0);res.json({ok:true});
+ });
  const community=installCommunity({app,db,account,limited,games});
  const marketplace=installMarketplace({app,db,account,needUser,limited,origin,builtinGames:games,...marketplaceOptions});
  app.get('/api/library',needUser,(req,res)=>res.json({games:marketplace.library(req.account.id)}));
