@@ -79,3 +79,5 @@
 
 .game-surface[data-menu-quality="low"] .immersive-menu::backdrop,.game-surface[data-menu-quality="low"] #panel.immersive-menu:not([hidden]){backdrop-filter:none;background:#040710d9}
 @media(prefers-reduced-transparency:reduce){.immersive-menu::backdrop,.game-surface #panel.immersive-menu:not([hidden]){backdrop-filter:none;background:#040710ed}}
+
+.overlay-community{color:rgb(var(--menu-accent));font:inherit;text-decoration:none;padding:8px;border:1px solid rgb(var(--menu-accent)/.2);border-radius:6px;white-space:nowrap}.overlay-community:hover{background:rgb(var(--menu-accent)/.1)}.overlay-community:focus-visible{outline:2px solid currentColor;outline-offset:3px}@media(max-width:600px){.overlay-footer{flex-wrap:wrap}.overlay-community{margin-left:auto}}

@@ -208,7 +208,7 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
     </motion.article>
   );
 }
-export function GameDetails({ game, onClose, onPlay, launching }) {
+export function GameDetails({ game, onClose, onPlay, launching, onCommunity }) {
   const meta = gameMeta[game.id] || {
     tag: "INDEPENDENT / MYELIN",
     length: "Vendor hosted",
@@ -267,6 +267,7 @@ export function GameDetails({ game, onClose, onPlay, launching }) {
           {launching === game.id ? "Opening your game…" : "Play " + game.title}
           <ArrowUpRight size={17} />
         </button>
+        {!game.vendor&&onCommunity&&<button className="outline full" style={{marginTop:12}} onClick={()=>onCommunity(game.id)}>Player reviews & community <ArrowUpRight size={17}/></button>}
         <p className="fine centered">
           {game.pricing === "paid"
             ? "Wallet purchase required. Review price and vendor details before paying."

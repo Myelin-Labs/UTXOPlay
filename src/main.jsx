@@ -68,6 +68,8 @@ import {
   apiError,
 } from "./ui-model.mjs";
 import "./style.css";
+import {ItemStore} from "./item-store.jsx";
+import {CommunityPage,UsernameEditor} from "./community.jsx";
 import {GameFrame} from "./game-frame.jsx";
 const loadMarketplace = () => import("./marketplace.jsx");
 const Studio = lazy(() =>
@@ -341,6 +343,10 @@ function App({ walletApi }) {
         ? game.title
         : page === "/library"
           ? "Your library"
+          : page.startsWith("/community")
+            ? "Player community"
+          : page === "/items"
+            ? "Item store"
           : page === "/developers"
             ? "Studio"
             : page === "/purchases"
@@ -570,6 +576,8 @@ function App({ walletApi }) {
   const navItems = [
     ["/", "Discover", Grid2X2],
     ["/library", "My library", Library],
+    ["/items", "Item store", Sparkles],
+    ["/community", "Community", Users],
     ["/purchases", "Purchases", Wallet],
     ["/developers", "Developer studio", Code2],
   ];
@@ -580,8 +588,8 @@ function App({ walletApi }) {
         {navItems.map(([p, label, Icon]) => (
           <button
             key={p}
-            aria-current={page === p ? "page" : undefined}
-            className={page === p ? "selected" : ""}
+            aria-current={(page === p || p === "/community" && page.startsWith("/community/")) ? "page" : undefined}
+            className={(page === p || p === "/community" && page.startsWith("/community/")) ? "selected" : ""}
             onClick={() => go(p)}
           >
             <Icon size={18} />
@@ -1111,6 +1119,10 @@ function App({ walletApi }) {
                     </p>
                   )}
                 </>
+              ) : page === "/community" || page.startsWith("/community/") ? (
+                <CommunityPage games={featuredGames} gameId={page.split("/")[2]} user={user} onConnect={connect} onPlay={launch} onChoose={id=>go("/community/"+id)}/>
+              ) : page === "/items" ? (
+                <ItemStore user={user} onConnect={connect} onOpen={id=>{try{sessionStorage.setItem("utxoplay:open-items",id);}catch{}launch(id);}}/>
               ) : page === "/developers" ? (
                 <Studio
                   key={user?.id || "anonymous"}
@@ -1305,6 +1317,7 @@ function App({ walletApi }) {
         {details && (
           <GameDetails
             game={details}
+            onCommunity={id=>{setDetails(null);go("/community/"+id);}}
             onClose={() => setDetails(null)}
             onPlay={launch}
             launching={launching}
@@ -1339,6 +1352,7 @@ function App({ walletApi }) {
                   Your CKB account is signed in. Your library is ready on any
                   device you sign in from.
                 </p>
+                <UsernameEditor key={user.id} user={user} onSaved={username=>setUser(current=>current?.id===user.id?{...current,username}:current)}/>
                 <div className="address">{user.address}</div>
                 <button
                   className="text-link copy-address"

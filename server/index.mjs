@@ -1,4 +1,5 @@
 import express from 'express';
+import {installCommunity} from './community.mjs';
 import {optimizedStatic} from './static.mjs';
 import {installMarketplace} from './marketplace.mjs';
 import {teeworldsSockets} from './teeworlds-socket.mjs';
@@ -14,7 +15,7 @@ export const games=JSON.parse(readFileSync(path.join(root,'server/catalog.json')
 export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'), origin=process.env.PUBLIC_ORIGIN||'http://127.0.0.1:8790', verify=verifyWallet, runtimeFetch=fetch, marketplaceOptions={}}={}) {
  mkdirSync(dataDir,{recursive:true,mode:0o700});
  const db=new DatabaseSync(path.join(dataDir,'platform.sqlite'));
- db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
+ db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
  CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY,address TEXT,scheme TEXT,created INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,account TEXT NOT NULL REFERENCES accounts(id),expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS challenges(id TEXT PRIMARY KEY,browser TEXT NOT NULL,message TEXT NOT NULL,address TEXT NOT NULL,expires INTEGER NOT NULL);
@@ -29,7 +30,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
  const cookie=(res,name,value,maxAge)=>res.cookie(name,value,{httpOnly:true,secure,sameSite:'lax',path:'/',maxAge});
  function cookies(req) {return Object.fromEntries((req.headers.cookie||'').split(';').map(s=>s.trim().split('=')).filter(v=>v.length===2));}
  function account(req) {const t=cookies(req).utxoplay_session;if(!t)return null;return lookupAccount.get(digest(t),Date.now())||null;}
- function userView(a){return a?{id:a.id,address:a.address,guest:!a.address,scheme:a.scheme}:null;}
+ function userView(a){return a?{id:a.id,address:a.address,guest:!a.address,scheme:a.scheme,username:community.profile(a.id)}:null;}
  function session(res,a) {const token=randomBytes(32).toString('hex');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(token),a,Date.now()+7*86400000);cookie(res,'utxoplay_session',token,7*86400000);}
  function limited(key,max,ms) {const now=Date.now();const r=countLimit.get(key,now+ms,now,now);return r.count>max;}
  const needUser=(req,res,next)=>{req.account=account(req);if(!req.account)return res.status(401).json({error:'Start a guest session or sign in to play.'});next();};
@@ -42,7 +43,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   next();
  });
  app.use(express.json({limit:'64kb'}));
- app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.18.0'}));
+ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'utxoplay',version:'0.19.0'}));
  app.get('/api/games',(_req,res)=>res.json({games:[...games,...marketplace.catalog()]}));
  app.get('/api/me',(req,res)=>res.json({user:userView(account(req))}));
  app.post('/api/guest',(req,res)=>{
@@ -75,6 +76,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
   }catch(e){res.status(401).json({error:e.message||'Unable to verify wallet'});}
  });
  app.post('/api/auth/logout',(req,res)=>{const t=cookies(req).utxoplay_session;if(t)db.prepare('DELETE FROM sessions WHERE token=?').run(digest(t));cookie(res,'utxoplay_session','',0);res.json({ok:true});});
+ const community=installCommunity({app,db,account,limited,games});
  const marketplace=installMarketplace({app,db,account,needUser,limited,origin,builtinGames:games,...marketplaceOptions});
  app.get('/api/library',needUser,(req,res)=>res.json({games:marketplace.library(req.account.id)}));
  app.use('/games/:game/api',needUser,async(req,res)=>{
@@ -87,6 +89,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
    const base=req.params.game==='prism-breaker'?(process.env.PRISM_URL||'http://127.0.0.1:8787')+'/prism-breaker':req.params.game==='neon-miner'?(process.env.MINER_URL||'http://127.0.0.1:8786')+'/neon-miner':games.find(g=>g.id===req.params.game)?.runtime==='arcade'?(process.env.ARCADE_URL||'http://127.0.0.1:8785')+'/'+req.params.game:req.params.game==='openstrike'?(process.env.OPENSTRIKE_URL||'http://127.0.0.1:8784'):req.params.game==='teeworlds'?(process.env.TEEWORLDS_URL||'http://127.0.0.1:8783'):req.params.game==='chess'?(process.env.CHESS_URL||'http://127.0.0.1:8781'):(process.env.SLING_URL||'http://127.0.0.1:8782');
    const result=await runtimeFetch(base+'/api'+endpoint,{method:req.method,headers:{'Content-Type':'application/json','X-Runtime-Token':process.env.RUNTIME_TOKEN||'','X-UTXOPlay-Account':req.account.id},body:req.method==='POST'?JSON.stringify(req.body||{}):undefined,signal:AbortSignal.timeout(20000)});
    const content=await result.text();
+   if(result.ok && req.method==='POST' && endpoint==='/action')community.recordPlay(req.account.id,req.params.game);
    if(result.ok && (!['teeworlds','openstrike'].includes(req.params.game)||req.method==='POST'&&['create','join'].includes(req.body?.type)))recordPlay.run(req.account.id,req.params.game,Date.now(),req.method==='POST'?1:0);
    if(endpoint==='/export')res.set('Content-Disposition',`attachment; filename="utxoplay-${req.params.game}-session.json"`);
    res.status(result.status).type('json').send(content);

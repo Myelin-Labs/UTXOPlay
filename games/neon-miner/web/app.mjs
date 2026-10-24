@@ -53,6 +53,7 @@ for(const item of shop){const row=document.createElement('div');row.className='s
 function view(name){tab=name;for(const el of menu.querySelectorAll('[data-view]'))el.hidden=el.dataset.view!==name;for(const el of menu.querySelectorAll('[data-tab]'))el.setAttribute('aria-pressed',String(el.dataset.tab===name));$('reset-confirm').hidden=true;text('menu-title',name==='items'?'Upgrade your rig':name==='settings'?'Make it yours':name==='help'?'Know the mine':'Expedition paused');if(name==='items')updateShop();}
 async function openMenu(name='game'){stop();menuReady=false;view(name);if(!menu.open)menu.showModal();updateHud();const ok=await flush();menuReady=ok;updateHud();}
 function closeMenu(){menu.close();$('menu').focus();showRest();}
+document.addEventListener('utxoplay:open-menu',e=>openMenu(e.detail?.view==='items'?'items':'game'));
 $('menu').onclick=()=>openMenu();$('wallet').onclick=()=>openMenu('items');$('close-menu').onclick=closeMenu;
 menu.addEventListener('cancel',e=>{e.preventDefault();closeMenu();});menu.addEventListener('keydown',e=>{e.stopPropagation();});menu.addEventListener('close',()=>{if(!running)showRest();});
 for(const el of menu.querySelectorAll('[data-tab]'))el.onclick=()=>view(el.dataset.tab);

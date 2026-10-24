@@ -33,7 +33,7 @@ export function walletButtonState({user,loadingUser=false,walletBusy=false,walle
  const pending=loadingUser?'checking':walletBusy?(walletPhase==='idle'?'loading':walletPhase):isOpen?'choosing':null;
  const labels={checking:'Checking session',loading:'Opening wallet',choosing:'Choose wallet',signature:'Confirm in wallet',verifying:'Verifying',logout:'Signing out'};
  if(pending)return {state:pending,label:labels[pending]||'Connecting',hint:labels[pending]||'Connecting',busy:true};
- if(user&&!user.guest){const address=user.address||'';return {state:'connected',label:address.slice(0,6)+'…'+address.slice(-4),hint:'Signed in · '+address+' · Open account',busy:false};}
+ if(user&&!user.guest){const address=user.address||'';return {state:'connected',label:user.username||address.slice(0,6)+'…'+address.slice(-4),hint:'Signed in · '+address+' · Open account',busy:false};}
  if(walletError)return {state:'error',label:'Try again',hint:walletError,busy:false};
  if(signer)return {state:'ready',label:'Sign in',hint:'Wallet selected · Sign a message to sign in',busy:false};
  return {state:user?.guest?'guest':'disconnected',label:'Connect wallet',hint:'Connect a wallet to sign in',busy:false};

@@ -1,10 +1,13 @@
 import React,{useState,useEffect,useRef} from 'react';
 import {initialLoad,acceptLoadMessage} from './game-load-state.mjs';
 
+function wantsItems(id){try{return sessionStorage.getItem('utxoplay:open-items')===id;}catch{return false;}}
 export function GameFrame({game}) {
   const [attempt,setAttempt]=useState(0),[state,setState]=useState(initialLoad),[revealed,setRevealed]=useState(false),[slow,setSlow]=useState(false),[offline,setOffline]=useState(!navigator.onLine);
   const frame=useRef(null),loader=useRef(null),lastChange=useRef(Date.now()),completion=useRef(null),current=useRef(state);
   const token=game.id+':'+attempt;
+  const openItems=useRef(wantsItems(game.id));
+  const menuSent=useRef(false);
   current.current=state;
   function retry(){clearTimeout(completion.current);setState(initialLoad());setRevealed(false);setSlow(false);lastChange.current=Date.now();setAttempt(n=>n+1);}
   function requestState(){frame.current?.contentWindow?.postMessage({type:'utxoplay:load-request',attempt:token},location.origin);}
@@ -15,6 +18,7 @@ export function GameFrame({game}) {
       if(!next)return;
       if(next.progress!==current.current.progress||next.error!==current.current.error){lastChange.current=Date.now();setSlow(false);}
       current.current=next;setState(next);
+      if(next.ready&&openItems.current&&!menuSent.current){menuSent.current=true;try{sessionStorage.removeItem('utxoplay:open-items');}catch{}frame.current?.contentWindow?.postMessage({type:'utxoplay:open-items'},location.origin);}
       if(next.ready&&!completion.current)completion.current=setTimeout(()=>setRevealed(true),600);
     };
     const network=()=>setOffline(!navigator.onLine);

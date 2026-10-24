@@ -114,3 +114,7 @@ A cyberpunk Gold Miner game with 60 sectors, five contract types, moving ore, ha
 Prism Breaker now has 24 distinct authored sectors, armoured / explosive / supply crystals, six falling capsule effects, a rechargeable column pulse, and six permanent perk paths chosen between sectors. Its dedicated `myelin-prism-breaker` service listens on 8787 (`PRISM_URL`) and binds the exact Rust source, session executor, lockfile and authored level data. New crystal campaign saves use their own directory; the previous Prism records and all other game runtimes remain intact.
 
 Every bundled game now owns a full-screen scene with controls inside it, widescreen / ultrawide presentation, large-display HUD scaling and bounded render resolution. The ongoing contract is in [AGENTS.md](AGENTS.md). See [release and validation notes](docs/prism-campaign-widescreen.md).
+
+## Player community and item store
+
+Wallet users can choose a public username in the account panel. `/community` contains player recommendations, ratings, helpful votes and reply threads for every bundled game. `/items` contains the Miner and Skyward item catalogs and account inventory snapshots; buying and equipping stay inside each game. See [the item economy and Spore / DOB integration design](docs/item-economy-spore-dob-myelin-ckb.md) for implemented scope, the proposed CKB integration and moderation operations.

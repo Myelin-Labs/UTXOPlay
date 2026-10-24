@@ -200,7 +200,7 @@ h3 {
 .wallet-button:focus-visible{outline:2px solid #a8f5c4;outline-offset:4px;}
 .wallet-button:disabled{opacity:.8;cursor:wait;}
 .wallet-glyph{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#ffffff09;flex:none;color:#b9d2c3;}
-.wallet-label{line-height:1.2;}
+.wallet-label{line-height:1.2;max-width:180px;overflow:hidden;text-overflow:ellipsis;}
 .wallet-chevron{color:#82978b;}
 .wallet-state-dot{width:5px;height:5px;flex:none;border-radius:50%;background:#74867b;}
 .wallet-button[data-state="connected"]{border-color:#99e8b342;}
@@ -3138,3 +3138,5 @@ body:has(.game-active){overflow:hidden}
 
 .price-free{align-self:center;flex:none;padding:5px 8px;border-radius:6px;border:1px solid #a4f3bd38;background:#8eeeb014;color:#c2fbd3;font-weight:700;letter-spacing:1.05px;line-height:1;box-shadow:inset 0 1px 0 #d1ffdf0a;}
 @media(max-width:600px){.wallet-button{padding:5px 9px 5px 5px;gap:7px;min-height:40px}.wallet-glyph{width:28px;height:28px}.wallet-chevron{display:none}}
+
+@media(max-width:600px){.wallet-label{max-width:105px}.wallet-button{min-width:0}}

@@ -79,10 +79,15 @@
       },true);
       window.addEventListener('keyup',event=>{if(!menu.hidden)event.stopImmediatePropagation();},true);
     }
+    if(['sling','neon-miner'].includes(id))window.addEventListener('message',event=>{
+      if(event.origin!==location.origin||event.source!==parent||event.data?.type!=='utxoplay:open-items')return;
+      document.dispatchEvent(new CustomEvent('utxoplay:open-menu',{detail:{view:'items'}}));
+    });
     const footer=document.createElement('div');footer.className='overlay-footer';
     const live=['openstrike','teeworlds'].includes(id);
     footer.innerHTML=`<span class="overlay-platform"><img src="/brand/utxoplay-logo-dark-192.webp" alt="" width="20" height="20">UTXOPlay <i>/</i> IN-GAME</span><span class="overlay-status${live?' live':''}">${live?'ONLINE PLAY · ROUNDS CONTINUE':'YOUR GAME · YOUR PACE'}</span>`;
     const systemActions=content.querySelector('.game-system-actions');if(systemActions)content.append(systemActions);
+    const community=document.createElement('a');community.href='/community/'+id;community.target='_top';community.textContent='Player community ↗';community.className='overlay-community';footer.append(community);
     content.append(footer);
     const opener=surface.querySelector('.game-menu-toggle')||surface.querySelector('#menu');
     if(opener){opener.classList.add('overlay-opener');opener.setAttribute('aria-label','Open game menu');opener.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16"/></svg><span>Menu</span><kbd>ESC</kbd>';}
