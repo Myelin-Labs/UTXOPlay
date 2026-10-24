@@ -26,3 +26,9 @@ No authentication, transaction, game rules, Myelin evidence, inventory or databa
 - Browser checks at 390×844, 844×390, 1920×1080, 2560×1080, 2560×1440 and 3840×2160: all 13 cards remain present; no horizontal page overflow or horizontally clipped card, hero or filter buttons.
 - Checked title search, combined Strategy/friends filtering, featured-game switch, mobile navigation, preferences, game details, original developer and publisher links, creator collections, reviews, wallet account entry, purchase history and the consolidated publishing action opening the editor.
 - Verification uses an isolated local Store and fixture account. No purchase, wallet signature or production player mutation is required for this presentation change.
+
+## Rollout
+
+Published implementation `a7e2b9e` to `/data/utxoplay/releases/20261024-store-0.30.0`. Store container `185d7e7c1116` is healthy. All 20 other running containers retained their IDs.
+
+The public health endpoint reports 0.30.0. Entry JS/CSS and lazy publishing JS/CSS match the local production build byte-for-byte. All 13 built-in game credit records, creator routes and publishing/privacy notices were checked over public HTTPS. A verified online SQLite backup was made before rollout: `platform-before-0.30.0-1792830392.sqlite`. Browser interaction checks were performed against the isolated local server, not claimed as live payment testing.
