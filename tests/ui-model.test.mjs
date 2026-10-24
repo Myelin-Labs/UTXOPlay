@@ -7,7 +7,7 @@ test('search tolerates case and surrounding spaces while combining genre and pla
  assert.deepEqual(selectGames(games,{query:'  SKYward  ',genre:'Arcade',mode:'solo'}).map(g=>g.id),['sling']);
  assert.deepEqual(selectGames(games,{query:'skyward',genre:'Action'}),[]);
  assert.deepEqual(selectGames(games,{query:'skyward',mode:'friends'}),[]);
- assert.deepEqual(selectGames(games,{mode:'solo'}).map(g=>g.id),['neon-miner','prism-breaker','neon-coil','starfall','drift-run','openstrike','teeworlds','sling','rune-foundry','lumen-weave','orbit-courier','mosslight']);
+ assert.deepEqual(selectGames(games,{mode:'solo'}).map(g=>g.id),['neon-miner','prism-breaker','neon-coil','starfall','drift-run','openstrike','teeworlds','sling','chess','rune-foundry','lumen-weave','orbit-courier','mosslight']);
  assert.deepEqual(selectGames(games,{genre:'Strategy',mode:'friends'}).map(g=>g.id),['chess']);
  assert.equal(selectGames(games,{query:'   '}).length,13);
  assert.equal(games.length,13);

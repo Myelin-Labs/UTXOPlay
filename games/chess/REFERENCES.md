@@ -11,5 +11,6 @@
 ## Chess references
 
 - **jordanbray/chess**: https://github.com/jordanbray/chess — MIT. `chess` 3.2.0 is the actual Rust rules dependency; legal moves and game history are computed server-side.
-- **chess.js**: https://github.com/jhlywa/chess.js — BSD-2-Clause. Reviewed as a browser-first alternative, not bundled or used. A Rust engine avoids trusting browser move validation.
-- Interface and chess artwork are original. No Lichess/Chess.com interface, artwork, or audio has been copied.
+- **chess.js**: https://github.com/jhlywa/chess.js — BSD-2-Clause. Version 1.4.0 supplies browser SAN/PGN notation. The native Rust engine remains authoritative for move validation.
+- **Stockfish.js**: https://github.com/nmrugg/stockfish.js — GPLv3. Actual unmodified 17.1 Lite single-threaded engine, pinned to npm commit `602fd7e1a571a2be71f242942db90483731f2a1f`. Browser Worker UCI integration uses bounded think time and 16 MiB hash. License, authors, build instructions, source and matching network are served in `web/engine/`.
+- Interface and chess artwork are original. The engine is attributed separately from the game developer/publisher.

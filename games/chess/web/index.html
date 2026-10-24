@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>The Quiet Board · Conservatory</title>
+    <title>The Quiet Board · Blue Hour Club</title>
     <link rel="stylesheet" href="/games/chess/style.css" />
-  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/><link rel="stylesheet" href="/game-shell.css?v=0.17.0"/><script src="/game-loader.js?v=0.14.0"></script><link rel="stylesheet" href="/widescreen.css?v=0.17.0"><link rel="stylesheet" href="/game-overlay.css?v=0.18.0"><link rel="stylesheet" href="/games/chess/porcelain.css?v=0.21.0"></head>
+  <meta name="theme-color" content="#151715"/><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/><link rel="manifest" href="/site.webmanifest"/><link rel="stylesheet" href="/game-shell.css?v=0.17.0"/><script src="/game-loader.js?v=0.14.0"></script><link rel="stylesheet" href="/widescreen.css?v=0.17.0"><link rel="stylesheet" href="/game-overlay.css?v=0.18.0"><link rel="stylesheet" href="/games/chess/porcelain.css?v=0.21.0"><link rel="stylesheet" href="/games/chess/club.css?v=0.29.0"></head>
   <body>
     <header>
       <a class="brand" href="/" target="_top" aria-label="UTXOPlay Chess home"
@@ -25,9 +25,9 @@
       </section>
       <div class="play-layout">
         <section class="table" aria-label="Chess game">
-          <div class="table-title"><span>THE CONSERVATORY</span><h1>The<br>quiet board.</h1><p>A thoughtful move.<br>A little time for yourself.</p></div>
+          <div class="table-title"><span>THE BLUE HOUR CLUB</span><h1>The<br>quiet board.</h1><p>Good company.<br>A beautiful game.</p></div>
           <button id="table-mode" class="table-mode" aria-label="Choose opponent and game options">PASS & PLAY <span>↗</span></button>
-          <div class="table-tools"><button id="quick-flip" aria-label="Flip board">↻ <span>Flip</span></button><button id="journal-open">Moves <span>↗</span></button></div>
+          <div class="table-tools"><button id="table-invite" hidden>Invite <span>↗</span></button><button id="quick-flip" aria-label="Flip board">↻ <span>Flip</span></button><button id="journal-open">Moves <span>↗</span></button></div>
           <div id="board-feedback" role="status" aria-live="polite"></div>
           <nav id="board-review" hidden aria-label="Review on board"><button id="board-prev" aria-label="Previous saved position">‹</button><span id="board-review-label"></span><button id="board-next" aria-label="Next saved position">›</button><button id="board-live">Return to live</button></nav>
           <button id="bot-retry" hidden>Resume computer ↻</button>
@@ -62,7 +62,9 @@
             <p id="hint">
               Two players, one board. Select a piece to see its legal moves.
             </p>
-            <div class="match-setup"><label>AT YOUR TABLE<select id="opponent"><option value="local">Pass & play · two people</option><option value="rookie">Computer · Gentle</option><option value="club">Computer · Club</option><option value="expert">Computer · Focused</option></select></label><label>YOUR PIECES<select id="human-color"><option value="white">Ivory · play White</option><option value="black">Jade · play Black</option></select></label><p id="mode-description">Two players share this device. No clock. Take your time.</p></div>
+            <div class="match-setup"><label>AT YOUR TABLE<select id="opponent"><option value="online">Online · invite a friend</option><option value="local">Pass & play · two people</option><option value="rookie">Stockfish · Gentle</option><option value="club">Stockfish · Club</option><option value="expert">Stockfish · Focused</option></select></label><label>YOUR PIECES<select id="human-color"><option value="white">Ivory · play White</option><option value="black">Jade · play Black</option></select></label><p id="mode-description">Two players share this device. No clock. Take your time.</p></div>
+            <section class="online-room" id="online-room" hidden><div class="club-eyebrow">PRIVATE TABLE</div><p id="online-status" role="status"></p><label>Invitation link<input id="invite-link" readonly spellcheck="false"/></label><button id="copy-invite">Copy invitation</button><p class="club-note">Your friend needs a different browser or account. Keep this link to return to the same seats. Guest seats belong to this browser; wallet seats follow your signed-in account.</p></section>
+            <section class="join-table"><label>Join a friend’s table<input id="join-code" placeholder="Paste an invitation link" autocomplete="off" spellcheck="false"/></label><button id="join-table">Join table ↗</button><button id="recent-tables">Your recent tables</button><div id="recent-list"></div></section>
             <button id="new" class="primary">
               Start a fresh game <span>↗</span>
             </button>
@@ -98,7 +100,7 @@
               <button id="replay">▷ Replay & verify</button
               ><a
                 class="button"
-                href="/games/chess/api/export"
+                id="match-export" href="/games/chess/api/export"
                 download="chess-session.json"
                 >↓ Save match</a
               >
@@ -129,7 +131,7 @@
       <div id="promotion-choices"></div>
       <button id="promotion-cancel">Cancel</button>
     </dialog>
-    <dialog id="help"><h2>Your table, your move.</h2><p>Play against a computer at three training levels, or share this device with a friend. Choose your opponent and color in the game menu, then start a fresh game. White moves first. Tap a piece and a destination, or drag it there. Rings mark captures.</p><p>Castling: select the king and move it two squares. En passant and promotion appear automatically when legal. A red square marks a king in check.</p><p>Use the move journal or ‹ / › to review. Return to Live to continue playing. Review never changes your saved match.</p><p>F flips the board. Escape clears your selection and opens the game menu. Arrow keys navigate squares; Enter or Space selects one. F flips the board. Computer play pauses while the menu, a dialog or move review is open. The training levels are not rated Elo.</p><button id="help-close">Back to the board</button></dialog>
+    <dialog id="help"><h2>Your table, your move.</h2><p>Invite a friend to an online table, play Stockfish at three training levels, or share this device. Online seats are fixed; refresh or reopen your invitation to reconnect. Moves are accepted only on your turn. Resignation and draw claims are also available on your turn. Choose your opponent and color in the game menu, then start a fresh game. White moves first. Tap a piece and a destination, or drag it there. Rings mark captures.</p><p>Castling: select the king and move it two squares. En passant and promotion appear automatically when legal. A red square marks a king in check.</p><p>Use the move journal or ‹ / › to review. Return to Live to continue playing. Review never changes your saved match.</p><p>F flips the board. Escape clears your selection and opens the game menu. Arrow keys navigate squares; Enter or Space selects one. F flips the board. Computer play pauses while the menu, a dialog or move review is open. The training levels are not rated Elo.</p><button id="help-close">Back to the board</button></dialog>
     <dialog id="confirm-action"><h2 id="confirm-title"></h2><p id="confirm-copy"></p><div class="button-row"><button id="confirm-cancel">Keep playing</button><button id="confirm-yes" class="primary">Confirm</button></div></dialog>
     <dialog id="credits">
       <button class="close" id="credits-close" aria-label="Close credits">
@@ -137,8 +139,8 @@
       ><span class="eyebrow">THE PEOPLE & THE CRAFT</span>
       <h2>Art & sound</h2>
       <p>
-        Original conservatory environment and ivory/jade ceramic chess set generated with OpenAI ImageGen.
-        Interface, training search and sound effects by Myelin Labs. Browser notation and move generation use the BSD-2-Clause chess.js library; the native Rust engine validates and records every move.
+        Original blue-hour salon and conservatory environments and ivory/jade ceramic chess set generated with OpenAI ImageGen.
+        Interface and sound effects by Myelin Labs. Computer opponents use Stockfish.js 17.1 Lite by Nathan Rugg, Chess.com and the Stockfish authors. Browser notation and move generation use the BSD-2-Clause chess.js library; the native Rust engine validates and records every move.
       </p>
       <p>
         “Evening Fall (Harp)” by
@@ -157,6 +159,7 @@
         <a href="https://github.com/jordanbray/chess">chess</a> library. Full
         credits and source references are in the repository.
       </p>
+      <p>Stockfish is free software under GPLv3, without warranty. <a href="/games/chess/engine/Copying.txt" target="_blank">Engine license</a> · <a href="/games/chess/engine/SOURCE.md" target="_blank">Corresponding source & build instructions</a> · <a href="/games/chess/engine/AUTHORS" target="_blank">Engine authors</a></p>
       <label
         >Music volume
         <input id="volume" type="range" min="0" max="100" value="30"

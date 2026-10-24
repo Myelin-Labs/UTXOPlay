@@ -1,12 +1,19 @@
+import { ChessEngine } from "./engine-client.mjs";
 import { notation, squareAt, preferences } from "./strategy.js";
 import { startPolling } from "./performance.mjs";
 import { toggleSound, volume, sound, savedVolume } from "./audio.js";
 globalThis.UTXOPlayLoader?.boot();
 globalThis.UTXOPlayLoader?.images([
-  "/games/chess/assets/conservatory.webp",
+  "/games/chess/assets/blue-hour.webp",
   "/games/chess/assets/porcelain-pieces.webp",
 ]);
 const $ = (s) => document.querySelector(s);
+const engine = new ChessEngine();
+let roomId = new URLSearchParams(location.hash.slice(1)).get("table"), roomStream=null, roomConnected=false;
+if (!/^[a-f0-9]{24}$/.test(roomId||"")) roomId=null;
+const endpoint = name => roomId ? `/games/chess/api/rooms/${roomId}/${name}` : `/games/chess/api/${name}`;
+const roomTurn = () => !roomId || !!(roomConnected && data?.room?.ready && data.room.color === data.game.turn);
+
 let data,
   selected = null,
   flipped = false,
@@ -168,6 +175,7 @@ async function select(sq, p) {
     busy ||
     choosing ||
     botTurn() ||
+    !roomTurn() ||
     replaying ||
     reviewIndex !== null ||
     data.game.result
@@ -226,7 +234,7 @@ function promotion(choices) {
 function render() {
   $("#connection").hidden = true;
   $("#resign").disabled = false;
-  if ($("#auto-flip").checked) flipped = data.game.turn === "black";
+  if (!roomId && $("#auto-flip").checked) flipped = data.game.turn === "black";
   showBoard();
   const g = data.game;
   const key = g.moves.join(" ");
@@ -265,7 +273,8 @@ function render() {
   updateMaterial();
   $("#move-count").textContent =
     g.moves.length + (g.moves.length === 1 ? " ply" : " plies");
-  if (g.moves.length) {
+  if (g.moves.length && $("#moves").dataset.key !== key) {
+    $("#moves").dataset.key = key;
     $("#moves").replaceChildren();
     for (let i = 0; i < g.moves.length; i += 2) {
       const row = document.createElement("div");
@@ -284,13 +293,15 @@ function render() {
       $("#moves").append(row);
     }
     $("#moves").scrollTop = $("#moves").scrollHeight;
-  } else
+  } else if (!g.moves.length)
     $("#moves").innerHTML =
       '<p class="empty">Every great game starts<br>with a small move.</p>';
   reviewControls();
   updateTable();
   scheduleBot();
   $("#session-short").textContent = data.session.id.slice(0, 12) + "…";
+  if ($("#session-info").dataset.head === data.session.block_hash) return;
+  $("#session-info").dataset.head = data.session.block_hash;
   $("#session-info").replaceChildren();
   for (const [k, v] of Object.entries(data.session)) {
     const dt = document.createElement("dt"),
@@ -306,6 +317,7 @@ async function act(action, computer = false) {
     busy ||
     replaying ||
     reviewIndex !== null ||
+    !roomTurn() ||
     (!computer && botTurn())
   )
     return;
@@ -314,7 +326,7 @@ async function act(action, computer = false) {
   busy = true;
   $("#board").setAttribute("aria-busy", "true");
   try {
-    data = await api("/games/chess/api/action", {
+    data = await api(endpoint("action"), {
       action,
       expected_block: data.session.block_hash,
       session_id: data.session.id,
@@ -329,7 +341,7 @@ async function act(action, computer = false) {
   } catch (e) {
     toast(e.message);
     try {
-      data = await api("/games/chess/api/state");
+      data = await api(endpoint("state"));
       positions = null;
       render();
     } catch {
@@ -348,19 +360,22 @@ async function act(action, computer = false) {
 }
 $("#new").onclick = async () => {
   if (busy || replaying || choosing) return;
+  if ($("#opponent").value === "online") { await createRoom(); return; }
   cancelBot();
   if (
     data?.game.moves.length &&
     !data.game.result &&
     !(await confirmAction(
       "Start a new match?",
-      "Your current match will be replaced. Save its export first if you want to keep it.",
+      roomId ? "Your online table stays saved in Your recent tables. Start a separate practice game?" : "Your current match will be replaced. Save its export first if you want to keep it.",
     ))
   )
     return;
   busy = true;
   try {
     data = await api("/games/chess/api/new", {});
+    disconnectRoom();
+    roomId=null;history.replaceState(null,"",location.pathname);
     pref = {
       ...pref,
       opponent: $("#opponent").value,
@@ -476,6 +491,7 @@ function reviewControls() {
     reviewIndex !== null ||
     replaying ||
     botTurn() ||
+    !roomTurn() ||
     busy;
   $("#draw").disabled = reviewIndex !== null || replaying || botTurn() || busy;
   document.body.classList.toggle("reviewing", reviewIndex !== null);
@@ -509,7 +525,7 @@ function showBoard() {
 async function loadPositions() {
   if (positions) return;
   const key = data.session.id + data.session.block_hash;
-  const r = await api("/games/chess/api/replay", {});
+  const r = await api(endpoint("replay"), {});
   if (key !== data.session.id + data.session.block_hash)
     throw Error("The match changed. Review the current match again.");
   if (r.verified !== true || !Array.isArray(r.positions))
@@ -660,7 +676,7 @@ async function refresh() {
   cancelBot();
   $("#retry").disabled = true;
   try {
-    data = await api("/games/chess/api/state");
+    data = await api(endpoint("state"));
     globalThis.UTXOPlayLoader?.session();
     positions = null;
     reviewIndex = null;
@@ -679,7 +695,7 @@ async function refresh() {
     scheduleBot();
   }
 }
-$("#retry").onclick = refresh;
+$("#retry").onclick = () => roomId ? joinRoom(roomId) : refresh();
 
 function readBoard(fen) {
   const map = {};
@@ -703,6 +719,7 @@ function savePreferences() {
 function botTurn() {
   return (
     !!data &&
+    !roomId &&
     pref.opponent !== "local" &&
     data.game.turn !== pref.color &&
     !data.game.result
@@ -725,7 +742,7 @@ function updateTable() {
   $("#board-live").textContent = replaying ? "Stop replay" : "Return to live";
   $("#board-feedback").hidden = reviewIndex !== null;
   $("#table-mode").textContent =
-    pref.opponent === "local"
+    roomId ? "ONLINE TABLE ↗" : pref.opponent === "local"
       ? "PASS & PLAY ↗"
       : `COMPUTER · ${{ rookie: "GENTLE", club: "CLUB", expert: "FOCUSED" }[pref.opponent]} ↗`;
   $("#board").dataset.hints = String(pref.hints);
@@ -736,7 +753,7 @@ function updateTable() {
         ? "MATCH COMPLETE"
         : botTurn()
           ? "YOUR PARTNER IS CONSIDERING A MOVE"
-          : "TAP OR DRAG A PIECE";
+          : roomId ? !roomConnected ? "RECONNECTING TO YOUR TABLE" : !data.room?.ready ? "INVITE A FRIEND · YOUR TABLE IS READY" : roomTurn() ? "YOUR MOVE · TAKE YOUR TIME" : "YOUR FRIEND IS CONSIDERING A MOVE" : "TAP OR DRAG A PIECE";
   const visibleTurn =
     reviewIndex === null
       ? data.game.turn
@@ -761,12 +778,20 @@ function updateTable() {
   }
   for (const color of ["white", "black"])
     $("." + color + "-player strong").textContent =
-      (color === "white" ? "Ivory" : "Jade") +
-      (pref.opponent === "local"
+      (roomId ? data.room?.players[color]?.name || "Open seat" : color === "white" ? "Ivory" : "Jade") +
+      (roomId ? (data.room?.color===color ? " · You" : "") : pref.opponent === "local"
         ? ""
         : color === pref.color
           ? " · You"
-          : " · Computer");
+          : " · Stockfish");
+  $("#resign").disabled=!!data.game.result || !roomTurn();
+  $("#draw").disabled=!roomTurn();
+  $("#table-invite").hidden=!roomId;
+  $("#online-room").hidden=!roomId;
+  $("#online-status").textContent=roomId ? !roomConnected ? "Reconnecting… your table is saved." : data.room?.ready ? "Both seats are ready. Moves sync automatically." : "Your friend can take the open seat using this invitation." : "";
+  $("#invite-link").value=roomId ? location.origin+location.pathname+"#table="+roomId : "";
+  $("#match-export").href=endpoint("export");
+  $("#auto-flip").disabled=!!roomId;
 }
 function botError(message) {
   cancelBot();
@@ -811,45 +836,17 @@ function scheduleBot() {
       id = ++botEpoch;
     updateTable();
     try {
-      worker = new Worker("/games/chess/worker.js?v=0.21.0", {
-        type: "module",
-      });
-      worker.onerror = () =>
-        botError("Training paused. Use Resume computer to try again.");
-      botTimeout = setTimeout(
-        () =>
-          botError("Your training partner took too long. You can resume it."),
-        6000,
-      );
-      worker.onmessage = ({ data: reply }) => {
-        if (reply.id !== botEpoch) return;
-        cancelBot();
-        if (
-          key !== data.session.id + data.session.block_hash ||
-          !botTurn() ||
-          reviewIndex !== null ||
-          replaying ||
-          choosing ||
-          busy ||
-          menuOpen ||
-          document.hidden
-        )
-          return;
-        if (reply.error || !data.game.legal_moves.includes(reply.move)) {
-          botError(
-            reply.error ||
-              "The training move was unavailable. Resume to try again.",
-          );
-          return;
-        }
-        act({ type: "move", uci: reply.move }, true);
-      };
-      worker.postMessage({
-        id,
-        fen: data.game.fen,
-        legal: data.game.legal_moves,
-        level: pref.opponent,
-      });
+      worker={terminate:()=>engine.cancel()};
+      botTimeout=setTimeout(()=>botError("Stockfish is taking longer to load. Reconnect and resume the computer."),30000);
+      engine.run({moves:data.game.moves,level:pref.opponent,
+        onError:message=>botError(message),
+        onMove:move=>{
+          if(id!==botEpoch)return;
+          cancelBot();
+          if(key!==data.session.id+data.session.block_hash || !botTurn() || reviewIndex!==null || replaying || choosing || busy || menuOpen || document.hidden)return;
+          if(!data.game.legal_moves.includes(move)){botError("The engine move was unavailable. Resume to try again.");return;}
+          act({type:"move",uci:move},true);
+        }});
     } catch {
       botError(
         "This browser could not start the training worker. Pass & play remains available.",
@@ -917,7 +914,7 @@ function initializeTable() {
   $("#board-live").onclick = () =>
     $(replaying ? "#replay" : "#review-live").click();
   $("#volume").value = String(Math.round(savedVolume() * 100));
-  $("#opponent").value = pref.opponent;
+  $("#opponent").value = roomId ? "online" : pref.opponent;
   $("#human-color").value = pref.color;
   $("#auto-flip").checked = pref.autoFlip;
   $("#show-hints").checked = pref.hints;
@@ -926,9 +923,9 @@ function initializeTable() {
   const describe = () => {
     $("#human-color").disabled = $("#opponent").value === "local";
     $("#mode-description").textContent =
-      $("#opponent").value === "local"
+      $("#opponent").value === "online" ? "A private table for two browsers. Share the invitation. Your seat and moves are saved; no clock." : $("#opponent").value === "local"
         ? "Two people, one device. Opponent choices apply when you start a fresh game."
-        : "A local training partner, with no clock or rated Elo. Choices apply to your next fresh game.";
+        : "Stockfish 17.1 Lite runs in a separate worker on your device. No clock or rated Elo. Choices apply to your next fresh game.";
   };
   describe();
   $("#opponent").onchange = describe;
@@ -1028,6 +1025,7 @@ function initializeTable() {
       busy ||
       choosing ||
       botTurn() ||
+    !roomTurn() ||
       replaying ||
       reviewIndex !== null ||
       data.game.result
@@ -1076,12 +1074,92 @@ function initializeTable() {
   });
 }
 
+function disconnectRoom(){roomStream?.close();roomStream=null;roomConnected=false;}
+function receiveRoom(next){
+  if(!roomId||next.room?.id!==roomId)return;
+  const changed=next.session.block_hash!==data?.session.block_hash;
+  const previous=data;
+  data=next;
+  if(changed){
+    selected=null;positions=null;reviewIndex=null;replaying=false;replayToken++;
+    if(drag)endDrag({pointerId:drag.id},true);
+    if(choosing){$("#promotion-cancel").click();choosing=false;}
+    render();
+    if(previous&&next.game.moves.length>previous.game.moves.length){sound(next.game.result?"win":"move");animateMove(next.game.moves.at(-1));}
+  }else updateTable();
+}
+function connectRoom(){
+  disconnectRoom();if(!roomId||document.hidden)return;
+  const expected=roomId;
+  roomStream=new EventSource(endpoint("events"));
+  roomStream.onopen=()=>{if(roomId===expected){roomConnected=true;updateTable();}};
+  roomStream.addEventListener("position",event=>{
+    if(roomId!==expected)return;
+    try{roomConnected=true;if(!busy)receiveRoom(JSON.parse(event.data));}catch{toast("Reconnecting to the latest board…");}
+  });
+  roomStream.onerror=()=>{if(roomId===expected){roomConnected=false;updateTable();}};
+}
+async function enterRoom(next){
+  cancelBot();disconnectRoom();roomId=next.room.id;data=next;
+  flipped=next.room.color==="black";selected=null;reviewIndex=null;positions=null;replaying=false;replayToken++;
+  history.replaceState(null,"",location.pathname+"#table="+roomId);
+  $("#opponent").value="online";$("#human-color").value=next.room.color;
+  render();connectRoom();
+  document.dispatchEvent(new CustomEvent("utxoplay:close-menu"));
+  globalThis.UTXOPlayLoader?.session();globalThis.UTXOPlayLoader?.ready();
+}
+async function createRoom(){
+  if(busy)return;
+  busy=true;cancelBot();
+  try{await enterRoom(await api("/games/chess/api/rooms",{color:$("#human-color").value}));toast("Your table is ready. Copy the invitation for your friend.");}
+  catch(e){toast(e.message);}finally{busy=false;}
+}
+async function joinRoom(id){
+  if(busy)return;
+  if(!/^[a-f0-9]{24}$/.test(id||"")){toast("Paste a Quiet Board invitation link.");return;}
+  busy=true;cancelBot();
+  try{await enterRoom(await api(`/games/chess/api/rooms/${id}/join`,{}));}
+  catch(e){toast(e.message);$("#connection").hidden=false;if(!data)globalThis.UTXOPlayLoader?.fail("session");}
+  finally{busy=false;}
+}
+async function startTable(){
+  try{
+    const me=await api("/api/me");if(!me.user)await api("/api/guest",{});
+    if(roomId){await joinRoom(roomId);return;}
+    await refresh();
+  }catch(e){globalThis.UTXOPlayLoader?.fail("session");toast(e.message);$("#connection").hidden=false;}
+}
+$("#join-table").onclick=()=>{
+  const input=$("#join-code").value.trim();let id=input;
+  try{const url=new URL(input);if(url.origin!==location.origin)throw Error();id=new URLSearchParams(url.hash.slice(1)).get("table");}catch{}
+  void joinRoom(id);
+};
+async function copyInvitation(){
+  if(!roomId)return;
+  try{await navigator.clipboard.writeText(location.origin+location.pathname+"#table="+roomId);toast("Invitation copied. Send it to your friend.");}
+  catch{document.dispatchEvent(new CustomEvent("utxoplay:open-menu",{detail:{view:"game"}}));$("#invite-link").focus();$("#invite-link").select();toast("Select and copy the invitation link.");}
+}
+$("#copy-invite").onclick=$("#table-invite").onclick=copyInvitation;
+$("#recent-tables").onclick=async()=>{
+  try{
+    const {rooms}=await api("/games/chess/api/rooms");$("#recent-list").replaceChildren();
+    for(const room of rooms){const button=document.createElement("button");button.textContent=`${new Date(room.created).toLocaleDateString()} · ${room.color} · ${room.ready?"Two players":"Waiting for friend"}`;button.onclick=()=>joinRoom(room.id);$("#recent-list").append(button);}
+    if(!rooms.length)$("#recent-list").textContent="Your online tables will appear here.";
+  }catch(e){toast(e.message);}
+};
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){disconnectRoom();engine.dispose();}else if(roomId)connectRoom();
+});
+addEventListener("pagehide",()=>{disconnectRoom();engine.dispose();});
+addEventListener("hashchange",()=>location.reload());
+
 initializeTable();
-await refresh();
+await startTable();
 startPolling(
   async () => {
     const before = data;
     if (
+      roomId ||
       busy ||
       worker ||
       choosing ||
@@ -1092,7 +1170,7 @@ startPolling(
     )
       return;
     try {
-      const next = await api("/games/chess/api/state");
+      const next = await api(endpoint("state"));
       if (
         busy ||
         replaying ||

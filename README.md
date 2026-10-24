@@ -16,7 +16,7 @@ Store 0.17.1 refines the wallet control into one authentication-state button, re
 - Self-service vendor publication with private/live drafts, vendor-hosted Myelin instance checks and a server-side launch adapter. Free publication is the recommended default.
 - CKB mainnet one-time purchases with no scheduled access expiry, direct Store 20% / vendor 80% outputs, saved receipts and confirmed revenue reporting. Paid publication/checkout require the operator’s actual `STORE_CKB_ADDRESS`.
 
-Vendor games open on their own HTTPS origins using scoped launch tickets. Remote chess rooms are not implemented. Chess/Skyward run on server-side Rust; Teeworlds runs its original C++ simulation and OpenStrike its original Rust simulation, both with Myelin replay verification; wallet login does not submit blockchain transactions.
+Vendor games open on their own HTTPS origins using scoped launch tickets. The Quiet Board supports private two-player online rooms, invitation links, reconnectable seats and a Stockfish.js AI opponent. Every accepted move uses the existing native Myelin chess session and replay verifier; see [Blue Hour Club](docs/chess-online-club.md). Chess/Skyward run on server-side Rust; Teeworlds runs its original C++ simulation and OpenStrike its original Rust simulation, both with Myelin replay verification; wallet login does not submit blockchain transactions.
 
 ## Local development
 

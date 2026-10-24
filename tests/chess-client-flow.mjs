@@ -22,8 +22,8 @@ const result = await build({
       setup(b) {
         b.onLoad({ filter: /web\/app\.js$/ }, (a) => ({
           contents: readFileSync(a.path, "utf8").replace(
-            "await refresh();",
-            "void refresh();",
+            "await startTable();",
+            "void startTable();",
           ),
           loader: "js",
           resolveDir: path.dirname(a.path),
@@ -91,6 +91,8 @@ class Worker {
   }
   postMessage(v) {
     this.request = v;
+    if(v==='uci')queueMicrotask(()=>this.onmessage({data:'uciok'}));
+    if(v==='isready')queueMicrotask(()=>this.onmessage({data:'readyok'}));
   }
   terminate() {
     this.terminated = true;
@@ -120,6 +122,7 @@ w.fetch = async (url, options) => {
     payload = state();
   } else if (url.endsWith("/replay"))
     payload = { verified, frames: actions, positions: [...snapshots] };
+  else if(url==="/api/me")payload={user:{guest:true}};
   else payload = state();
   return { ok: true, json: async () => payload };
 };
@@ -134,12 +137,12 @@ try {
     oldId = worker.request.id;
   menu(true);
   assert.equal(old.terminated, true);
-  old.onmessage({ data: { id: oldId, move: "e2e4" } });
+  old.onmessage({ data: "bestmove e2e4" });
   await settle();
   assert.equal(actions, 0, "terminated worker cannot submit a stale move");
   menu(false);
   await settle(520);
-  worker.onmessage({ data: { id: worker.request.id, move: "e2e4" } });
+  worker.onmessage({ data: "bestmove e2e4" });
   await settle();
   assert.equal(actions, 0);
   assert.equal(d.querySelector("#bot-retry").hidden, false);
@@ -152,7 +155,7 @@ try {
   );
   d.querySelector("#bot-retry").click();
   await settle(520);
-  worker.onmessage({ data: { id: worker.request.id, move: "e2e4" } });
+  worker.onmessage({ data: "bestmove e2e4" });
   await settle();
   assert.equal(actions, 1);
   assert.ok(d.querySelector("[data-square=e4]").dataset.piece === "P");

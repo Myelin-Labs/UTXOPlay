@@ -1,4 +1,5 @@
 import express from 'express';
+import {installChessRooms} from './chess-rooms.mjs';
 import {installCommunity} from './community.mjs';
 import {optimizedStatic} from './static.mjs';
 import {installMarketplace} from './marketplace.mjs';
@@ -93,6 +94,7 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
  const community=installCommunity({app,db,account,limited,games});
  const marketplace=installMarketplace({app,db,account,needUser,limited,origin,builtinGames:games,...marketplaceOptions});
  app.get('/api/library',needUser,(req,res)=>res.json({games:marketplace.library(req.account.id)}));
+ const chessRooms=installChessRooms({app,db,account,needUser,limited,runtimeFetch,recordPlay,community});
  app.use('/games/:game/api',needUser,async(req,res)=>{
   if(!games.some(g=>g.id===req.params.game))return res.status(404).json({error:'Unknown game'});
   const endpoint=req.path;
@@ -111,14 +113,14 @@ export function createApp({dataDir=process.env.DATA_DIR||path.join(root,'data'),
  });
  app.use('/atelier',optimizedStatic(path.join(root,'games/atelier/web')));
  app.use('/arcade',optimizedStatic(path.join(root,'games/arcade/web')));
- for(const game of games)app.use('/games/'+game.id,(_req,res,next)=>{res.set('Content-Security-Policy',`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self' ${new URL(origin).protocol==='https:'?'wss:':'ws:'}//${new URL(origin).host}; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`);next();},optimizedStatic(path.join(root,'games',game.id,'web')));
+ for(const game of games)app.use('/games/'+game.id,(_req,res,next)=>{res.set('Content-Security-Policy',`default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self' ${new URL(origin).protocol==='https:'?'wss:':'ws:'}//${new URL(origin).host}; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`);next();},optimizedStatic(path.join(root,'games',game.id,'web')));
  app.use('/api',(_req,res)=>res.status(404).json({error:'Unknown API endpoint'}));
  app.use(optimizedStatic(path.join(root,'dist'),{index:false}));
  app.get('/{*path}',(_req,res)=>{res.set('Cache-Control','no-cache');res.sendFile(path.join(root,'dist','index.html'));});
  app.use((err,_req,res,_next)=>res.status(err.status||500).json({error:err.status===413?'Request too large':'Unable to complete request'}));
  const cleanup=setInterval(()=>{const t=Date.now();db.prepare('DELETE FROM sessions WHERE expires<?').run(t);db.prepare('DELETE FROM challenges WHERE expires<?').run(t);db.prepare('DELETE FROM limits WHERE expires<?').run(t);},60000);cleanup.unref();
  const sockets=teeworldsSockets({account,origin,limited});
- return {app,db,attachSockets:sockets.attach,close:()=>{marketplace.close();sockets.close();clearInterval(cleanup);db.close();}};
+ return {app,db,attachSockets:sockets.attach,close:()=>{chessRooms.close();marketplace.close();sockets.close();clearInterval(cleanup);db.close();}};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
  if(!process.env.RUNTIME_TOKEN||process.env.RUNTIME_TOKEN.length<32)throw new Error('RUNTIME_TOKEN must be set');

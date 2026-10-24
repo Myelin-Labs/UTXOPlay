@@ -23,7 +23,7 @@ export function selectGames(
         (mode === "solo" &&
           (g.vendor
             ? ["Single player", "Solo + multiplayer"].includes(g.mode)
-            : g.id !== "chess")) ||
+            : true)) ||
         (mode === "friends" &&
           (g.vendor ? g.mode !== "Single player" : g.mode !== "Single-player"))),
   );
@@ -81,10 +81,10 @@ export const gameMeta = {
   },
   chess: {
     accent: "#d9c18a",
-    tag: "THE CONSERVATORY",
+    tag: "THE BLUE HOUR CLUB",
     length: "Play at your pace",
     input: "Mouse or touch",
-    note: "Play a friend, or train with three computer levels.",
+    note: "Invite a friend. Share a table. Challenge Stockfish.",
     repo: "myelin-chess",
   },
 };

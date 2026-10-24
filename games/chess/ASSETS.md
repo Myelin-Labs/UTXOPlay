@@ -53,3 +53,15 @@ Use case: stylized-concept. Finished high-end browser chess game environment bac
 ### `web/assets/pieces.png`
 
 Transparent production chess sprite sheet, exactly 6 columns × 2 rows, 12 separated pieces in equal cells. Top row: ivory king, queen, bishop, knight, rook, pawn. Bottom row: dark ebony versions in the same order. Carved Staunton set, three-quarter frontal orthographic view, polished ivory and dark walnut with antique gold base rings. Warm upper-left studio light, readable silhouettes, carved horse heads, close contact shadows. No board, backdrop, labels, text or extra pieces. Rendered original dimensions: 2172 × 724.
+
+## Blue Hour Club — 2026-10-24
+
+`web/assets/blue-hour.webp` is an original image generated with the built-in OpenAI ImageGen tool, then encoded as WebP (292,878 bytes; use the SHA256SUMS manifest for exact integrity). It replaces the active conservatory backdrop; the ceramic piece atlas remains the existing original generated artwork. No third-party reference images were used.
+
+### Final environment prompt
+
+Use case: stylized-concept. Asset type: premium full-screen chess game environment background, 16:9 landscape, very high resolution. A luxurious intimate contemporary chess salon at blue hour overlooking a rain-washed Japanese courtyard through immense arched bronze-framed windows. Exceptional physically based cinematic game environment art, sophisticated realistic materials, softly tactile, artisanal. Smoked walnut tabletop stretches across the entire foreground and central 70 percent, empty and uncluttered where an interactive chessboard will be overlaid. At the far left a softly glowing alabaster sculptural lamp and a small tea cup; far right a fern in an exquisite ceramic pot and a few beautiful books. Deep petrol teal shadows, champagne brass details, warm ivory light against cool blue rainy garden, controlled atmospheric depth, natural balanced light. Camera looking gently down toward the broad table with level horizon. Compose delicate narrative details toward outer edges, central area quiet. No chessboard, no chess pieces, no people, no text, no letters, no logos, no UI. Truly refined AAA-quality architectural visualization, not flat illustration.
+
+## Stockfish opponent
+
+The actual Stockfish.js 17.1 Lite single-thread engine is distributed unmodified under GPLv3. See `web/engine/SOURCE.md`, `Copying.txt`, `AUTHORS` and the corresponding-source archive (including the hash-verified Lite neural network). The application remains an original game by Arthur Zhang, using separately attributed engine dependencies.

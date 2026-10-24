@@ -21,6 +21,7 @@ export function encodingQuality(header, encoding) {
   return values.get(encoding) ?? values.get("*") ?? 0;
 }
 export function assetCache(file) {
+  if (/^stockfish-17\.1-lite-single-03e3232\.(?:js|wasm)$/.test(path.basename(file))) return "public, max-age=31536000, immutable";
   return /-[\w-]{8,}\.(?:js|css)(?:\.(?:br|gz))?$/.test(path.basename(file))
     ? "public, max-age=31536000, immutable"
     : /\.(?:png|webp|jpg|ico|mp3|woff2)(?:\.(?:br|gz))?$/.test(file)
