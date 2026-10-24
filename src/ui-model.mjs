@@ -52,11 +52,11 @@ export const gameMeta = {
   "starfall": {"accent": "#7edaff", "tag": "ORBITAL DEFENCE", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Hold the line. Light up the night.", "repo": "UTXOPlay"},
   "drift-run": {"accent": "#ffbc83", "tag": "AFTER HOURS", "length": "Quick arcade runs", "input": "Keyboard + touch", "note": "Three lanes. One way forward.", "repo": "UTXOPlay"},
   openstrike: {
-    accent: "#68c8ed",
-    tag: "NEON DIVIDE",
+    accent: "#69b7ad",
+    tag: "SUNLIT HARBOR",
     length: "90-second rounds",
-    input: "Keyboard + mouse",
-    note: "A first-person duel. Desktop recommended.",
+    input: "Keyboard + mouse / touch",
+    note: "Three training levels. A sunny harbor. One clean shot.",
     repo: "myelin-openstrike",
   },
   teeworlds: {

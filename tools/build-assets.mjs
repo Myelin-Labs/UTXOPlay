@@ -7,3 +7,5 @@ for (const game of ["chess", "sling", "teeworlds", "arcade", "neon-miner"])
 
 for (const game of ["arcade", "sling", "teeworlds", "neon-miner", "openstrike"])
   copyFileSync("shared/game-viewport.mjs", `games/${game}/web/viewport.mjs`);
+
+await import("./build-openstrike.mjs");

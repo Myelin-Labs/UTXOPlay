@@ -1,6 +1,6 @@
 services:
   store:
-    image: utxoplay:0.19.1
+    image: utxoplay:0.20.0
     container_name: utxoplay-store
     restart: unless-stopped
     init: true
@@ -96,7 +96,7 @@ services:
       retries: 3
 
   openstrike:
-    image: myelin-openstrike:0.1.0
+    image: myelin-openstrike:0.2.0
     container_name: utxoplay-openstrike
     restart: unless-stopped
     init: true

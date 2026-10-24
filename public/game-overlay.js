@@ -12,7 +12,7 @@
       sling:['Skyward','THE FLOATING GARDENS','237 205 145','/assets/sling-cover.webp'],
       chess:['The Quiet Board','THE STUDY','209 199 166','/assets/chess-cover.webp'],
       teeworlds:['Teeworlds','GRASSLAND ARENA','192 221 135','/assets/teeworlds-cover.svg'],
-      openstrike:['OpenStrike','NEON DIVIDE','154 220 221','/assets/openstrike-cover.svg']
+      openstrike:['OpenStrike','SUNLIT HARBOR','155 220 198','/games/openstrike/art/harbor-keyart.webp']
     };
     const theme=themes[id];if(!theme)return;
     surface.dataset.menuTheme=id;
