@@ -5,7 +5,7 @@
   margin: 32px 0 40px;
 }
 .publish-steps b {
-  color: #79d59a;
+  color: var(--muted);
   font: 12px ui-monospace;
   display: block;
   margin-bottom: 12px;
@@ -16,7 +16,7 @@
 .publish-steps p {
   font-size: 13px;
   line-height: 1.7;
-  color: #9daf9f;
+  color: var(--muted);
 }
 .studio-toolbar {
   display: flex;
@@ -36,7 +36,7 @@
   padding: 25px;
   border: 1px solid var(--line);
   border-radius: 13px;
-  background: #17211a;
+  background: var(--panel);
 }
 .project-heading {
   display: flex;
@@ -51,17 +51,17 @@
 .project-heading p,
 .instance-host {
   font-size: 13px;
-  color: #a2b5a6;
+  color: var(--secondary);
   overflow-wrap: anywhere;
 }
 .project-heading > svg {
-  color: #83ad90;
+  color: var(--muted);
 }
 .state-badge {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #b8c9bf;
+  color: var(--secondary);
   border: 1px solid #80978850;
   border-radius: 5px;
   padding: 5px 8px;
@@ -86,7 +86,7 @@
   gap: 18px;
   padding: 16px 0;
   font-size: 12px;
-  color: #829787;
+  color: var(--muted);
 }
 .project-progress span {
   display: flex;
@@ -94,7 +94,7 @@
   align-items: center;
 }
 .project-progress .done {
-  color: #9bddac;
+  color: var(--secondary);
 }
 .project-actions {
   display: flex;
@@ -120,7 +120,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #8a9c90;
+  color: var(--muted);
   font-size: 12px;
   flex: 1;
   padding: 10px;
@@ -156,17 +156,17 @@
   display: flex;
   flex-direction: column;
   gap: 9px;
-  color: #c1d5c7;
+  color: var(--secondary);
   font-size: 13px;
 }
 .publisher-form input:not([type="checkbox"]):not([type="radio"]),
 .publisher-form textarea,
 .publisher-form select {
-  background: #101813;
-  border: 1px solid #3d5244;
+  background: var(--input);
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
-  color: #ecf5ef;
+  color: var(--ink);
   font: inherit;
   width: 100%;
   min-width: 0;
@@ -195,7 +195,7 @@
   border: 1px solid #6bdd9225;
   padding: 17px;
   border-radius: 10px;
-  color: #cce7d6;
+  color: var(--secondary);
 }
 .inline-benefit > svg {
   flex-shrink: 0;
@@ -204,7 +204,7 @@
 .inline-benefit p {
   font-size: 13px;
   line-height: 1.7;
-  color: #a3bbac;
+  color: var(--secondary);
   margin: 5px 0 0;
 }
 .inline-benefit strong {
@@ -217,7 +217,7 @@
   border-radius: 9px;
 }
 .key-panel p {
-  color: #a0b3a7;
+  color: var(--secondary);
   font-size: 13px;
   line-height: 1.65;
 }
@@ -230,7 +230,7 @@
   flex-direction: row;
   align-items: flex-start;
   gap: 10px;
-  color: #b7c9bd;
+  color: var(--secondary);
   font-size: 12px;
   line-height: 1.7;
   margin: 15px 0;
@@ -263,7 +263,7 @@
     monospace;
   overflow: auto;
   margin: 0;
-  color: #a6d3b7;
+  color: var(--secondary);
 }
 .pricing-options {
   border: 0;
@@ -317,7 +317,7 @@
 }
 .pricing-options small {
   font-size: 12px;
-  color: #a1b6a7;
+  color: var(--secondary);
   line-height: 1.7;
   display: block;
 }
@@ -332,7 +332,7 @@
 .split-preview span {
   flex: 1;
   font-size: 12px;
-  color: #91aa99;
+  color: var(--muted);
 }
 .split-preview b {
   display: block;
@@ -351,7 +351,7 @@
   font-size: 16px;
 }
 .publish-review p {
-  color: #aac0b1;
+  color: var(--secondary);
   font-size: 13px;
   line-height: 1.7;
   overflow-wrap: anywhere;
@@ -397,7 +397,7 @@
 .sales-summary > span {
   font-size: 10px;
   letter-spacing: 2px;
-  color: #8bbc9c;
+  color: var(--muted);
 }
 .sales-summary > strong {
   display: block;
@@ -409,7 +409,7 @@
 }
 .sales-summary p {
   max-width: 600px;
-  color: #9bb6a4;
+  color: var(--secondary);
   font-size: 13px;
   line-height: 1.8;
 }
@@ -426,14 +426,14 @@
   padding: 23px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: #152019;
+  background: var(--panel);
 }
 .receipt-row h3 {
   font-size: 19px;
   margin: 12px 0 7px;
 }
 .receipt-row p {
-  color: #92aa9b;
+  color: var(--muted);
   font-size: 11px;
 }
 .receipt-row > div:last-child {
@@ -447,7 +447,7 @@
   font-size: 20px;
 }
 .receipt-row small {
-  color: #90a499;
+  color: var(--muted);
   font-size: 11px;
 }
 .vendor-play {
@@ -475,7 +475,7 @@
   top: 22px;
   font-size: 10px;
   letter-spacing: 2px;
-  color: #c6e6d1;
+  color: var(--secondary);
 }
 .vendor-play-copy h1 {
   font-size: 40px;
@@ -485,7 +485,7 @@
 .vendor-play-copy > p {
   font-size: 14px;
   line-height: 1.8;
-  color: #9fb3a7;
+  color: var(--secondary);
 }
 .vendor-host {
   display: flex;
@@ -498,18 +498,18 @@
 }
 .vendor-host span {
   font-size: 11px;
-  color: #8ba391;
+  color: var(--muted);
   flex: 1;
 }
 .vendor-host strong {
   display: block;
   font-size: 15px;
-  color: #d3e6d9;
+  color: var(--secondary);
   margin-top: 5px;
   overflow-wrap: anywhere;
 }
 .vendor-host svg {
-  color: #80bb91;
+  color: var(--muted);
   flex-shrink: 0;
 }
 .vendor-links {
@@ -517,7 +517,7 @@
   flex-wrap: wrap;
   gap: 18px;
   font-size: 12px;
-  color: #9be0b0;
+  color: var(--secondary);
   margin: 18px 0;
 }
 .vendor-links a {
@@ -538,7 +538,7 @@
 }
 .purchase-promise span {
   font-size: 12px;
-  color: #a2b7a9;
+  color: var(--secondary);
 }
 .checkout-modal {
   width: 560px;
@@ -557,13 +557,13 @@
 }
 .checkout-total span {
   font-size: 12px;
-  color: #9aad9f;
+  color: var(--muted);
 }
 .receipt-details {
   font-size: 12px;
   line-height: 1.7;
   margin: 20px 0;
-  color: #a4b6aa;
+  color: var(--secondary);
 }
 .receipt-details summary {
   cursor: pointer;
@@ -571,7 +571,7 @@
 }
 .receipt-details code {
   display: block;
-  color: #c7dacd;
+  color: var(--secondary);
   overflow-wrap: anywhere;
   margin-top: 6px;
 }
@@ -580,7 +580,7 @@
 }
 .confirmation-progress {
   padding: 18px 0;
-  color: #a2d1b2;
+  color: var(--secondary);
   font-size: 12px;
 }
 .confirmation-progress progress {
@@ -591,7 +591,7 @@
   accent-color: #7ce49d;
 }
 .confirmation-progress p {
-  color: #9caf9f;
+  color: var(--muted);
   line-height: 1.7;
 }
 @media (max-width: 1100px) {
@@ -666,6 +666,7 @@
     align-items: flex-start;
     padding: 18px;
     gap: 12px;
+    background: var(--panel);
   }
   .receipt-row strong {
     font-size: 17px;
@@ -687,6 +688,7 @@
   }
   .publisher-projects article {
     padding: 20px;
+    background: var(--panel);
   }
 }
 
@@ -696,7 +698,7 @@
 
 .publisher-projects .credit-byline { margin: 18px 0; }
 .receipt-credits { margin: 24px 0; }
-.receipt-credits h3 { font-size: 12px; font-weight: 500; color: #a2b2a7; }
+.receipt-credits h3 { font-size: 12px; font-weight: 500; color: var(--secondary); }
 .receipt-credits .game-credits { margin: 12px 0; }
 
 .publisher-fields { display: flex; flex-direction: column; gap: 19px; border: 0; padding: 0; margin: 0; min-width: 0; }
@@ -706,8 +708,8 @@
 .credit-changes { border-top: 1px solid #94bb9e33; margin-top: 20px; padding-top: 16px; }
 .credit-changes h4 { margin: 0; font-size: 13px; }
 .credit-changes dl { display: grid; gap: 14px; }
-.credit-changes dt { color: #c4d6ca; font-size: 11px; margin-bottom: 8px; }
+.credit-changes dt { color: var(--secondary); font-size: 11px; margin-bottom: 8px; }
 .credit-changes dd { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.credit-changes dd span { min-width: 0; overflow-wrap: anywhere; font-size: 12px; color: #c6d9cc; line-height: 1.6; }
-.credit-changes small { display: block; margin-bottom: 3px; color: #8ea396; text-transform: uppercase; letter-spacing: .07em; font-size: 9px; }
+.credit-changes dd span { min-width: 0; overflow-wrap: anywhere; font-size: 12px; color: var(--secondary); line-height: 1.6; }
+.credit-changes small { display: block; margin-bottom: 3px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-size: 9px; }
 @media(max-width:560px) { .credit-changes dd { grid-template-columns: minmax(0,1fr); gap: 10px; } }
