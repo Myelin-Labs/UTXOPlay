@@ -249,20 +249,23 @@ test("credits separate original authorship, publishing authority and payout, and
     { developerAddress: "ckb1invalid" }, { developerAddress: "ckt1wrongnetwork" },
     { developerName: "Hidden\u202ename" }, { publisherName: "x".repeat(81) },
     { developerName: "", developerAddress: other },
+    { developerSourceUrl: "javascript:alert(1)" }, { developerSourceUrl: "https://127.0.0.1/source" },
   ]) {
     const rejected = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft }, sellerCookie);
     assert.equal(rejected.status, 400, JSON.stringify(draft));
   }
   assert.equal((await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { publisherName: "Hijacked" } }, otherCookie)).status, 404);
-  const saved = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { developerAddress: other, publisherName: "Next Publishing" } }, sellerCookie);
+  const saved = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { developerAddress: other, publisherName: "Next Publishing", developerSourceUrl: "https://github.com/example/original" } }, sellerCookie);
   assert.equal(saved.status, 200);
-  assert.deepEqual(saved.data.developer, { name: "Original Studio", address: other });
+  assert.deepEqual(saved.data.developer, { name: "Original Studio", address: other, sourceUrl: "https://github.com/example/original" });
+  assert.deepEqual(saved.data.liveCredits.publisher, { name: "Garden Publishing", address: seller });
+  assert.equal(saved.data.liveCredits.developer.sourceUrl, undefined);
   assert.deepEqual(saved.data.publisher, { name: "Next Publishing", address: seller });
   const live = (await req("/api/games")).data.games.find(g => g.id === game);
   assert.deepEqual(live.developer, { name: "Original Studio", address: null });
   assert.deepEqual(live.publisher, { name: "Garden Publishing", address: seller });
   p = saved.data;
-  const restored = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { developerAddress: "", publisherName: "Garden Publishing" } }, sellerCookie);
+  const restored = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { developerAddress: "", publisherName: "Garden Publishing", developerSourceUrl: "" } }, sellerCookie);
   assert.equal(restored.status, 200);
   assert.equal(restored.data.developer.address, null);
 });
@@ -414,6 +417,7 @@ test("checkout reserves one quote per buyer; inputs and exact split are bound be
   assert.equal(r.status, 201);
   order = r.data.order;
   assert.equal(order.priceCkb, "400");
+  assert.deepEqual(order.credits, {developer:{name:"Original Studio",address:null},publisher:{name:"Garden Publishing",address:seller}});
   assert.equal(order.store, "8000000000");
   assert.equal(order.vendor, "32000000000");
   assert.equal(
@@ -696,7 +700,7 @@ test("concurrent buyers reuse one quote; later prices do not alter it; unlisting
   p = (
     await req(
       `/api/developer/projects/${p.id}/save`,
-      { revision: p.revision, draft: { priceCkb: "800" } },
+      { revision: p.revision, draft: { priceCkb: "800", publisherName: "Renamed Publisher", developerName: "Updated Studio" } },
       sellerCookie,
     )
   ).data;
@@ -714,6 +718,12 @@ test("concurrent buyers reuse one quote; later prices do not alter it; unlisting
     (await req("/api/orders", { game }, otherCookie)).data.order.priceCkb,
     "400",
   );
+  const retained = (await req("/api/orders", { game }, otherCookie)).data.order;
+  assert.deepEqual(retained.credits, reserved.credits);
+  const live = (await req("/api/games")).data.games.find(g=>g.id===game);
+  assert.equal(live.publisher.name, "Renamed Publisher");
+  assert.notEqual(retained.credits.publisher.name, live.publisher.name);
+  assert.equal(retained.credits.publisher.address, seller);
   await req(`/api/developer/projects/${p.id}/unpublish`, {}, sellerCookie);
   const tx = ccc.Transaction.from({
     inputs: [
@@ -833,6 +843,9 @@ test("missing Store receive address permits free publishing and blocks paid acti
         runtimeUrl: "https://free.example.com",
       })
     ).data;
+    const unnamed = await api(`/api/developer/projects/${p.id}/publish`, {revision:p.revision});
+    assert.equal(unnamed.status,400);assert.match(unnamed.data.error,/developer and publisher names/);
+    p = (await api(`/api/developer/projects/${p.id}/save`, {revision:p.revision,draft:{developerName:"Free Studio",publisherName:"Free Publisher"}})).data;
     await api(`/api/developer/projects/${p.id}/key`, {});
     assert.equal(
       (
@@ -874,4 +887,14 @@ test("missing Store receive address permits free publishing and blocks paid acti
     fresh.close();
     rmSync(temp, { recursive: true, force: true });
   }
+});
+
+test("older receipts without credits are not backfilled from a later listing",async()=>{
+ const row=service.db.prepare("SELECT id,quote FROM orders WHERE id=?").get(order.id);
+ const quote=JSON.parse(row.quote);delete quote.game.developer;delete quote.game.publisher;
+ try {
+  service.db.prepare("UPDATE orders SET quote=? WHERE id=?").run(JSON.stringify(quote),row.id);
+  const receipt=(await req('/api/orders',undefined,buyerCookie)).data.orders.find(o=>o.id===row.id);
+  assert.equal(receipt.credits,null);assert.equal(receipt.vendorAddress,order.vendorAddress);
+ } finally {service.db.prepare("UPDATE orders SET quote=? WHERE id=?").run(row.quote,row.id);}
 });

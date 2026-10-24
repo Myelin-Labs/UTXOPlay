@@ -748,3 +748,8 @@
 .credit-editor { min-width: 0; border: 1px solid rgba(178,219,195,.16); border-radius: 12px; padding: 18px; display: grid; gap: 16px; }
 .credit-editor legend { padding: 0 8px; font-size: 13px; font-weight: 600; }
 .credit-editor > p { margin: 0; }
+
+.publisher-projects .credit-byline { margin: 18px 0; }
+.receipt-credits { margin: 24px 0; }
+.receipt-credits h3 { font-size: 12px; font-weight: 500; color: #a2b2a7; }
+.receipt-credits .game-credits { margin: 12px 0; }

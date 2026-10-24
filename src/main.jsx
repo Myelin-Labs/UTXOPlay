@@ -50,6 +50,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import {
+  StoreNavigation,
   WalletPickerGuard,
   BrandIcon,
   Spinner,
@@ -71,6 +72,7 @@ import "./style.css";
 import {createWalletSession, disconnectWallet} from "./wallet-session.mjs";
 import {ItemStore} from "./item-store.jsx";
 import {CommunityPage,UsernameEditor} from "./community.jsx";
+import {CreatorCollection} from "./creators.jsx";
 import {GameFrame} from "./game-frame.jsx";
 const loadMarketplace = () => import("./marketplace.jsx");
 const Studio = lazy(() =>
@@ -201,6 +203,7 @@ function App({ walletApi }) {
     [freeOnly, setFreeOnly] = useState(false);
   const [page, setPage] = useState(location.pathname),
     [games, setGames] = useState(initialGames),
+    [catalogStatus, setCatalogStatus] = useState({loading:true,error:""}),
     [user, setUser] = useState(null),
     [loadingUser, setLoadingUser] = useState(true),
     [accountError, setAccountError] = useState("");
@@ -282,9 +285,10 @@ function App({ walletApi }) {
     };
   }, [page, user?.id, revision]);
   function refreshCatalog() {
+    setCatalogStatus({loading:true,error:""});
     api("/api/games")
-      .then((d) => setGames(d.games))
-      .catch((e) => notify(apiError(e), "error"));
+      .then((d) => { setGames(d.games); setCatalogStatus({loading:false,error:""}); })
+      .catch((e) => { setCatalogStatus({loading:false,error:apiError(e)}); notify(apiError(e), "error"); });
     setRevision((r) => r + 1);
   }
   const notify = useCallback(
@@ -314,7 +318,7 @@ function App({ walletApi }) {
     setMobileNav(false);
     setDialog(null);
     setDetails(null);
-    window.scrollTo(0, 0);
+    window.scrollTo({top:0,left:0,behavior:"instant"});
     setRevision((r) => r + 1);
   }
   const navigateRef = useRef(go);
@@ -326,13 +330,14 @@ function App({ walletApi }) {
       setDialog(null);
       setDetails(null);
       setRevision((r) => r + 1);
-      window.scrollTo(0, 0);
+      window.scrollTo({top:0,left:0,behavior:"instant"});
     };
     addEventListener("popstate", onPop);
     loadAccount();
+    setCatalogStatus({loading:true,error:""});
     api("/api/games")
-      .then((d) => setGames(d.games))
-      .catch(() => {});
+      .then((d) => { setGames(d.games); setCatalogStatus({loading:false,error:""}); })
+      .catch((e) => setCatalogStatus({loading:false,error:apiError(e)}));
     return () => removeEventListener("popstate", onPop);
   }, [loadAccount]);
   useEffect(() => {
@@ -343,6 +348,8 @@ function App({ walletApi }) {
           ? "Your library"
           : page.startsWith("/community")
             ? "Player community"
+          : page.startsWith("/creators/")
+            ? "Creator collection"
           : page === "/items"
             ? "Item store"
           : page === "/developers"
@@ -655,6 +662,7 @@ function App({ walletApi }) {
     </>
   );
   return (
+    <StoreNavigation.Provider value={go}>
     <MotionConfig
       reducedMotion={reduced ? "always" : "user"}
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
@@ -1129,6 +1137,8 @@ function App({ walletApi }) {
                     </p>
                   )}
                 </>
+              ) : page.startsWith("/creators/") ? (
+                <CreatorCollection loading={catalogStatus.loading} error={catalogStatus.error} onRetry={refreshCatalog} games={games} role={page.split("/")[2]} gameId={page.split("/")[3]} onPlay={launch} onDetails={setDetails} launching={launching}/>
               ) : page === "/community" || page.startsWith("/community/") ? (
                 <CommunityPage games={featuredGames} gameId={page.split("/")[2]} user={user} onConnect={connect} onPlay={launch} onChoose={id=>go("/community/"+id)}/>
               ) : page === "/items" ? (
@@ -1565,6 +1575,7 @@ function App({ walletApi }) {
         </AnimatePresence>
       </div>
     </MotionConfig>
+    </StoreNavigation.Provider>
   );
 }
 createRoot(document.getElementById("root")).render(<Root />);

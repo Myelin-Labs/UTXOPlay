@@ -29,6 +29,7 @@ const initial = (p) => ({
   payoutAddress: "",
   developerName: "",
   developerAddress: "",
+  developerSourceUrl: "",
   publisherName: "",
   supportUrl: "",
   refundUrl: "",
@@ -95,7 +96,7 @@ export function installMarketplace({
   function credits(p, d) {
     const owner = db.prepare("SELECT address FROM accounts WHERE id=?").get(p.owner);
     return {
-      developer: { name: d.developerName || "Not specified", address: d.developerAddress || null },
+      developer: { name: d.developerName || "Not specified", address: d.developerAddress || null, ...(d.developerSourceUrl ? { sourceUrl: d.developerSourceUrl } : {}) },
       publisher: { name: d.publisherName || "Independent publisher", address: owner?.address || null },
     };
   }
@@ -106,7 +107,8 @@ export function installMarketplace({
       draft: { ...initial(p), ...JSON.parse(p.draft) },
       ...credits(p, JSON.parse(p.draft)),
       revision: p.revision,
-      live: p.live ? JSON.parse(p.live) : null,
+      live: p.live ? { ...initial(p), ...JSON.parse(p.live) } : null,
+      liveCredits: p.live ? credits(p, JSON.parse(p.live)) : null,
       status: p.listed ? "published" : p.live ? "unlisted" : "draft",
       checkedRevision: p.checked_revision,
       checkedAt: p.checked_at,
@@ -246,7 +248,7 @@ export function installMarketplace({
       throw fail(
         "Use a title of 3–80 characters, a description up to 2,000, and controls up to 1,200.",
       );
-    for (const key of ["gameUrl", "runtimeUrl", "supportUrl", "refundUrl"])
+    for (const key of ["gameUrl", "runtimeUrl", "supportUrl", "refundUrl", "developerSourceUrl"])
       if (d[key]) d[key] = publicHttps(d[key]);
     if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(d.version))
       throw fail("Use a version such as 1.0.0.");
@@ -310,6 +312,7 @@ export function installMarketplace({
       id: o.id,
       game: o.game,
       title: q.game.title,
+      credits: q.game.developer && q.game.publisher ? { developer: q.game.developer, publisher: q.game.publisher } : null,
       status: o.status,
       priceCkb: formatCkb(o.price),
       ...splitPrice(o.price),
@@ -537,6 +540,8 @@ export function installMarketplace({
       if (limited("publish:" + p.id, 8, 60000))
         throw fail("Please wait before publishing again.", 429);
       const d = JSON.parse(p.draft);
+      if (!d.developerName || !d.publisherName)
+        throw fail("Add the original developer and publisher names in Game details before publishing.");
       if (d.pricing === "paid") {
         if (!d.supportUrl || !d.refundUrl)
           throw fail("Paid games need support and refund-policy URLs.");

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useId, useState } from "react";
+import React, { useEffect, useRef, useId, useState, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import {
@@ -13,7 +13,7 @@ import {
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
-import { gameMeta } from "./ui-model.mjs";
+import { gameMeta, creatorHref } from "./ui-model.mjs";
 export function BrandIcon({ className = "" }) {
   return (
     <img
@@ -125,8 +125,18 @@ export function Skeletons() {
 export function MyelinBadge({ game }) {
   return game.myelin?.based ? <span className="myelin-badge" title="Myelin host replay. Off-chain; no CKB settlement."><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN</span> : null;
 }
-function CreditWallet({ person, role }) {
+export const StoreNavigation = createContext(null);
+export function StoreLink({ href, children, ...props }) {
+  const navigate = useContext(StoreNavigation);
+  return <a href={href} {...props} onClick={event => {
+    if (navigate && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+      event.preventDefault(); navigate(href);
+    }
+  }}>{children}</a>;
+}
+export function CreditWallet({ person, role }) {
   const [copied, setCopied] = useState("");
+  useEffect(() => setCopied(""), [person?.address]);
   if (!person?.address) return <span className="credit-unknown">Wallet not provided</span>;
   const address = person.address;
   return <details className="credit-wallet">
@@ -138,19 +148,19 @@ function CreditWallet({ person, role }) {
     <span role="status" className="fine">{copied}</span>
   </details>;
 }
-export function GameCredits({ game, compact = false }) {
+export function GameCredits({ game, compact = false, linked = true }) {
   const roles = [["Developer", game.developer], ["Publisher", game.publisher]];
   if (!compact && game.portedBy) roles.push(["Port & Myelin integration", game.portedBy]);
   return <dl className={compact ? "credit-byline" : "game-credits"} aria-label="Game credits">
     {roles.map(([role, person]) => <div key={role} className="game-credit">
-      <dt>{role}</dt><dd><strong>{person?.name || "Not specified"}</strong>
+      <dt>{role}</dt><dd><strong>{linked && creatorHref(game, role.toLowerCase()) ? <StoreLink className="credit-name" href={creatorHref(game, role.toLowerCase())} title={"Explore games · " + person.name + " · " + role}>{person.name}</StoreLink> : person?.name || "Not specified"}</strong>
         {!compact && <><CreditWallet person={person} role={role}/>{person?.sourceUrl && <a className="credit-source" href={person.sourceUrl} target="_blank" rel="noopener noreferrer">Original project <ArrowUpRight size={13}/></a>}</>}
       </dd>
     </div>)}
   </dl>;
 }
 export function GameCard({ g, onPlay, onDetails, launching, updated }) {
-  const meta = gameMeta[g.id] || { accent: "#8bf4b9", length: "Vendor hosted" };
+  const meta = gameMeta[g.id] || { accent: "#8bf4b9", length: "Publisher hosted" };
   return (
     <motion.article
       layout
@@ -238,9 +248,9 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
 export function GameDetails({ game, onClose, onPlay, launching, onCommunity }) {
   const meta = gameMeta[game.id] || {
     tag: "INDEPENDENT / MYELIN",
-    length: "Vendor hosted",
+    length: "Publisher hosted",
     input: "See controls",
-    note: "Opens on the creator’s website: " + game.host,
+    note: "Opens on the publisher’s website: " + game.host,
   };
   return (
     <Modal
@@ -298,7 +308,7 @@ export function GameDetails({ game, onClose, onPlay, launching, onCommunity }) {
         {!game.vendor&&onCommunity&&<button className="outline full" style={{marginTop:12}} onClick={()=>onCommunity(game.id)}>Player reviews & community <ArrowUpRight size={17}/></button>}
         <p className="fine centered">
           {game.pricing === "paid"
-            ? "Wallet purchase required. Review price and vendor details before paying."
+            ? "Wallet purchase required. Review price and publisher details before paying."
             : "No download. No deposit. A guest session is all you need."}
         </p>
       </div>

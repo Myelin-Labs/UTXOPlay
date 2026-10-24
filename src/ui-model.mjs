@@ -88,3 +88,23 @@ export const gameMeta = {
     repo: "myelin-chess",
   },
 };
+
+// Publisher collections follow wallet identity. Unverified developer claims stay
+// inside the publishing account's catalog; names alone never merge identities.
+export function creatorKey(game, role) {
+  if (!["developer", "publisher"].includes(role)) return null;
+  const person = game?.[role];
+  if (!person?.name || ["Not specified", "Independent publisher"].includes(person.name) && !person.address) return null;
+  if (role === "publisher") return JSON.stringify([role, person.address || game.id]);
+  const scope = game.vendor ? ["publisher", game.publisher?.address || game.id] : ["curated"];
+  const identity = person.address ? ["wallet", person.address] : !game.vendor && person.sourceUrl ? ["source", person.sourceUrl] : ["listing", game.id];
+  return JSON.stringify([role, scope, identity]);
+}
+export function creatorHref(game, role) {
+  return game?.id && creatorKey(game, role) ? `/creators/${role}/${encodeURIComponent(game.id)}` : null;
+}
+export function creatorCollection(games, role, gameId) {
+  const anchor = games.find(game => game.id === gameId), key = creatorKey(anchor, role);
+  if (!key) return null;
+  return { person: anchor[role], anchor, games: games.filter(game => creatorKey(game, role) === key) };
+}

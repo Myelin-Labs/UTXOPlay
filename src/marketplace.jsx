@@ -46,6 +46,7 @@ const emptyDraft = {
   payoutAddress: "",
   developerName: "",
   developerAddress: "",
+  developerSourceUrl: "",
   publisherName: "",
   supportUrl: "",
   refundUrl: "",
@@ -238,6 +239,7 @@ export function Studio({ user, onConnect, onCatalogChange }) {
                 </div>
                 <Server size={25} />
               </div>
+              <GameCredits game={p.liveCredits || p} compact linked={false}/>
               {p.live && JSON.stringify(p.live) !== JSON.stringify(p.draft) && (
                 <p className="fine">
                   Saved draft changes · Republish to update the live game
@@ -445,6 +447,7 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
                 <label>Publisher name<input value={draft.publisherName} maxLength={80} onChange={e => field("publisherName", e.target.value)} placeholder="Your publishing name" /></label>
               </div>
               <label>Developer CKB wallet (optional)<input value={draft.developerAddress} maxLength={300} onChange={e => field("developerAddress", e.target.value)} placeholder="ckb1… · Leave blank if unknown" spellCheck={false} /></label>
+              <label>Original project website (optional)<input type="url" value={draft.developerSourceUrl} maxLength={500} onChange={e => field("developerSourceUrl", e.target.value)} placeholder="https://github.com/creator/original-game" /></label>
               <label>Publisher CKB wallet<input readOnly value={project?.publisher?.address || user.address || ""} onFocus={e => e.target.select()} /></label>
               <p className="fine">Your publisher wallet comes from the signed-in project owner and is public on the listing. Credit names and developer wallets are attribution supplied by the publisher. The payout address is configured separately in Pricing.</p>
             </fieldset>
@@ -714,7 +717,7 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
                     />
                   </label>
                   <label>
-                    Vendor CKB mainnet receive address
+                    Publisher CKB mainnet payout address
                     <input
                       value={draft.payoutAddress}
                       onChange={(e) => field("payoutAddress", e.target.value)}
@@ -805,6 +808,8 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
             )}
             <div className="publish-review">
               <h3>Before it goes live</h3>
+              <GameCredits linked={false} game={{developer:{name:draft.developerName,address:draft.developerAddress||null,sourceUrl:project?.draft?.developerSourceUrl === draft.developerSourceUrl ? draft.developerSourceUrl||undefined : undefined},publisher:{name:draft.publisherName,address:project?.publisher?.address||user.address}}}/>
+              {(!draft.developerName.trim() || !draft.publisherName.trim()) && <p className="fine">Add both credit names in Game details before publishing. Developer wallets can stay unknown.</p>}
               <p>
                 <strong>{draft.title}</strong> · v{draft.version} ·{" "}
                 {draft.genre}
@@ -939,6 +944,7 @@ export function ReceiptRow({ order: o, vendor = false, onOpen }) {
           {humanStatus(o.status)}
         </span>
         <h3>{o.title}</h3>
+        {o.credits?.publisher && <p className="receipt-publisher">Published by {o.credits.publisher.name}</p>}
         <p>
           {new Date(o.created).toLocaleString()} · {o.id.slice(0, 12)}
         </p>
@@ -1126,12 +1132,12 @@ export function VendorPlay({
         <div className="vendor-host">
           <Server size={18} />
           <span>
-            Hosted by the creator<strong>{game.host}</strong>
+            Hosted by the publisher<strong>{game.host}</strong>
           </span>
           <ExternalLink size={15} />
         </div>
         <p className="fine">
-          This game opens on the vendor’s website. Your store cookies, wallet
+          This game opens on the publisher’s website. Your store cookies, wallet
           keys and login signature are never shared with it.
         </p>
         {game.pricing === "paid" && !owned ? (
@@ -1141,7 +1147,7 @@ export function VendorPlay({
               <span>Pay once · No recurring subscription</span>
             </div>
             <p className="fine">
-              Access has no scheduled expiry. The vendor hosts the game and
+              Access has no scheduled expiry. The publisher hosts the game and
               handles support and refunds; continued play depends on that
               service remaining available.
             </p>
@@ -1198,7 +1204,7 @@ export function VendorPlay({
         <div className="vendor-links">
           {game.supportUrl && (
             <a href={game.supportUrl} target="_blank" rel="noreferrer">
-              Vendor support <ExternalLink size={13} />
+              Publisher support <ExternalLink size={13} />
             </a>
           )}
           {game.refundUrl && (
@@ -1379,6 +1385,7 @@ function Checkout({
           <span className={"state-badge " + order.status}>
             {humanStatus(order.status)}
           </span>
+          {order.credits ? <section className="receipt-credits"><h3>Credits recorded with this order</h3><GameCredits game={order.credits} linked={false}/><p className="fine">Recorded with this order. Later listing edits do not change these credits.</p></section> : <p className="fine">Developer and publisher credits were not recorded on this older receipt.</p>}
           <div className="checkout-total">
             <strong>
               {order.priceCkb} <small>CKB</small>
@@ -1389,16 +1396,17 @@ function Checkout({
           </div>
           <div className="split-preview">
             <span>
-              Vendor · 80%<b>{money(order.vendor)} CKB</b>
+              Publisher share · 80%<b>{money(order.vendor)} CKB</b>
             </span>
             <span>
               Store · 20%<b>{money(order.store)} CKB</b>
             </span>
           </div>
           <details className="receipt-details">
-            <summary>Receive addresses & order ID</summary>
+            <summary>Payout addresses & order ID</summary>
+            <p className="fine">The publisher’s payout address can differ from its identity wallet above.</p>
             <p>
-              Vendor: <code>{order.vendorAddress}</code>
+              Publisher payout: <code>{order.vendorAddress}</code>
             </p>
             <p>
               Store: <code>{order.storeAddress}</code>
@@ -1429,7 +1437,7 @@ function Checkout({
             <>
               <p className="fine">
                 One purchase unlocks this wallet’s access without a scheduled
-                expiry. The vendor provides hosting, support and refunds. The
+                expiry. The publisher provides hosting, support and refunds. The
                 store does not hold these payments.
               </p>
               <div className="vendor-links">
@@ -1446,7 +1454,7 @@ function Checkout({
                   checked={accepted}
                   onChange={(e) => setAccepted(e.target.checked)}
                 />
-                I reviewed the price, vendor hosting and refund policy.
+                I reviewed the price, publisher hosting and refund policy.
               </label>
               {!signer ? (
                 <button

@@ -43,3 +43,26 @@ test('catalog distinguishes original developers, ports and the publisher, and su
  assert.deepEqual(selectGames(games,{query:'  RETRIC '}).map(g=>g.id),['openstrike']);
  assert.equal(selectGames(games,{query:'Arthur Zhang'}).length,13);
 });
+
+test('creator collections use wallet identity and do not merge unknown or cross-publisher developer claims',async()=>{
+ const {creatorCollection,creatorHref}=await import('../src/ui-model.mjs');
+ assert.equal(creatorCollection(games,'publisher','openstrike').games.length,13);
+ assert.equal(creatorCollection(games,'developer','sling').games.length,11);
+ assert.deepEqual(creatorCollection(games,'developer','openstrike').games.map(g=>g.id),['openstrike']);
+ assert.equal(creatorCollection(games,'portedBy','openstrike'),null);
+ assert.equal(creatorCollection(games,'publisher','missing'),null);
+ assert.equal(creatorHref({id:'unknown',developer:{name:'Not specified',address:null}},'developer'),null);
+ const arthur=games[0].publisher.address;
+ const vendor=(id,publisher,developer)=>({id,vendor:true,publisher,developer});
+ const a=vendor('a',{name:'Same name',address:'publisher-a'},{name:'Arthur Zhang',address:arthur});
+ const b=vendor('b',{name:'Same name',address:'publisher-b'},{name:'Arthur Zhang',address:arthur});
+ const c=vendor('c',{name:'Renamed',address:'publisher-a'},{name:'Another credit',address:arthur});
+ const unknown1=vendor('unknown1',a.publisher,{name:'Unknown Artist',address:null});
+ const unknown2=vendor('unknown2',a.publisher,{name:'Unknown Artist',address:null});
+ const all=[...games,a,b,c,unknown1,unknown2];
+ assert.deepEqual(creatorCollection(all,'publisher','a').games.map(g=>g.id),['a','c','unknown1','unknown2']);
+ assert.deepEqual(creatorCollection(all,'developer','a').games.map(g=>g.id),['a','c']);
+ assert.equal(creatorCollection(all,'developer','sling').games.length,11);
+ assert.deepEqual(creatorCollection(all,'developer','unknown1').games.map(g=>g.id),['unknown1']);
+ assert.equal(creatorHref(games[0],'publisher'),'/creators/publisher/neon-miner');
+});
