@@ -335,6 +335,10 @@ async function act(action, computer = false) {
     } catch {
       $("#connection").hidden = false;
     }
+    if (computer && botTurn())
+      botError(
+        "The move could not be saved. Resume the computer when the connection is ready.",
+      );
   } finally {
     busy = false;
     if (data) reviewControls();
@@ -364,6 +368,7 @@ $("#new").onclick = async () => {
     };
     savePreferences();
     botFailed = false;
+    $("#bot-retry").hidden = true;
     flipped = pref.opponent !== "local" && pref.color === "black";
     positions = null;
     reviewIndex = null;
