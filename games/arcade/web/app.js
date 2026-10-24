@@ -6,14 +6,16 @@ import {setText,startRenderLoop,readQuality} from './performance.mjs';
 globalThis.UTXOPlayLoader?.boot();
 const id=location.pathname.split('/')[2];
 const config={
- 'prism-breaker':{title:'Prism Breaker',label:'01 / REFRACTION LAB',accent:'#b7a2ff',intro:'Find the angle. Break the spectrum.',goal:'Clear the prism wall. Chain brick hits for a bigger multiplier. Three lives, endless waves.',keys:['←','→','A','D'],tip:'Move the mouse to aim, use the arrow keys, or drag on touch. Keep the ball above your paddle.'},
+ 'prism-breaker':{title:'Prism Breaker',label:'01 / REFRACTION LAB',accent:'#b7a2ff',intro:'Find the angle. Break the spectrum.',goal:'Shatter all 48 crystals. Chain hits between paddle returns for up to 8× resonance. A new realm appears every two waves.',keys:['←','→','A','D'],tip:'Mouse, arrows or touch drag steer the paddle. F toggles Focus Lens: a projected path and landing marker with the paddle held still. Aim with the edges to change the return angle.'},
  'neon-coil':{title:'Neon Coil',label:'02 / LIVING CIRCUIT',accent:'#84efba',intro:'A little hunger. A longer circuit.',goal:'Collect the glowing nodes. Grow your circuit without crossing yourself or touching the edge.',keys:['↑','←','↓','→'],tip:'Arrow keys or WASD to turn. Swipe on the board or use the direction buttons. The pace increases as you grow.'},
  'starfall':{title:'Starfall',label:'03 / ORBITAL DEFENCE',accent:'#7edaff',intro:'Hold the line. Light up the night.',goal:'Break through each descending formation. Dodge return fire and survive the next wave.',keys:['←','→','SPACE'],tip:'Move the mouse, use A/D, or drag to steer. Auto fire is on by default; turn it off to fire manually with Space or FIRE.'},
  'drift-run':{title:'Drift Run',label:'04 / AFTER HOURS',accent:'#ffbc83',intro:'Three lanes. One way forward.',goal:'Slip between the barriers. Catch amber energy rings as the city rushes past.',keys:['←','→','A','D'],tip:'Tap left or right to change lanes. Swipe sideways on the road, or use the touch arrows. Stay clear of the coral barriers.'}
 }[id];
 if(!config||!kinds.includes(id))throw Error('Unknown arcade game');
 const $=s=>document.querySelector(s),canvas=$('canvas');
-const renderer=new ArcadeRenderer(canvas,id,config.accent),input=new InputBuffer(id),gesture=new BoardGesture(id),audio=new ArcadeAudio();
+const {PrismRenderer}=id==='prism-breaker'?await import('./prism-renderer.mjs'):{};
+const renderer=id==='prism-breaker'?new PrismRenderer(canvas):new ArcadeRenderer(canvas,id,config.accent);
+const input=new InputBuffer(id),gesture=new BoardGesture(id),audio=new ArcadeAudio();
 const motion=matchMedia('(prefers-reduced-motion: reduce)');
 const read=(key,fallback)=>{try{return localStorage.getItem(key)||fallback;}catch{return fallback;}};
 const write=(key,value)=>{try{localStorage.setItem(key,String(value));}catch{}};
@@ -21,7 +23,14 @@ let predicted=createGame(id),previous=structuredClone(predicted),confirmed=null,
 let running=false,loaded=false,stopping=false,accumulator=0,saveTimer=0,countdown=0,lastCount=0;
 let best=Number(read(`utxoplay:best:${id}`,'0'))||0,runBest=best;
 let autoFire=read('utxoplay:autofire','on')==='on',hoverX=null,overlayAction='play',resumeEpoch=0,busy=false;
-let noticeTime=0,quality=readQuality();
+let noticeTime=0,quality=readQuality(),artworkReady=false;
+if(id==='prism-breaker'){
+ renderer.setLens(read('utxoplay:prism-lens','on')==='on');
+ const lens=$('#prism-lens');
+ const label=()=>{lens.setAttribute('aria-pressed',String(renderer.lens));lens.querySelector('span').textContent=renderer.lens?'Focus lens ON':'Focus lens OFF';};
+ lens.onclick=()=>{renderer.setLens(!renderer.lens);write('utxoplay:prism-lens',renderer.lens?'on':'off');label();if(running||countdown)canvas.focus();};label();
+}
+async function prepareArtwork(){if(id==='prism-breaker'&&!artworkReady){await renderer.load($('#cover'));artworkReady=true;}}
 const hud={};
 function updateHud(){
   if(hud.score!==predicted.score){hud.score=predicted.score;setText('score',predicted.score.toLocaleString());}
@@ -29,6 +38,7 @@ function updateHud(){
   if(hud.lives!==predicted.lives){
     hud.lives=predicted.lives;const maxLives=id==='neon-coil'||id==='drift-run'?1:3;
     setText('lives','●'.repeat(predicted.lives)+'○'.repeat(maxLives-predicted.lives));
+    if(id==='prism-breaker')$('#lives').replaceChildren(...Array.from({length:3},(_,n)=>{const heart=document.createElement('img');heart.src='/games/prism-breaker/art/heart.webp';heart.alt='';heart.style.opacity=n<predicted.lives?'1':'.2';return heart;}));
     $('#lives').setAttribute('aria-label',predicted.lives+' lives remaining');
   }
   const seconds=Math.floor(predicted.tick/30);
@@ -52,9 +62,9 @@ function toast(text){setText('notice',text);$('#notice').hidden=false;noticeTime
 function rememberBest(){if(confirmed.game.score>best){best=confirmed.game.score;write(`utxoplay:best:${id}`,best);}setText('best',best.toLocaleString());}
 function begin(){clearInput();syncView();$('#notice').hidden=true;noticeTime=0;$('#overlay').hidden=true;$('#pause').textContent='Pause';countdown=1800;lastCount=0;$('#countdown').hidden=false;setText('countdown','3');canvas.focus();}
 document.documentElement.style.setProperty('--accent',config.accent);document.documentElement.dataset.game=id;document.title=config.title+' · UTXOPlay';
-document.documentElement.style.setProperty('--key-art',`url('/assets/${id}-keyart.webp')`);
+document.documentElement.style.setProperty('--key-art',`url('/assets/${id}-keyart.webp${id==='prism-breaker'?'?v=0.15.0':''}')`);
 setText('title',config.title);setText('eyebrow',config.label);setText('intro',config.intro);setText('goal',config.goal);setText('controls',config.tip);setText('best',best.toLocaleString());
-$('#cover').src=`/assets/${id}-keyart.webp`;$('#cover').alt=config.title+' original arcade key art';globalThis.UTXOPlayLoader?.images([$('#cover')]);
+$('#cover').src=`/assets/${id}-keyart.webp${id==='prism-breaker'?'?v=0.15.0':''}`;$('#cover').alt=config.title+' original arcade key art';if(id!=='prism-breaker')globalThis.UTXOPlayLoader?.images([$('#cover')]);
 setText('level-label',id==='neon-coil'||id==='drift-run'?'PACE':'WAVE');
 for(const key of config.keys){const k=document.createElement('kbd');k.textContent=key;$('#keys').append(k);}
 for(const b of document.querySelectorAll('.touch button'))if((id!=='neon-coil'&&[4,8].includes(+b.dataset.input))||(id!=='starfall'&&+b.dataset.input===16))b.hidden=true;
@@ -94,10 +104,10 @@ async function finish(){
 }
 function showStats(game){const summary=runSummary(game,runBest);$('#run-stats').hidden=false;setText('result-score',game.score.toLocaleString());setText('result-time',summary.duration);setText('result-best',best.toLocaleString());}
 async function boot(){
-  try{confirmed=await api('state');predicted=structuredClone(confirmed.game);syncView();loaded=true;runBest=best;rememberBest();
+  try{const [state]=await Promise.all([api('state').then(state=>{globalThis.UTXOPlayLoader?.session();return state;},error=>{globalThis.UTXOPlayLoader?.fail('session');throw error;}),prepareArtwork()]);confirmed=state;predicted=structuredClone(confirmed.game);syncView();updateHud();loaded=true;runBest=best;rememberBest();
     showOverlay(predicted.over?'Your last run':config.title,predicted.tick?`${predicted.score} points saved. ${predicted.over?'Ready for another run?':'Pick up where you left off.'}`:config.intro,predicted.over?'Play again':predicted.tick?'Continue run':'Start playing',true);
     status('Connected · progress saves as you play');globalThis.UTXOPlayLoader?.session();globalThis.UTXOPlayLoader?.ready();
-  }catch(e){globalThis.UTXOPlayLoader?.fail('session');loaded=false;showOverlay('Connecting failed',e.message,'Retry connection',true);status('Unable to load your session.');}
+  }catch(e){if(!globalThis.UTXOPlayLoader?.state?.error)globalThis.UTXOPlayLoader?.fail('game');loaded=false;showOverlay('Connecting failed',e.message,'Retry connection',true);status('Unable to load your session.');}
   finally{refreshButtons();}
 }
 $('#launch').onclick=async()=>{
@@ -137,6 +147,7 @@ addEventListener('keydown',e=>{
   if(e.code==='Escape'){
     if(!e.repeat){if(overlayAction==='restart')$('#cancel-restart').click();else void pause();}return;
   }
+  if(id==='prism-breaker'&&e.code==='KeyF'&&!e.target.closest?.('button')){e.preventDefault();if(!e.repeat)$('#prism-lens').click();return;}
   if(e.code==='KeyP'){e.preventDefault();if(!e.repeat)$('#pause').click();return;}
   if(e.code==='KeyR'){e.preventDefault();if(!e.repeat)$('#restart').click();return;}
   if(e.code==='Enter'&&!e.target.closest?.('button')&&!$('#overlay').hidden){e.preventDefault();if(!e.repeat)$('#launch').click();return;}

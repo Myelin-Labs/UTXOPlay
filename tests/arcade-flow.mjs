@@ -13,6 +13,8 @@ const guest=await nativeFetch(base+'/api/guest',{method:'POST',headers:{Origin:b
 assert.equal(guest.status,200);const cookie=guest.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');
 const dom=new JSDOM(readFileSync(`${root}/games/${kind}/web/index.html`,'utf8'),{pretendToBeVisual:true,url:base+`/games/${kind}/`,runScripts:'outside-only'});
 const {window}=dom,errors=[];
+if(kind==='prism-breaker'){const {loadImage}=require('@napi-rs/canvas');const assetFile=url=>{const pathname=new URL(url,base).pathname;return pathname.startsWith('/assets/')?root+'/public'+pathname:root+pathname.replace('/games/prism-breaker/','/games/prism-breaker/web/');};globalThis.Image=class{async decode(){this.native=await loadImage(assetFile(this.src));}};window.HTMLImageElement.prototype.decode=async function(){this.native=await loadImage(assetFile(this.src));};}
+
 window.addEventListener('error',e=>errors.push(e.error));
 // Drawing is checked separately. This harness exercises actual UI flow and input.
 const context=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}})},{get:(obj,key)=>key in obj?obj[key]:()=>{}});
@@ -44,6 +46,8 @@ window.HTMLDialogElement.prototype.close=function(){this.open=false;};
 window.eval(readFileSync(root+'/public/game-shell.js','utf8'));
 await import(`${root}/games/arcade/web/app.js`);
 await until(()=>!$('#launch').disabled);assert.equal($('#overlay').dataset.art,'true');
+if(kind==='prism-breaker'){assert.equal($('#prism-lens').getAttribute('aria-pressed'),'true');$('#prism-lens').click();assert.equal($('#prism-lens').getAttribute('aria-pressed'),'false');$('#prism-lens').click();assert.equal($('#prism-lens').getAttribute('aria-pressed'),'true');assert.equal(document.querySelectorAll('#lives img').length,3);}
+
 // Holding a direction during countdown must affect the first simulation tick.
 await $('#launch').onclick();key('keydown',kind==='neon-coil'?'KeyW':'KeyA');await pump(130);key('keyup',kind==='neon-coil'?'KeyW':'KeyA');
 assert.equal($('#overlay').hidden,true);assert.equal($('#countdown').hidden,true);

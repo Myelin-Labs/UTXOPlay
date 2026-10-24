@@ -9,3 +9,13 @@ The interface loads no animation library from an external CDN. The new WebP cove
 The 0.7.0 arcade rules, Canvas renderers, SVG covers and synthesized sounds are original UTXOPlay code under `games/arcade/LICENSE`. No source or assets were copied from the genre references listed in `docs/arcade-release.md`. The Myelin logo was supplied by the site owner.
 
 Neon Prospector (0.12.0) is an original deterministic implementation of the classic Gold Miner genre. [Lor3walker/gold-miner](https://github.com/Lor3walker/gold-miner), MIT, was inspected as a gameplay reference; its code, artwork and audio are not redistributed. New code uses `games/neon-miner/LICENSE`. The original AI-generated cover prompt and provenance are in `docs/neon-miner-art.json`. Store 0.13.0 adds original imagegen environments, ore, robot/claw and equipment sprites; prompts and encoding provenance are in `docs/neon-miner-ingame-art.json`. No reference-project artwork is redistributed.
+
+Prism Breaker 0.15.0 adapts `Game.Math.intercept` from Jake Gordon and contributors'
+[javascript-breakout](https://github.com/jakesgordon/javascript-breakout), revision
+`eed59e2affa9423b93d2ac8ff93061bb88b33284`, under MIT. The adapted helper and full
+code license ship in `games/arcade/web/vendor/`. It serves the optional visual
+Focus Lens; authoritative integer rules remain original UTXOPlay code. No
+upstream sound, artwork or level layouts are redistributed. Original generated
+artwork, prompts and processing records are in `docs/prism-breaker-art.json` and
+`assets/prism-breaker-source/`; the in-game credits link the upstream project and
+license.

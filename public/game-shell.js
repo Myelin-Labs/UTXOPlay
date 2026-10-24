@@ -91,7 +91,7 @@
     move('body > dialog,body > #toast,body > #notice', surface);
     // Remove obsolete site furniture, after preserving every functional game node.
     for (const node of [...document.body.children]) {
-      if (node !== surface && !['SCRIPT','STYLE','LINK'].includes(node.tagName)) node.remove();
+      if (node !== surface && !['SCRIPT','STYLE','LINK','UTXO-LOADER'].includes(node.tagName)) node.remove();
     }
   }
   if (!$('#quality')) {

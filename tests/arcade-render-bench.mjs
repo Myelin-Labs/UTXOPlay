@@ -10,7 +10,8 @@ const {ArcadeRenderer}=await import(pathToFileURL(resolve(process.env.RENDERER||
 globalThis.document={createElement:()=>createCanvas(1000,1000)};
 const output=process.env.BENCH_OUTPUT||'artifacts/arcade-performance/current';mkdirSync(output,{recursive:true});
 const rows=[];
-for(const kind of kinds)for(const ratio of [1,2]){
+// Prism's image renderer has its own art-aware benchmark in prism-render.mjs.
+for(const kind of kinds.filter(kind=>kind!=='prism-breaker'))for(const ratio of [1,2]){
  const canvas=createCanvas(600,600);canvas.clientWidth=600;
  const renderer=new ArcadeRenderer(canvas,kind,'#b7a2ff'),game=createGame(kind);
  for(let i=0;i<30;i++)step(game,kind==='starfall'?16:kind==='neon-coil'?4:0);

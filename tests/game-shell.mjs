@@ -20,7 +20,9 @@ for (const {id} of games) {
   if(id==='neon-miner'){
     const surface=d.querySelector('.game-surface');assert.ok(surface);for(const control of controls)assert.ok(surface.contains(control));assert.ok(surface.querySelector('.game-myelin-badge img'));assert.ok(surface.querySelector('#game-menu'));assert.ok(!d.querySelector('script[src*="game-shell"]'));console.log('neon-miner: native game-owned viewport; interactive behavior covered by miner-flow.mjs');dom.window.close();continue;
   }
+  const loader=d.createElement('utxo-loader');d.body.append(loader);
   w.eval(shell);
+  assert.ok(loader.isConnected,`${id}: standalone loading screen survives shell mounting`);
   const surface=d.querySelector('.game-surface');
   assert.ok(surface,`${id}: owns a viewport`);
   for(const name of originalIds)assert.ok(d.getElementById(name),`${id}: preserved #${name}`);
