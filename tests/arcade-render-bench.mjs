@@ -1,3 +1,4 @@
+import {loadTestArt} from './premium-art-helper.mjs';
 // Native Canvas microbenchmark, not browser/GPU FPS. Optional @napi-rs/canvas.
 import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
@@ -14,6 +15,7 @@ const rows=[];
 for(const kind of kinds.filter(kind=>kind!=='prism-breaker'))for(const ratio of [1,2]){
  const canvas=createCanvas(600,600);canvas.clientWidth=600;
  const renderer=new ArcadeRenderer(canvas,kind,'#b7a2ff'),game=createGame(kind);
+ renderer.art=await loadTestArt(kind);
  for(let i=0;i<30;i++)step(game,kind==='starfall'?16:kind==='neon-coil'?4:0);
  // Include a long, valid-looking body to exercise the higher-cost snake renderer.
  if(kind==='neon-coil')game.trail=Array.from({length:80},(_,i)=>[i%20,3+Math.floor(i/20)]);

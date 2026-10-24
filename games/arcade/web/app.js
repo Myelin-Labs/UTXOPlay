@@ -32,7 +32,7 @@ if(id==='prism-breaker'){
  const label=()=>{lens.setAttribute('aria-pressed',String(renderer.lens));lens.querySelector('span').textContent=renderer.lens?'Direction hint ON':'Direction hint OFF';};
  lens.onclick=()=>{renderer.setLens(!renderer.lens);write('utxoplay:prism-lens',renderer.lens?'on':'off');label();if(running||countdown)canvas.focus();};label();
 }
-async function prepareArtwork(){if(id==='prism-breaker'&&!artworkReady){await renderer.load($('#cover'));artworkReady=true;}}
+async function prepareArtwork(){if(!artworkReady){await renderer.load($('#cover'));artworkReady=true;}}
 // Scene-owned instrumentation and controls share the exact signed input tape.
 const signatures={
  'prism-breaker':{name:'REFRACTION',hint:'Break crystals · spend 4 to bend light',buttons:[[4,'↖','Bend left','Q'],[8,'↗','Bend right','E']]},
@@ -82,7 +82,7 @@ function updateHud(){
   if(hud.lives!==predicted.lives){
     hud.lives=predicted.lives;const maxLives=id==='neon-coil'||id==='drift-run'?1:3;
     setText('lives','●'.repeat(predicted.lives)+'○'.repeat(maxLives-predicted.lives));
-    if(id==='prism-breaker')$('#lives').replaceChildren(...Array.from({length:3},(_,n)=>{const heart=document.createElement('img');heart.src='/games/prism-breaker/art/heart.webp';heart.alt='';heart.style.opacity=n<predicted.lives?'1':'.2';return heart;}));
+    if(id==='prism-breaker')$('#lives').replaceChildren(...Array.from({length:3},(_,n)=>{const heart=document.createElement('img');heart.src='/arcade/art/prism-heart.webp?v=0.24.0';heart.alt='';heart.style.opacity=n<predicted.lives?'1':'.2';return heart;}));
     $('#lives').setAttribute('aria-label',predicted.lives+' lives remaining');
   }
   const seconds=Math.floor(predicted.tick/30);
@@ -108,7 +108,7 @@ function begin(){if(predicted.draft){void showPerks();return;}clearInput();syncV
 document.documentElement.style.setProperty('--accent',config.accent);document.documentElement.dataset.game=id;document.title=config.title+' · UTXOPlay';
 document.documentElement.style.setProperty('--key-art',`url('/assets/${id}-keyart.webp${id==='prism-breaker'?'?v=0.15.0':''}')`);
 setText('title',config.title);setText('eyebrow',config.label);setText('intro',config.intro);setText('goal',config.goal);setText('controls',config.tip);setText('best',best.toLocaleString());
-$('#cover').src=`/assets/${id}-keyart.webp${id==='prism-breaker'?'?v=0.15.0':''}`;$('#cover').alt=config.title+' original arcade key art';if(id!=='prism-breaker')globalThis.UTXOPlayLoader?.images([$('#cover')]);
+$('#cover').src=`/assets/${id}-keyart.webp${id==='prism-breaker'?'?v=0.15.0':''}`;$('#cover').alt=config.title+' original arcade key art';
 setText('level-label',id==='neon-coil'||id==='drift-run'?'PACE':'WAVE');
 for(const key of config.keys){const k=document.createElement('kbd');k.textContent=key;$('#keys').append(k);}
 for(const b of document.querySelectorAll('.touch button'))if((id!=='neon-coil'&&[4,8].includes(+b.dataset.input))||(id!=='starfall'&&+b.dataset.input===16))b.hidden=true;
@@ -153,7 +153,7 @@ async function showPerks(){
  if(drafting)return;drafting=true;refreshButtons();running=false;countdown=0;clearInput();$('#countdown').hidden=true;
  showOverlay('Sector restored','Saving your clear…','Saving…');$('#launch').disabled=true;
  try{await saveAll();if(!confirmed.game.draft)return;predicted=structuredClone(confirmed.game);syncView();$('#overlay').hidden=true;const panel=$('#prism-draft');panel.hidden=false;setText('prism-draft-title','Sector '+predicted.level+' complete');const cards=$('#prism-perks');cards.replaceChildren();
- for(const choice of predicted.offers){const perk=PERKS[choice],button=document.createElement('button');button.className='perk-card';const img=document.createElement('img');img.src='/games/prism-breaker/art/'+perk.icon+'.webp';img.alt='';const title=document.createElement('strong');title.textContent=perk.name;const desc=document.createElement('span');desc.textContent=perk.detail;const rank=document.createElement('small');rank.textContent='RANK '+(predicted.perks[choice]+1)+' / 4';button.append(img,rank,title,desc);button.onclick=()=>void selectPerk(choice);cards.append(button);}
+ for(const choice of predicted.offers){const perk=PERKS[choice],button=document.createElement('button');button.className='perk-card';const img=document.createElement('img');img.src='/arcade/art/prism-'+perk.icon+'.webp?v=0.24.0';img.alt='';const title=document.createElement('strong');title.textContent=perk.name;const desc=document.createElement('span');desc.textContent=perk.detail;const rank=document.createElement('small');rank.textContent='RANK '+(predicted.perks[choice]+1)+' / 4';button.append(img,rank,title,desc);button.onclick=()=>void selectPerk(choice);cards.append(button);}
  cards.querySelector('button')?.focus({preventScroll:true});announce('Sector complete. Choose one permanent perk.');
  }catch(e){status(e.message);}finally{drafting=false;refreshButtons();}
 }

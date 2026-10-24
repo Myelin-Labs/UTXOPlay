@@ -1,0 +1,70 @@
+{
+  "generator": "Built-in image_gen",
+  "date": "2026-10-24",
+  "assets": [
+    {
+      "name": "coil_bg",
+      "prompt": "Use case: stylized-concept. Asset type: production in-game environment plate for NEON COIL, a premium top-down circuit snake game. Generate one 1536x1024 landscape image. A museum-quality miniature bioluminescent jade conservatory, viewed strictly straight down orthographic, tactile dark ceramic and oxidized copper, tiny luminous moss, fine elegant circuit veins, botanical glass bulbs and richly sculpted jade edging. The central 68% width and 86% height is a perfectly flat dark teal slate playing surface, subtle hand-worked material and restrained copper seams but NO grid, NO objects in the play area. Rich dimensional botanical machinery restricted to far left and right margins, refined warm amber edge lights. Grounded realistic 3D materials, soft ambient occlusion, cinematic but readable, precious manufactured object, sophisticated Japanese sci-fi garden atmosphere. Designed as a real game background, not a mockup. Crisp beautiful details visible on large screens; deep turquoise, celadon jade, warm copper accents. No snakes, characters, food, text, labels, logos, user interface, checkerboard, vignette or central bright hotspot.",
+      "source": "assets/arcade-premium-source/coil_bg.png",
+      "web": "games/arcade/web/art/coil_bg.webp"
+    },
+    {
+      "name": "coil_atlas",
+      "prompt": "Use case: stylized-concept. Asset type: production 2D sprite atlas. ONE 1536x1024 RGBA image, truly transparent background, exactly a 3 column by 2 row grid of six cells each512x512, with one object centered in each cell and generous clear margins. No text, grid lines, labels, checkerboard, ground plane or cast shadows outside objects. Premium tactile 3D game art, strict overhead orthographic view, consistent soft upper-left illumination. A jade ceramic bio-mechanical circuit serpent: celadon glazed porcelain, copper inlays, subtle translucent mint energy core, exquisite tiny manufactured details, charming expressive design not low-detail vector. Row1 left: the serpent head, rounded square approximately330x330 with two dark glossy eyes, tiny copper horns, facing RIGHT, top-down and clean compact silhouette. Row1 middle: one rounded square body segment320x320, jade ceramic shell with an elegant copper circuit cross and mint translucent center, symmetrical all four directions. Row1 right: one tapered tail segment, wide at LEFT tapering to rounded point at RIGHT, jade/copper, approximately330x280. Row2 left: a luminous golden botanical seed orb with copper petal casing, circular compact silhouette diameter250, exquisite amber glass. Row2 middle: a rare closed-circuit energy node, jade and polished golden circular ring enclosing a pearl core, diameter260. Row2 right: a small cluster of three jade and gold broken ceramic fragments, compact240x240. High-end game asset lighting with precise material separation, sharp edges and restrained highlights. All six sprites entirely isolated with real transparency, no baked checkerboard. They will be sampled directly as 512x512 cells in a game.",
+      "source": "assets/arcade-premium-source/coil_atlas.png",
+      "web": "games/arcade/web/art/coil_atlas.webp"
+    },
+    {
+      "name": "starfall_bg",
+      "prompt": "Use case: stylized-concept. Asset type: actual in-game background plate, one 1536x1024 landscape image. A cinematic science-fiction orbital battlefield seen from high above an exquisite blue gas giant's curved horizon, gigantic distant luminous orbital ring at the far upper-left and delicate space station structure along extreme edges, dark deep teal/navy cosmic dust, soft amber sunlight on the planetary atmosphere, sapphire and copper accents, realistic atmospheric depth and physical materials. Central 70% is calm dark deep space with a subtle distant mist, suitable for small brightly colored ships and enemy projectiles; readable and not cluttered. Outer edges richly detailed, balanced strong cinematic composition, sophisticated high-budget space exploration game art, ultra-polished. No ships, no projectiles, no enemies, no interfaces, no text, no logo. No brightly glowing sun in the playfield. Not a game screenshot, an actual environment texture.",
+      "source": "assets/arcade-premium-source/starfall_bg.png",
+      "web": "games/arcade/web/art/starfall_bg.webp"
+    },
+    {
+      "name": "starfall_atlas",
+      "prompt": "Use case: stylized-concept. Production game sprite sheet, 1536x1024, 3 columns by 2 rows exactly512x512 each. Six isolated objects on a completely uniform PURE BLACK #000000 BACKGROUND, absolutely no background gradient, ambient glow, backdrop, floor, or shadows outside each object. Crisp hard-edged silhouettes, no text or labels. Strict top-down orthographic view like an exquisite high-budget space tactics game. Realistic miniature spacecraft with platinum ceramic panels, titanium frames, intricate structural details and recessed emissive lights; not triangular flat polygons. Each object fits within its cell leaving at least64px margin. TOP ROW: left a sleek ivory and turquoise interceptor with swept wings, nose facing UP, twin engines, approximately330wide370tall; center an enemy crimson/gunmetal armored scarab drone nose DOWN, approximately330wide300tall; right an enemy violet/titanium manta drone nose DOWN, approximately330wide300tall. BOTTOM ROW: left an enemy amber/titanium angular gunship nose DOWN, approximately330wide300tall; middle a beautiful cyan-and-gold capture reactor ring, a hollow circular torus diameter300; right a compact orange/white explosion fireball with razor-sharp silhouetted fragments approximately300x300. Consistent top-left light, high craftsmanship physically plausible surfaces, excellent small-scale readability. Only six objects, each centered on an absolutely flat pure black isolation matte; no grey haze or colored gradient between them.",
+      "source": "assets/arcade-premium-source/starfall_atlas.png",
+      "web": "games/arcade/web/art/starfall_atlas.webp"
+    },
+    {
+      "name": "drift_bg",
+      "prompt": "Use case: stylized-concept. Asset type: production landscape background plate for a premium cinematic arcade racing game, 1536x1024. A beautifully realized miniature retro-futurist coastal megacity at blue hour, rain-soaked black basalt elevated highway approaches centered on a single vanishing point at 50% width and 28% image height. Elegant art-deco skyscrapers at far left/right, layered mountains and harbor silhouettes at horizon, peach-coral sunset break in deep indigo clouds, restrained neon teal architectural windows and gold edge lights. Realistic detailed stylized 3D, sophisticated filmic lighting, wet material reflections and atmospheric perspective, exquisite miniature craftsmanship. The BOTTOM 65% is quiet low-contrast nearly black asphalt / dark foreground for a dynamically rendered road overlay, no hardcoded lane markings or cars; the buildings remain at the extreme sides. Very wide sense of place. No vehicles, barriers, UI, logos, text, billboards with lettering. An environment asset, not a screenshot or mockup.",
+      "source": "assets/arcade-premium-source/drift_bg.png",
+      "web": "games/arcade/web/art/drift_bg.webp"
+    },
+    {
+      "name": "drift_atlas",
+      "prompt": "Use case: stylized-concept. Production game sprite sheet 1536x1024, EXACT regular 3x2 grid, each cell512x512. Six isolated realistic premium arcade-racing assets on perfectly flat PURE BLACK #000000 background, no gradient no halo no floor no cast shadow outside objects, no text no logos no grid lines. Elevated rear chase camera, approximately35degrees above road, all vehicles seen from BEHIND facing AWAY from camera, coherent perspective. Exquisite detailed miniature futuristic grand tourer: pearl ivory body, dark glass, copper-titanium accents and narrow luminous ruby tail lights, believable suspension/wheels, high-end automotive rendering. ROW1: left straight rear-view player coupe; middle same coupe with a slight left steering lean; right same coupe with slight right steering lean. Each car width360 height300 and generous margin. ROW2: left a heavy industrial road barrier with ceramic coral hazard panels and dark titanium frame, viewed from front slightly above, width390 height200; middle one floating luminous amber energy ring, precise metallic torus with engraved machinery, diameter280, from chase camera; right one narrow roadside futuristic illuminated bollard, teal/copper, height360 width100. All silhouettes crisp against exactly pure black. Finest art-directed physically based rendering, deliberate readable shapes. No smoke, motion blur, ground plane or checkerboard.",
+      "source": "assets/arcade-premium-source/drift_atlas.png",
+      "web": "games/arcade/web/art/drift_atlas.webp"
+    },
+    {
+      "name": "prism_bg",
+      "prompt": "Use case: stylized-concept. Production 1536x1024 landscape in-game environment texture. A breathtaking dark celestial optical instrument inside an enormous glass-roofed art-deco observatory, premium physically rendered game environment. Symmetrical front-on scene, champagne gold and brushed platinum ribs, huge iridescent glass facets and jewel-cut mechanical lenses only at far side margins. A subtle grand astrolabe circle in deep central distance, layers of midnight blue and plum glass, tiny warm suspended motes, soft teal reflected light and prismatic refraction caustics. The central80% is open dark and calm for moving crystal blocks and a small luminous orb. Very fine engraving, believable polished materials, theatrical depth, museum-quality design. A tall sense of an immense space while retaining a wide screen composition. No game objects, bricks, paddle, ball, HUD, labels, lettering, logo, or bright central light. Refined optical engineering rather than generic fantasy crystal cave. Rich tactile and cinematic, an actual usable background plate.",
+      "source": "assets/arcade-premium-source/prism_bg.png",
+      "web": "games/arcade/web/art/prism_bg.webp"
+    },
+    {
+      "name": "prism_atlas",
+      "prompt": "Use case: stylized-concept. Actual premium brick-breaker game sprite atlas, 1536x1024 regular 3columns by4rows each512x256, exactly twelve objects centered in their cells on perfectly flat PURE BLACK #000000, absolutely no gradient, halo, floor, external shadows, labels or text. Strict straight-on FRONT orthographic view with subtle bevel depth, consistent soft upper-left studio light. Exquisite manufactured optical crystal instruments, ultra-fine champagne-gold machined corners, platinum rails, clean softly beveled rectangular glass block silhouette, luminous deeply refractive gemstone interiors. Top TWO ROWS: six horizontal crystal bricks, each400x130, identical outer shape. Row1 amethyst purple, aquamarine cyan, coral ruby; Row2 emerald jade, amber citrine, opalescent pearl white. Each has a precise central geometric jewel lens, tactile exquisite refractions, flawless material, crisp very readable silhouette. Row3: left luxurious horizontal optical paddle, white ceramic wing tips, gold/platinum rails, violet glass core, width430 height85; middle round white opal energy ball diameter110 with sharp edge and gold fine rim; right three small angular jewel shards in compact130x130 cluster. Row4: left gold-mounted prismatic circular lens diameter130; middle compact four-point white-cyan impact star diameter130; right faceted translucent rose-quartz heart diameter130. All generous margins, exact row layout, realistic physical lighting and high-end AAA UI asset finish, no excessive bloom. Pure black isolation matte behind all twelve sprites.",
+      "source": "assets/arcade-premium-source/prism_atlas.png",
+      "web": "games/arcade/web/art/prism_atlas.webp"
+    }
+  ],
+  "delivery": {
+    "format": "WebP with source alpha retained",
+    "backgroundQuality": 88,
+    "atlasQuality": 94,
+    "build": "tools/build-premium-art.mjs",
+    "spriteBounds": "games/arcade/web/premium-art.mjs",
+    "prismUiIcons": [
+      "paddle",
+      "diamond",
+      "citrine",
+      "aquamarine",
+      "amethyst",
+      "heart",
+      "lens"
+    ]
+  }
+}
