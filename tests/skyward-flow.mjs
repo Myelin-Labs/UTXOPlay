@@ -45,7 +45,7 @@ async function pump(frames){for(let i=0;i<frames;i++){time+=1000/60;const jobs=[
 const $=s=>document.querySelector(s),state=async()=>await(await globalThis.fetch('/games/sling/api/state')).json();
 window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
 window.HTMLDialogElement.prototype.close=function(){this.open=false;};
-window.eval(readFileSync(root+'/public/game-shell.js','utf8'));
+window.eval(readFileSync(root+'/public/game-shell.js','utf8'));window.eval(readFileSync(root+'/public/game-overlay.js','utf8'));window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
 await import(root+'/games/sling/web/app.js');
 $('.game-menu-toggle').click();assert.equal($('#game-menu').open,true);
 $('#game-menu .game-menu-close').click();assert.equal($('#game-menu').open,false);

@@ -6,10 +6,11 @@ import assert from 'node:assert/strict';
 const require = createRequire(process.env.ARCADE_TEST_MODULES ? resolve(process.env.ARCADE_TEST_MODULES,'../package.json') : import.meta.url);
 const {JSDOM} = require('jsdom');
 const games = JSON.parse(readFileSync('server/catalog.json'));
-const shell = readFileSync('public/game-shell.js','utf8');
+const shell = readFileSync('public/game-shell.js','utf8'),overlay=readFileSync('public/game-overlay.js','utf8');
 for (const {id} of games) {
   const dom = new JSDOM(readFileSync(`games/${id}/web/index.html`,'utf8'),{url:`http://localhost/games/${id}/`,runScripts:'outside-only',pretendToBeVisual:true});
   const {window:w}=dom,d=w.document;
+  const decorate=()=>{w.eval(overlay);d.dispatchEvent(new w.Event('DOMContentLoaded'));};
   w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
   w.HTMLDialogElement.prototype.close=function(){this.open=false;};
   const originalIds=[...d.querySelectorAll('[id]')].map(n=>n.id);
@@ -18,10 +19,17 @@ for (const {id} of games) {
   w.addEventListener('blur',()=>blurs++);
   w.addEventListener('keydown',()=>gameKeys++);
   if(id==='neon-miner'){
+    decorate();assert.equal(d.querySelector('#game-menu').dataset.overlayMounted,'true');assert.equal(d.querySelectorAll('.overlay-view').length,4);
     const surface=d.querySelector('.game-surface');assert.ok(surface);for(const control of controls)assert.ok(surface.contains(control));assert.ok(surface.querySelector('.game-myelin-badge img'));assert.ok(surface.querySelector('#game-menu'));assert.ok(!d.querySelector('script[src*="game-shell"]'));console.log('neon-miner: native game-owned viewport; interactive behavior covered by miner-flow.mjs');dom.window.close();continue;
   }
   const loader=d.createElement('utxo-loader');d.body.append(loader);
-  w.eval(shell);
+  w.eval(shell);decorate();
+  assert.equal(d.querySelectorAll('.immersive-menu').length,1);
+  assert.equal(d.querySelector('.game-surface').dataset.menuTheme,id);
+  assert.ok(d.querySelector('.overlay-footer'));
+  for(const button of d.querySelectorAll('.game-menu-sections button'))assert.ok(!button.classList.contains('overlay-view'));
+  let fullscreenCalls=0;d.documentElement.requestFullscreen=async()=>fullscreenCalls++;
+  await [...d.querySelectorAll('.game-system-actions button')].find(b=>b.textContent==='Toggle fullscreen').onclick();assert.equal(fullscreenCalls,1);
   assert.ok(loader.isConnected,`${id}: standalone loading screen survives shell mounting`);
   const surface=d.querySelector('.game-surface');
   assert.ok(surface,`${id}: owns a viewport`);
@@ -50,7 +58,13 @@ for (const {id} of games) {
       assert.equal(menu.open,true);assert.equal(menu.dataset.view,'items');assert.equal(d.querySelector('#item-store').hidden,false);
       d.dispatchEvent(new w.CustomEvent('utxoplay:close-menu'));assert.equal(menu.open,false);
     }
-  }else assert.equal(d.querySelectorAll('.game-menu-toggle').length,0,'reuse the existing FPS menu');
+  }else {
+    assert.equal(d.querySelectorAll('.game-menu-toggle').length,0,'reuse the existing FPS menu');
+    const panel=d.querySelector('#panel'),canvas=d.querySelector('#arena');assert.equal(canvas.inert,true);
+    panel.hidden=true;d.dispatchEvent(new w.Event('utxoplay:fps-menu'));assert.equal(canvas.inert,false,'release input before engine requests pointer lock');
+    panel.hidden=false;d.dispatchEvent(new w.Event('utxoplay:fps-menu'));assert.equal(canvas.inert,true);
+    const before=gameKeys;panel.querySelector('button').dispatchEvent(new w.KeyboardEvent('keydown',{key:'w',code:'KeyW',bubbles:true}));assert.equal(gameKeys,before,'FPS overlay blocks gameplay keys');
+  }
   console.log(`${id}: all controls in viewport, IDs retained, menu/input checks passed`);
   dom.window.close();
 }

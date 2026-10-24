@@ -148,8 +148,9 @@
   fullscreen.type = 'button';
   fullscreen.textContent = 'Toggle fullscreen';
   fullscreen.onclick = async () => {
-    const doc = embedded ? parent.document : document;
     try {
+      let doc=document;
+      try {if(window.parent!==window&&parent.location.origin===location.origin)doc=parent.document;} catch {}
       if (doc.fullscreenElement) await doc.exitFullscreen();
       else await doc.documentElement.requestFullscreen();
     } catch {fullscreen.textContent = 'Fullscreen unavailable';}

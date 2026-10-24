@@ -43,7 +43,7 @@ const $=s=>document.querySelector(s),state=async()=>await (await globalThis.fetc
 function key(type,code){$('canvas').dispatchEvent(new window.KeyboardEvent(type,{bubbles:true,code}));}
 window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
 window.HTMLDialogElement.prototype.close=function(){this.open=false;};
-window.eval(readFileSync(root+'/public/game-shell.js','utf8'));
+window.eval(readFileSync(root+'/public/game-shell.js','utf8'));window.eval(readFileSync(root+'/public/game-overlay.js','utf8'));window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
 await import(`${root}/games/arcade/web/app.js`);
 await until(()=>!$('#launch').disabled);assert.equal($('#overlay').dataset.art,'true');
 if(kind==='prism-breaker'){assert.equal($('#prism-lens').getAttribute('aria-pressed'),'true');$('#prism-lens').click();assert.equal($('#prism-lens').getAttribute('aria-pressed'),'false');$('#prism-lens').click();assert.equal($('#prism-lens').getAttribute('aria-pressed'),'true');assert.equal(document.querySelectorAll('#lives img').length,3);}

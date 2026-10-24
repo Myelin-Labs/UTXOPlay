@@ -2,6 +2,8 @@
 
 A deployed browser game store at https://store.utxoplay.io. The collection adds four Myelin arcade games—Prism Breaker, Neon Coil, Starfall and Drift Run—alongside The Quiet Board (same-device two-player chess), Skyward (single-player slingshot), Teeworlds (online duels and practice), and OpenStrike (first-person online duels and practice).
 
+Store 0.18.0 adds a themed in-game overlay to all nine games: a translucent scrim, game artwork, section navigation, styled actions and responsive layouts. Existing controls retain their handlers and save formats. Keyboard input stays inside the menu; OpenStrike releases background inertness synchronously before recapturing the mouse. Multiplayer rounds continue while the overlay is open. Low-power rendering disables the backdrop blur, and reduced-motion settings disable its entrance animation. The shared fullscreen action now works in standalone games and same-origin embeds.
+
 Store 0.17.1 refines the wallet control into one authentication-state button, removes the separate guest label, shortens both mining and Prism direction hints, and simplifies the visible Myelin badge. The Prism hint stops before the first contact and never marks a catch position; mining hints no longer identify future targets or values. These are presentation changes: existing signed campaigns and native runtime profiles remain unchanged.
 
 ## Shipped in this release
