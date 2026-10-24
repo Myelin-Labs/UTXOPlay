@@ -1,5 +1,8 @@
 import {startRenderLoop,setText} from './performance.mjs';
 import {CharacterMotion,constrainCharacter,followCamera} from './motion.mjs';
+globalThis.UTXOPlayLoader?.boot();
+globalThis.UTXOPlayLoader?.assets(0,5);
+let startupAssets=0;
 const nodes=new Map();const $=s=>{if(!nodes.has(s))nodes.set(s,document.querySelector(s));return nodes.get(s);}, canvas=$('#arena'), ctx=canvas.getContext('2d');
 let room=null,busy=false,current=null,map,images={},noticeTimer,sequence=Date.now(),lastPoll=0,lastInput=0,mouse={x:0,y:0,active:false},camera={x:1100,y:650},audio;
 let motion,lastRender=0,hadCharacter=false;
@@ -7,7 +10,7 @@ const keys=new Set();const input={direction:0,x:200,y:0,jump:0,fire:0,hook:0,wea
 const colors=['#d3ed8c','#f5a785'];let sound=false,jumpUntil=0,socket,live=false,retryDelay=500,revision=0,lastSent=0,lastControls='',sending=false;
 function notice(text){$('#notice').textContent=text;$('#notice').classList.remove('hidden');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#notice').classList.add('hidden'),4500);}
 async function api(body){const r=await fetch('/games/teeworlds/api/'+(body?'action':'state'),{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok)throw Error(data.error||'Connection failed');return data;}
-function setRoom(next){const old=room;
+function setRoom(next){globalThis.UTXOPlayLoader?.session();const old=room;
  if(next?.id===old?.id&&next?.status==='running'&&['sealing','finished','failed','interrupted'].includes(old?.status))return;
  if(next?.id===old?.id&&next?.state&&current&&next.state.tick<current.tick)next={...next,state:current,tick:Math.max(next.tick,old.tick)};
  room=next;
@@ -129,4 +132,4 @@ function render(now,elapsed,dpr){const w=canvas.clientWidth,h=canvas.clientHeigh
  }else{tee(1310,590,'#d3ed8c',-.3,now/300,1,2.4);tee(1475,740,'#f5a785',-2.5,now/300+2,3,1.7);ctx.strokeStyle='#e7e4bc90';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(1310,590);ctx.lineTo(1460,375);ctx.stroke();}
  ctx.restore();if(room?.status==='running'){const d=me;setText('health',d?'♥'.repeat(d[15])+'\n'+'◆'.repeat(d[16]):'Respawning…');setText('weapon',d?['HAMMER','GUN','SHOTGUN','GRENADE','LASER','NINJA'][d[18]]+' · '+(d[17]<0?'∞':d[17]):'');$('#scoreboard').textContent=(state?.players||[]).map(p=>(p.id===room.slot?'YOU':room.mode==='practice'?'BOT':'P'+(p.id+1))+'  '+p.score).join('    ');}
 }
-try{map=await (await fetch('assets/map.json')).json();motion=new CharacterMotion(map.types.character,(x,y,tx,ty)=>constrainCharacter(map,x,y,tx,ty));await Promise.all(['body','feet','eyes','game'].map(name=>new Promise((resolve,reject)=>{const img=new Image();img.onload=resolve;img.onerror=reject;img.src='assets/'+name+'.png';images[name]=img;})));startRenderLoop(render,{active:()=>room?.status==='running',maxFps:60});connect();poll();}catch{notice('The arena assets could not load. Please reload.');}
+try{map=await (await fetch('assets/map.json')).json();globalThis.UTXOPlayLoader?.assets(++startupAssets,5);motion=new CharacterMotion(map.types.character,(x,y,tx,ty)=>constrainCharacter(map,x,y,tx,ty));await Promise.all(['body','feet','eyes','game'].map(name=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{globalThis.UTXOPlayLoader?.assets(++startupAssets,5);resolve();};img.onerror=reject;img.src='assets/'+name+'.png';images[name]=img;})));startRenderLoop(render,{active:()=>room?.status==='running',maxFps:60});connect();poll();globalThis.UTXOPlayLoader?.ready();}catch{globalThis.UTXOPlayLoader?.fail('assets');notice('The arena assets could not load. Please reload.');}

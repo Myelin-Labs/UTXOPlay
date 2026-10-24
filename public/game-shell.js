@@ -1,7 +1,6 @@
 // A single game-owned viewport. Existing game controls keep their nodes and handlers.
 (() => {
   const $ = (selector) => document.querySelector(selector);
-  const embedded = parent !== window;
   const kind = $('#world') ? 'sling' : $('#board') ? 'chess' : $('.arena-wrap') ? 'teeworlds' : $('#panel') ? 'openstrike' : 'arcade';
   let surface = $(kind === 'sling' ? '.game-shell' : kind === 'chess' ? '.table' : kind === 'teeworlds' ? '.arena-wrap' : kind === 'arcade' ? '.board' : 'body');
   if (kind === 'openstrike') {
@@ -176,8 +175,5 @@
     surface.querySelector('.top > div').append(badge);
     surface.querySelector('.top small').hidden = true;
   } else surface.append(badge);
-  if (embedded) {
-    const ready = () => parent.postMessage({type:'utxoplay:game-ready'},location.origin);
-    if(document.readyState === 'complete') ready();else addEventListener('load',ready,{once:true});
-  }
+
 })();

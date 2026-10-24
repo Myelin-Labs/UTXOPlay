@@ -21,3 +21,8 @@ Only the store image advances to `utxoplay:0.10.0`. Game engines, native binarie
 ## 0.11.0 follow-up
 
 The long combined menu is now divided into flat Game, Settings and Help views; Skyward also has an Item Store view in the same dialog. Opening native help/credits blocks global game hotkeys as well, and closing them restores focus to the game menu button. The Skyward hotbar keeps the equipped-item description visible; spending and extra-flight use are deliberate actions inside the store. See [coin campaign rules](skyward-coins.md) for purchase safety, validation and the new archive boundary.
+
+The shared startup surface and per-game readiness contract are documented in
+[game-loading.md](game-loading.md). New bundled games must report program,
+resource, session and scene readiness through that contract before the store
+reveals their iframe.

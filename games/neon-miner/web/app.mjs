@@ -3,6 +3,7 @@ import {MinerRenderer} from './renderer.mjs';
 import {artUrl} from './art.mjs';
 import {MinerAudio} from './audio.mjs';
 import {startRenderLoop,readQuality} from './performance.mjs';
+globalThis.UTXOPlayLoader?.boot();
 const $=id=>document.getElementById(id),canvas=$('mine'),renderer=new MinerRenderer(canvas),audio=new MinerAudio(),menu=$('game-menu');
 let doc=null,g=createGame(),previous=structuredClone(g),running=false,connected=false,busy=false,saving=null,tape=[],pulse=0,accumulator=0,started=false,menuReady=false,toastTimer=0,tab='game',blurEpoch=0,dirty=true,assetsReady=false,artFailed=false,resolution=Math.min(devicePixelRatio||1,2);
 const text=(id,value)=>{const el=$(id);if(el.textContent!==String(value))el.textContent=String(value);};
@@ -12,7 +13,7 @@ renderer.scanner=preference('scanner','true')==='true';
 function scannerToggle(){renderer.scanner=!renderer.scanner;remember('scanner',renderer.scanner);scannerHud();dirty=true;}
 function scannerHud(){$('scanner').setAttribute('aria-pressed',String(renderer.scanner));text('scanner-label',renderer.scanner?'SCAN ON':'SCAN OFF');}
 $('scanner').onclick=()=>{scannerToggle();if(running)canvas.focus();};scannerHud();
-async function artwork(){artFailed=false;try{await renderer.load();assetsReady=true;dirty=true;}catch(error){artFailed=true;throw error;}}
+async function artwork(){artFailed=false;try{await renderer.load();assetsReady=true;dirty=true;}catch(error){artFailed=true;globalThis.UTXOPlayLoader?.fail('assets');throw error;}}
 audio.music=preference('music','false')==='true';audio.effects=preference('sound','true')==='true';
 async function request(path,body){const r=await fetch('./api/'+path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to save');return data;}
 function adopt(value){doc=value;g=structuredClone(value.game);previous=structuredClone(g);tape=[];accumulator=0;pulse=0;connected=true;dirty=true;hud();}
@@ -74,6 +75,4 @@ function resize(){const field=document.querySelector('.field'),r=field.getBoundi
 new ResizeObserver(resize).observe(document.querySelector('.field'));
 startRenderLoop((now,dt)=>{if(running){accumulator+=Math.min(dt,80);while(accumulator>=1000/30){if(tape.length>=60){text('status','Waiting for signed save…');accumulator=0;break;}previous=structuredClone(g);const before=g.score,oldCargo=g.cargo,oldStock=g.stock[0],oldPhase=g.phase;const input=pulse;pulse=0;step(g,input);tape.push(input);if(oldPhase===0&&g.phase===1)audio.effect('cast');if(oldCargo<0&&g.cargo>=0)audio.effect('catch');if(g.stock[0]<oldStock)audio.effect('emp');if(g.score>before)audio.effect('ore');accumulator-=1000/30;if(g.mode!=='mining'){stop();if(g.mode==='cleared'||g.mode==='complete')audio.effect('clear');showRest();flush();break;}}if(tape.length>=30&&!saving)save();}if(running||dirty||renderer.particles.length||renderer.labels.length||renderer.rings.length)renderer.draw(g,dt,running?Math.min(1,accumulator/(1000/30)):1,previous);dirty=false;updateHud();},{active:()=>running,onResolution:ratio=>{resolution=ratio;resize();}});
 window.addEventListener('pagehide',()=>audio.dispose());
-// The game UI owns loading/retry states; let the store reveal it before network work.
-if(window.parent!==window)window.parent.postMessage({type:'utxoplay:game-ready'},window.location.origin);
-try{await fetch('/api/guest',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const [,state]=await Promise.all([artwork(),request('state')]);adopt(state);text('status','Myelin · connected');showRest();}catch(error){connected=false;showRest();toast(error.message);}
+try{await fetch('/api/guest',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const [,state]=await Promise.all([artwork(),request('state').then(state=>{globalThis.UTXOPlayLoader?.session();return state;})]);adopt(state);text('status','Myelin · connected');showRest();globalThis.UTXOPlayLoader?.ready();}catch(error){globalThis.UTXOPlayLoader?.fail('session');connected=false;showRest();toast(error.message);}

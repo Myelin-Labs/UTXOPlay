@@ -3,6 +3,7 @@ import {InputBuffer,BoardGesture,feedback,runSummary} from './presentation.mjs';
 import {ArcadeRenderer} from './renderer.mjs';
 import {ArcadeAudio} from './audio.mjs';
 import {setText,startRenderLoop,readQuality} from './performance.mjs';
+globalThis.UTXOPlayLoader?.boot();
 const id=location.pathname.split('/')[2];
 const config={
  'prism-breaker':{title:'Prism Breaker',label:'01 / REFRACTION LAB',accent:'#b7a2ff',intro:'Find the angle. Break the spectrum.',goal:'Clear the prism wall. Chain brick hits for a bigger multiplier. Three lives, endless waves.',keys:['←','→','A','D'],tip:'Move the mouse to aim, use the arrow keys, or drag on touch. Keep the ball above your paddle.'},
@@ -53,7 +54,7 @@ function begin(){clearInput();syncView();$('#notice').hidden=true;noticeTime=0;$
 document.documentElement.style.setProperty('--accent',config.accent);document.documentElement.dataset.game=id;document.title=config.title+' · UTXOPlay';
 document.documentElement.style.setProperty('--key-art',`url('/assets/${id}-keyart.webp')`);
 setText('title',config.title);setText('eyebrow',config.label);setText('intro',config.intro);setText('goal',config.goal);setText('controls',config.tip);setText('best',best.toLocaleString());
-$('#cover').src=`/assets/${id}-keyart.webp`;$('#cover').alt=config.title+' original arcade key art';
+$('#cover').src=`/assets/${id}-keyart.webp`;$('#cover').alt=config.title+' original arcade key art';globalThis.UTXOPlayLoader?.images([$('#cover')]);
 setText('level-label',id==='neon-coil'||id==='drift-run'?'PACE':'WAVE');
 for(const key of config.keys){const k=document.createElement('kbd');k.textContent=key;$('#keys').append(k);}
 for(const b of document.querySelectorAll('.touch button'))if((id!=='neon-coil'&&[4,8].includes(+b.dataset.input))||(id!=='starfall'&&+b.dataset.input===16))b.hidden=true;
@@ -95,8 +96,8 @@ function showStats(game){const summary=runSummary(game,runBest);$('#run-stats').
 async function boot(){
   try{confirmed=await api('state');predicted=structuredClone(confirmed.game);syncView();loaded=true;runBest=best;rememberBest();
     showOverlay(predicted.over?'Your last run':config.title,predicted.tick?`${predicted.score} points saved. ${predicted.over?'Ready for another run?':'Pick up where you left off.'}`:config.intro,predicted.over?'Play again':predicted.tick?'Continue run':'Start playing',true);
-    status('Connected · progress saves as you play');
-  }catch(e){loaded=false;showOverlay('Connecting failed',e.message,'Retry connection',true);status('Unable to load your session.');}
+    status('Connected · progress saves as you play');globalThis.UTXOPlayLoader?.session();globalThis.UTXOPlayLoader?.ready();
+  }catch(e){globalThis.UTXOPlayLoader?.fail('session');loaded=false;showOverlay('Connecting failed',e.message,'Retry connection',true);status('Unable to load your session.');}
   finally{refreshButtons();}
 }
 $('#launch').onclick=async()=>{

@@ -18,5 +18,5 @@ test('network failures and timeouts have actionable messages, server validation 
  assert.equal(apiError(new Error('Use an HTTPS URL.')),'Use an HTTPS URL.');
 });
 test('every bundled game owns its viewport and loads its current interface',()=>{
- for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');if(game.id==='neon-miner'){assert.match(html,/data-surface="miner"/);assert.match(html,/id="game-menu"/);assert.match(html,/app\.mjs\?v=0\.13\.1/);}else assert.match(html,/\/game-shell\.js\?v=0\.11\.0/);}
+ for(const game of games){const html=readFileSync(new URL(`../games/${game.id}/web/index.html`,import.meta.url),'utf8');if(game.id==='neon-miner'){assert.match(html,/data-surface="miner"/);assert.match(html,/id="game-menu"/);assert.match(html,/app\.mjs\?v=0\.14\.0/);}else assert.match(html,/\/game-shell\.js\?v=0\.14\.0/);}
 });

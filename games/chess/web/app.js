@@ -1,5 +1,7 @@
 import { startPolling } from "./performance.mjs";
 import { toggleSound, volume, sound } from "./audio.js";
+globalThis.UTXOPlayLoader?.boot();
+globalThis.UTXOPlayLoader?.images(['/games/chess/assets/study.webp','/games/chess/assets/pieces.webp']);
 const $ = (s) => document.querySelector(s);
 let data,
   selected = null,
@@ -537,10 +539,13 @@ async function refresh() {
   $("#retry").disabled = true;
   try {
     data = await api("/games/chess/api/state");
+    globalThis.UTXOPlayLoader?.session();
     positions = null;
     reviewIndex = null;
     render();
+    globalThis.UTXOPlayLoader?.ready();
   } catch (e) {
+    globalThis.UTXOPlayLoader?.fail("session");
     toast(e.message);
     $("#status").textContent = "Table unavailable";
     $("#connection").hidden = false;

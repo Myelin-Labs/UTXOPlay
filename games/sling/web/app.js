@@ -1,5 +1,6 @@
 import { startRenderLoop, startPolling, setText } from "./performance.mjs";
 import { toggleSound, volume, sound, startSound, audioState } from "./audio.js?v=0.9.0";
+globalThis.UTXOPlayLoader?.boot();
 const $ = (s) => document.querySelector(s),
   canvas = $("#world"),
   ctx = canvas.getContext("2d");
@@ -115,6 +116,7 @@ bg.onload = () => {
 if (bg.complete && bg.naturalWidth) bg.onload();
 const sprites = new Image();
 sprites.src = "/games/sling/assets/characters.webp";
+globalThis.UTXOPlayLoader?.images([bg,sprites]);
 async function api(path, body) {
   const r = await fetch(
     path,
@@ -796,7 +798,10 @@ canvas.onkeydown = (e) => {
 try {
   data = await api("/games/sling/api/state");
   ui();
+  globalThis.UTXOPlayLoader?.session();
+  globalThis.UTXOPlayLoader?.ready();
 } catch (e) {
+  globalThis.UTXOPlayLoader?.fail("session");
   toast(e.message);
 }
 startRenderLoop(render, {

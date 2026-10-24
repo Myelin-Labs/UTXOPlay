@@ -68,6 +68,7 @@ import {
   apiError,
 } from "./ui-model.mjs";
 import "./style.css";
+import {GameFrame} from "./game-frame.jsx";
 const loadMarketplace = () => import("./marketplace.jsx");
 const Studio = lazy(() =>
   loadMarketplace().then((m) => ({ default: m.Studio })),
@@ -214,7 +215,6 @@ function App({ walletApi }) {
     [launching, setLaunching] = useState("");
   const [mobileNav, setMobileNav] = useState(false),
     [frameKey, setFrameKey] = useState(0),
-    [frameStatus, setFrameStatus] = useState("loading"),
     [revision, setRevision] = useState(0),
     [motionSetting, setMotionSetting] = useState(readMotion),
     [quality, setQuality] = useState(() => {
@@ -240,8 +240,6 @@ function App({ walletApi }) {
     launchLock = useRef(false),
     searchRef = useRef(null),
     mainRef = useRef(null),
-    frameRef = useRef(null),
-    frameTimer = useRef(null),
     walletPickerSeen = useRef(false),
     cancelSignature = useRef(null);
   const reduceSystem = useReducedMotion(),
@@ -521,33 +519,6 @@ function App({ walletApi }) {
       setWalletBusy(false);
     }
   }
-  useEffect(() => {
-    setFrameStatus("loading");
-    clearTimeout(frameTimer.current);
-    if (game && user && !game.vendor)
-      frameTimer.current = setTimeout(
-        () => setFrameStatus((s) => (s === "loading" ? "slow" : s)),
-        15000,
-      );
-    return () => clearTimeout(frameTimer.current);
-  }, [game?.id, user?.id, frameKey]);
-  useEffect(() => {
-    const onMessage = (e) => {
-      if (
-        e.origin !== location.origin ||
-        e.source !== frameRef.current?.contentWindow
-      )
-        return;
-      if (e.data?.type === "utxoplay:game-ready") {
-        setFrameStatus("ready");
-        clearTimeout(frameTimer.current);
-      }
-    };
-    addEventListener("message", onMessage);
-    return () => {
-      removeEventListener("message", onMessage);
-    };
-  }, []);
   async function launch(id) {
     if (launchLock.current || loadingUser) return;
     launchLock.current = true;
@@ -1210,51 +1181,7 @@ function App({ walletApi }) {
                       <h2>Getting your playground ready…</h2>
                     </div>
                   ) : user ? (
-                    <div
-                      className={
-                        "game-stage " +
-                        (frameStatus === "ready" ? "is-ready" : "")
-                      }
-                    >
-                      <iframe
-                        ref={frameRef}
-                        key={game.id + ":" + frameKey}
-                        className={"game-frame " + game.id}
-                        src={"/games/" + game.id + "/"}
-                        title={game.title}
-                        allow="fullscreen; autoplay"
-                        allowFullScreen
-                      />
-                      {frameStatus !== "ready" && (
-                        <div className="frame-loading" role="status">
-                          {frameStatus === "slow" ? (
-                            <>
-                              <WifiOff size={30} />
-                              <h2>The game is taking a little longer.</h2>
-                              <p>
-                                Check your connection, then try reloading the
-                                game.
-                              </p>
-                              <button
-                                className="primary"
-                                onClick={() => setFrameKey((k) => k + 1)}
-                              >
-                                <RefreshCw size={16} />
-                                Try again
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <Spinner />
-                              <h2>Opening {game.title}…</h2>
-                              <p>
-                                Getting everything ready for your next round.
-                              </p>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <GameFrame key={game.id+":"+user.id+":"+frameKey} game={game}/>
                   ) : (
                     <div
                       className="launch-placeholder"
