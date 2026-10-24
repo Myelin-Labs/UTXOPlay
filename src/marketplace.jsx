@@ -19,7 +19,7 @@ import {
   Code2,
   ShieldCheck,
 } from "lucide-react";
-import { Modal, Notice, Spinner, PageHeading } from "./ui.jsx";
+import { Modal, Notice, Spinner, PageHeading, GameCredits } from "./ui.jsx";
 import { formatCkb, parsePrice, splitPrice } from "../shared/pricing.mjs";
 export async function marketApi(url, body) {
   const r = await fetch(url, {
@@ -44,6 +44,9 @@ const emptyDraft = {
   pricing: "free",
   priceCkb: "",
   payoutAddress: "",
+  developerName: "",
+  developerAddress: "",
+  publisherName: "",
   supportUrl: "",
   refundUrl: "",
 };
@@ -306,7 +309,7 @@ export function Studio({ user, onConnect, onCatalogChange }) {
 function ProjectEditor({ initial, user, config, onClose, onDone }) {
   const [project, setProject] = useState(initial.new ? null : initial),
     [draft, setDraft] = useState(
-      initial.draft || { ...emptyDraft, payoutAddress: user.address || "" },
+      { ...emptyDraft, payoutAddress: user.address || "", publisherName: user.username || "", ...initial.draft },
     ),
     [step, setStep] = useState(0),
     [busy, setBusy] = useState(""),
@@ -319,7 +322,7 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
   const [discard, setDiscard] = useState(false);
   const savedDraft = useRef(
     JSON.stringify(
-      initial.draft || { ...emptyDraft, payoutAddress: user.address || "" },
+      { ...emptyDraft, payoutAddress: user.address || "", publisherName: user.username || "", ...initial.draft },
     ),
   );
   function requestClose() {
@@ -434,6 +437,17 @@ function ProjectEditor({ initial, user, config, onClose, onDone }) {
                 placeholder="A game worth sharing"
               />
             </label>
+            <fieldset className="credit-editor">
+              <legend>Developer & publisher</legend>
+              <p className="fine">Credit the people who made the game separately from the publisher responsible for this listing. Leave an unknown developer wallet blank.</p>
+              <div className="form-columns">
+                <label>Developer name<input value={draft.developerName} maxLength={80} onChange={e => field("developerName", e.target.value)} placeholder="Original creator or studio" /></label>
+                <label>Publisher name<input value={draft.publisherName} maxLength={80} onChange={e => field("publisherName", e.target.value)} placeholder="Your publishing name" /></label>
+              </div>
+              <label>Developer CKB wallet (optional)<input value={draft.developerAddress} maxLength={300} onChange={e => field("developerAddress", e.target.value)} placeholder="ckb1… · Leave blank if unknown" spellCheck={false} /></label>
+              <label>Publisher CKB wallet<input readOnly value={project?.publisher?.address || user.address || ""} onFocus={e => e.target.select()} /></label>
+              <p className="fine">Your publisher wallet comes from the signed-in project owner and is public on the listing. Credit names and developer wallets are attribution supplied by the publisher. The payout address is configured separately in Pricing.</p>
+            </fieldset>
             <label>
               Description
               <textarea
@@ -1108,6 +1122,7 @@ export function VendorPlay({
         </div>
         <h1>{game.title}</h1>
         <p>{game.description}</p>
+        <GameCredits game={game} />
         <div className="vendor-host">
           <Server size={18} />
           <span>

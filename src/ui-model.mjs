@@ -16,7 +16,7 @@ export function selectGames(
       (!freeOnly || g.pricing !== "paid") &&
       (genre === "All games" || g.genre === genre) &&
       (!q ||
-        `${g.title} ${g.description} ${g.genre} ${g.mode}`
+        `${g.title} ${g.description} ${g.genre} ${g.mode} ${g.developer?.name || ""} ${g.publisher?.name || ""}`
           .toLocaleLowerCase()
           .includes(q)) &&
       (mode === "all" ||

@@ -27,6 +27,9 @@ const initial = (p) => ({
   pricing: "free",
   priceCkb: "",
   payoutAddress: "",
+  developerName: "",
+  developerAddress: "",
+  publisherName: "",
   supportUrl: "",
   refundUrl: "",
 });
@@ -88,11 +91,20 @@ export function installMarketplace({
     if (!p || p.owner !== req.account.id) throw fail("Project not found.", 404);
     return p;
   }
+  // Publishing authority comes from the authenticated project owner, never credits or payouts.
+  function credits(p, d) {
+    const owner = db.prepare("SELECT address FROM accounts WHERE id=?").get(p.owner);
+    return {
+      developer: { name: d.developerName || "Not specified", address: d.developerAddress || null },
+      publisher: { name: d.publisherName || "Independent publisher", address: owner?.address || null },
+    };
+  }
   function view(p) {
     return {
       id: p.id,
       owner: p.owner,
-      draft: JSON.parse(p.draft),
+      draft: { ...initial(p), ...JSON.parse(p.draft) },
+      ...credits(p, JSON.parse(p.draft)),
       revision: p.revision,
       live: p.live ? JSON.parse(p.live) : null,
       status: p.listed ? "published" : p.live ? "unlisted" : "draft",
@@ -110,6 +122,7 @@ export function installMarketplace({
     return {
       id: "vendor-" + p.id,
       projectId: p.id,
+      ...credits(p, d),
       title: d.title,
       subtitle:
         d.pricing === "free"
@@ -196,7 +209,12 @@ export function installMarketplace({
       valid: BigInt(split.total) >= min,
     };
   }
-  function validateDraft(input, p) {
+  async function validateDraft(input, p) {
+    if (!input || typeof input !== "object" || Array.isArray(input))
+      throw fail("Provide a project draft.");
+    for (const key of ["publisherAddress", "publisher", "developer", "owner", "portedBy"])
+      if (Object.hasOwn(input, key))
+        throw fail("Publisher wallet and project ownership are set by the signed-in account. Use the credit name fields.");
     const current = p ? JSON.parse(p.draft) : {};
     const d = {
       ...initial({ title: "", description: "", url: "" }),
@@ -209,6 +227,16 @@ export function installMarketplace({
         d[k] = input[k].trim();
       }
     if (input.url !== undefined) d.gameUrl = input.url;
+    for (const key of ["developerName", "publisherName"])
+      if (d[key].length > 80 || /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/u.test(d[key]))
+        throw fail("Credit names must be at most 80 characters, without control characters.");
+    if (d.developerAddress) {
+      if (!d.developerName) throw fail("Add a developer name with the developer wallet.");
+      if (!d.developerAddress.startsWith("ckb1") || d.developerAddress.length > 300)
+        throw fail("Use a valid CKB mainnet developer address, or leave it blank if unknown.");
+      try { await chain.address(d.developerAddress); }
+      catch { throw fail("Use a valid CKB mainnet developer address, or leave it blank if unknown."); }
+    }
     if (
       d.title.length < 3 ||
       d.title.length > 80 ||
@@ -406,13 +434,13 @@ export function installMarketplace({
     "/api/developer/projects",
     vendor,
     wrap(async (req, res) => {
+      const d = await validateDraft(req.body);
       if (
         db
           .prepare("SELECT count(*) n FROM projects WHERE owner=?")
           .get(req.account.id).n >= 10
       )
         throw fail("Project limit reached.", 429);
-      const d = validateDraft(req.body);
       const id = randomBytes(12).toString("hex");
       db.exec("BEGIN");
       try {
@@ -447,7 +475,10 @@ export function installMarketplace({
           "This project changed in another tab. Reload before editing.",
           409,
         );
-      const d = validateDraft(req.body.draft || {}, p);
+      const d = await validateDraft(req.body.draft || {}, p);
+      // Address validation may yield; preserve optimistic concurrency across it.
+      if (find(p.id).revision !== p.revision)
+        throw fail("This project changed in another tab. Reload before editing.", 409);
       db.prepare(
         "UPDATE listings SET draft=?,revision=revision+1,check_error=NULL,updated=? WHERE project=?",
       ).run(JSON.stringify(d), Date.now(), p.id);

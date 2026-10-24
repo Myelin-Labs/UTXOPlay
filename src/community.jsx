@@ -1,6 +1,7 @@
 import React,{useState,useEffect,useRef} from 'react';
 import {ThumbsUp,ThumbsDown,Star,MessageSquare,Flag,ArrowRight,Check,UserRound} from 'lucide-react';
 import './community.css';
+import {GameCredits} from './ui.jsx';
 export async function communityApi(url,body){const r=await fetch(url,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to save. Please retry.');return data;}
 export function UsernameEditor({user,onSaved}){
  const [name,setName]=useState(user.username||''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
@@ -41,5 +42,5 @@ export function Community({game,user,onConnect}){
 
 export function CommunityPage({games,gameId,user,onConnect,onPlay,onChoose}){
  const game=games.find(g=>g.id===gameId)||games[0];
- return <><div className="community-page-top"><span className="eyebrow">UTXOPLAY COMMUNITY</span><label>Explore a game <select aria-label="Community game" value={game.id} onChange={e=>onChoose(e.target.value)}>{games.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}</select></label></div><div className="community-game-hero" style={{'--community-cover':`url(${game.cover})`}}><div><span className="eyebrow">{game.genre} · PLAYER REVIEWS</span><h1>{game.title}</h1><p>{game.description}</p><button className="primary" onClick={()=>onPlay(game.id)}>Play now <ArrowRight size={16}/></button></div></div><Community key={game.id+':'+(user?.id||'public')} game={game} user={user} onConnect={onConnect}/></>;
+ return <><div className="community-page-top"><span className="eyebrow">UTXOPLAY COMMUNITY</span><label>Explore a game <select aria-label="Community game" value={game.id} onChange={e=>onChoose(e.target.value)}>{games.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}</select></label></div><div className="community-game-hero" style={{'--community-cover':`url(${game.cover})`}}><div><span className="eyebrow">{game.genre} · PLAYER REVIEWS</span><h1>{game.title}</h1><p>{game.description}</p><button className="primary" onClick={()=>onPlay(game.id)}>Play now <ArrowRight size={16}/></button></div></div><GameCredits game={game}/><Community key={game.id+':'+(user?.id||'public')} game={game} user={user} onConnect={onConnect}/></>;
 }

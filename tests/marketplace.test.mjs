@@ -180,6 +180,10 @@ test("wallet vendor creates a default-free draft, checks configuration and publi
       gameUrl: "https://games.example.com/game",
       runtimeUrl: "https://games.example.com",
       controls: "Drag to play.",
+      developerName: "Original Studio",
+      developerAddress: "",
+      publisherName: "Garden Publishing",
+      payoutAddress: other,
     },
     sellerCookie,
   );
@@ -187,6 +191,9 @@ test("wallet vendor creates a default-free draft, checks configuration and publi
   project = r.data;
   game = "vendor-" + project.id;
   assert.equal(project.draft.pricing, "free");
+  assert.deepEqual(project.developer, { name: "Original Studio", address: null });
+  assert.deepEqual(project.publisher, { name: "Garden Publishing", address: seller });
+  assert.notEqual(project.publisher.address, project.draft.payoutAddress);
   assert.equal(
     (
       await req(
@@ -229,8 +236,53 @@ test("wallet vendor creates a default-free draft, checks configuration and publi
     ).status,
     200,
   );
-  assert.ok((await req("/api/games")).data.games.some((g) => g.id === game));
+  const published = (await req("/api/games")).data.games.find((g) => g.id === game);
+  assert.deepEqual(published.developer, project.developer);
+  assert.deepEqual(published.publisher, project.publisher);
   assert.equal(service.db.prepare("SELECT count(*) n FROM orders").get().n, 0);
+});
+test("credits separate original authorship, publishing authority and payout, and reject forged wallets", async () => {
+  let p = (await req("/api/developer/projects", undefined, sellerCookie)).data.projects[0];
+  for (const draft of [
+    { publisherAddress: other }, { publisher: { name: "Imposter", address: other } },
+    { owner: "forged" }, { developer: { name: "Forged", address: other } },
+    { developerAddress: "ckb1invalid" }, { developerAddress: "ckt1wrongnetwork" },
+    { developerName: "Hidden\u202ename" }, { publisherName: "x".repeat(81) },
+    { developerName: "", developerAddress: other },
+  ]) {
+    const rejected = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft }, sellerCookie);
+    assert.equal(rejected.status, 400, JSON.stringify(draft));
+  }
+  assert.equal((await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { publisherName: "Hijacked" } }, otherCookie)).status, 404);
+  const saved = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { developerAddress: other, publisherName: "Next Publishing" } }, sellerCookie);
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.data.developer, { name: "Original Studio", address: other });
+  assert.deepEqual(saved.data.publisher, { name: "Next Publishing", address: seller });
+  const live = (await req("/api/games")).data.games.find(g => g.id === game);
+  assert.deepEqual(live.developer, { name: "Original Studio", address: null });
+  assert.deepEqual(live.publisher, { name: "Garden Publishing", address: seller });
+  p = saved.data;
+  const restored = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { developerAddress: "", publisherName: "Garden Publishing" } }, sellerCookie);
+  assert.equal(restored.status, 200);
+  assert.equal(restored.data.developer.address, null);
+});
+test("developer wallet validation cannot overwrite a concurrent newer draft", async () => {
+  let p = (await req("/api/developer/projects", undefined, sellerCookie)).data.projects[0];
+  const original = chain.address;
+  let enter, release;
+  const entered = new Promise(r => enter = r), gate = new Promise(r => release = r);
+  chain.address = async a => { enter(); await gate; return original(a); };
+  const slow = req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { developerAddress: other } }, sellerCookie);
+  try {
+    await entered;
+    const newer = await req(`/api/developer/projects/${p.id}/save`, { revision: p.revision, draft: { publisherName: "Garden Publishing" } }, sellerCookie);
+    assert.equal(newer.status, 200);
+    release();
+    assert.equal((await slow).status, 409);
+    const current = (await req("/api/developer/projects", undefined, sellerCookie)).data.projects[0];
+    assert.equal(current.revision, newer.data.revision);
+    assert.equal(current.developer.address, null);
+  } finally { release(); chain.address = original; await slow; }
 });
 test("launch grants are scoped to one project, expire, and redeem once without exposing wallet identity", async () => {
   const guest = await req("/api/guest", {});

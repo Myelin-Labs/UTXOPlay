@@ -589,7 +589,7 @@ function App({ walletApi }) {
     ["/items", "Item store", Sparkles],
     ["/community", "Community", Users],
     ["/purchases", "Purchases", Wallet],
-    ["/developers", "Developer studio", Code2],
+    ["/developers", "Publishing studio", Code2],
   ];
   const navContent = (
     <>

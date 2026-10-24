@@ -3140,3 +3140,24 @@ body:has(.game-active){overflow:hidden}
 @media(max-width:600px){.wallet-button{padding:5px 9px 5px 5px;gap:7px;min-height:40px}.wallet-glyph{width:28px;height:28px}.wallet-chevron{display:none}}
 
 @media(max-width:600px){.wallet-label{max-width:105px}.wallet-button{min-width:0}}
+
+/* Credits identify creation and publishing independently; wallets expand on demand. */
+.credit-byline { margin: 14px 12px 0; display: grid; gap: 5px; font-size: 11px; }
+.credit-byline .game-credit { display: grid; grid-template-columns: 66px minmax(0,1fr); gap: 8px; }
+.game-credit dt { color: var(--muted, #98aaa0); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.game-credit dd { margin: 0; min-width: 0; }
+.credit-byline strong { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-credits { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; margin: 24px 0; padding: 22px; border: 1px solid rgba(178,219,195,.14); border-radius: 14px; background: linear-gradient(130deg,rgba(160,211,181,.065),rgba(160,211,181,.015)); }
+.game-credits .game-credit { min-width: 0; }
+.game-credits dt { margin-bottom: 8px; }
+.game-credits dd > strong { display: block; font-size: 14px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.credit-unknown { display: block; margin-top: 8px; color: var(--muted, #98aaa0); font-size: 11px; }
+.credit-wallet { margin-top: 8px; font-size: 11px; color: var(--muted, #98aaa0); }
+.credit-wallet summary { cursor: pointer; line-height: 1.7; }
+.credit-wallet summary span { display: inline-block; font-family: monospace; margin-left: 4px; }
+.credit-address { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; }
+.credit-address code { min-width: 0; overflow-wrap: anywhere; user-select: all; line-height: 1.7; }
+.credit-address button { flex-shrink: 0; width: 30px; height: 30px; }
+.credit-source { display: inline-flex; align-items: center; gap: 3px; margin-top: 8px; color: #b8dfc9; font-size: 11px; }
+.credit-wallet summary:focus-visible, .credit-source:focus-visible { outline: 2px solid #a7edc6; outline-offset: 4px; border-radius: 3px; }
+@media(max-width: 560px) { .game-credits { grid-template-columns: minmax(0,1fr); gap: 20px; padding: 18px; } }

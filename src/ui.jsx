@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useId } from "react";
+import React, { useEffect, useRef, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import {
   X,
+  Copy,
+  Check,
   ArrowUpRight,
   Play,
   Users,
@@ -123,6 +125,30 @@ export function Skeletons() {
 export function MyelinBadge({ game }) {
   return game.myelin?.based ? <span className="myelin-badge" title="Myelin host replay. Off-chain; no CKB settlement."><img src="/assets/myelin-logo.png?v=0.7.1" alt="" />MYELIN</span> : null;
 }
+function CreditWallet({ person, role }) {
+  const [copied, setCopied] = useState("");
+  if (!person?.address) return <span className="credit-unknown">Wallet not provided</span>;
+  const address = person.address;
+  return <details className="credit-wallet">
+    <summary>CKB wallet <span>{address.slice(0, 9)}…{address.slice(-6)}</span></summary>
+    <div className="credit-address"><code>{address}</code><button type="button" className="icon-btn" aria-label={"Copy " + role.toLowerCase() + " wallet address"} onClick={async () => {
+      try { await navigator.clipboard.writeText(address); setCopied("Copied"); }
+      catch { setCopied("Select the address to copy it manually."); }
+    }}>{copied === "Copied" ? <Check size={16}/> : <Copy size={16}/>}</button></div>
+    <span role="status" className="fine">{copied}</span>
+  </details>;
+}
+export function GameCredits({ game, compact = false }) {
+  const roles = [["Developer", game.developer], ["Publisher", game.publisher]];
+  if (!compact && game.portedBy) roles.push(["Port & Myelin integration", game.portedBy]);
+  return <dl className={compact ? "credit-byline" : "game-credits"} aria-label="Game credits">
+    {roles.map(([role, person]) => <div key={role} className="game-credit">
+      <dt>{role}</dt><dd><strong>{person?.name || "Not specified"}</strong>
+        {!compact && <><CreditWallet person={person} role={role}/>{person?.sourceUrl && <a className="credit-source" href={person.sourceUrl} target="_blank" rel="noopener noreferrer">Original project <ArrowUpRight size={13}/></a>}</>}
+      </dd>
+    </div>)}
+  </dl>;
+}
 export function GameCard({ g, onPlay, onDetails, launching, updated }) {
   const meta = gameMeta[g.id] || { accent: "#8bf4b9", length: "Vendor hosted" };
   return (
@@ -157,6 +183,7 @@ export function GameCard({ g, onPlay, onDetails, launching, updated }) {
           {g.pricing === "paid" ? g.priceCkb + " CKB" : "FREE"}
         </span>
       </div>
+      <GameCredits game={g} compact />
       <div className="card-meta">
         <span>
           <Users size={14} />
@@ -249,6 +276,7 @@ export function GameDetails({ game, onClose, onPlay, launching, onCommunity }) {
             {meta.input}
           </span>
         </div>
+        <GameCredits game={game} />
         <div className="control-note">
           <h3>Before you jump in</h3>
           <p>{meta.note}</p>

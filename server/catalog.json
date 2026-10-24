@@ -18,6 +18,14 @@
       "based": true,
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -40,7 +48,15 @@
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
-    "runtime": "arcade"
+    "runtime": "arcade",
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    }
   },
   {
     "id": "neon-coil",
@@ -62,7 +78,15 @@
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
-    "runtime": "arcade"
+    "runtime": "arcade",
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    }
   },
   {
     "id": "starfall",
@@ -84,7 +108,15 @@
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
-    "runtime": "arcade"
+    "runtime": "arcade",
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    }
   },
   {
     "id": "drift-run",
@@ -106,7 +138,15 @@
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
     },
-    "runtime": "arcade"
+    "runtime": "arcade",
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    }
   },
   {
     "id": "openstrike",
@@ -126,6 +166,19 @@
       "based": true,
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Retric",
+      "address": null,
+      "sourceUrl": "https://github.com/RetricSu/openstrike-fiber-arena"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "portedBy": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -146,6 +199,19 @@
       "based": true,
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Magnus Auvinen & Teeworlds contributors",
+      "address": null,
+      "sourceUrl": "https://github.com/teeworlds/teeworlds"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "portedBy": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -166,6 +232,14 @@
       "based": true,
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -186,6 +260,14 @@
       "based": true,
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -208,6 +290,14 @@
       "version": "0.31.0",
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -230,6 +320,14 @@
       "version": "0.31.0",
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -252,6 +350,14 @@
       "version": "0.31.0",
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   },
   {
@@ -274,6 +380,14 @@
       "version": "0.31.0",
       "evidence": "host-replay",
       "logo": "/assets/myelin-logo.png?v=0.7.1"
+    },
+    "developer": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
+    },
+    "publisher": {
+      "name": "Arthur Zhang",
+      "address": "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc"
     }
   }
 ]

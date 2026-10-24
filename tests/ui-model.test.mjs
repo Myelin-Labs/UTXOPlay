@@ -29,3 +29,17 @@ test('wallet button distinguishes authentication phases and never treats a selec
  assert.equal(state({isOpen:true}).state,'choosing');assert.equal(state({walletError:'Rejected'}).state,'error');
  const signed=state({user:{guest:false,address:'ckb1abcdefghijklmnopqrstuvwxyz'}});assert.equal(signed.state,'connected');assert.match(signed.label,/^ckb1ab…wxyz$/);assert.equal(signed.busy,false);
 });
+
+test('catalog distinguishes original developers, ports and the publisher, and supports creator search',async()=>{
+ const address='ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq238rvp7e36zawvdqruc5mpctgz6v95ngc4628yc';
+ const {ccc}=await import('@ckb-ccc/shell');const owner=ccc.ClientPublicMainnet.open();
+ try {const parsed=await ccc.Address.fromString(address,owner.value);assert.ok(parsed.script);}finally{await owner.dispose();}
+ for(const game of games)assert.deepEqual(game.publisher,{name:'Arthur Zhang',address});
+ const openstrike=games.find(g=>g.id==='openstrike');
+ assert.equal(openstrike.developer.name,'Retric');assert.equal(openstrike.developer.address,null);
+ const tee=games.find(g=>g.id==='teeworlds');assert.match(tee.developer.name,/Magnus Auvinen/);assert.equal(tee.developer.address,null);
+ for(const game of games.filter(g=>!['openstrike','teeworlds'].includes(g.id)))assert.deepEqual(game.developer,{name:'Arthur Zhang',address});
+ for(const game of [openstrike,tee]){assert.deepEqual(game.portedBy,{name:'Arthur Zhang',address});assert.ok(game.developer.sourceUrl.startsWith('https://github.com/'));}
+ assert.deepEqual(selectGames(games,{query:'  RETRIC '}).map(g=>g.id),['openstrike']);
+ assert.equal(selectGames(games,{query:'Arthur Zhang'}).length,13);
+});
