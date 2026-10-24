@@ -15,3 +15,7 @@ Local browser verification uses an isolated account and database. It covers Retr
 Collection layout checks show no horizontal overflow at actual CSS dimensions 390×844, 844×390, 1920×1080, 2560×1080, 2560×1440 and 3840×2160. Phone publishing inputs, validation and attribution comparisons also fit without horizontal overflow; desktop and phone screenshots were inspected.
 
 Only the Store image changes to 0.28.0. Deployment uses an online SQLite backup and recreates only the Store container. There are no database schema, native runtime, game rule or profile changes. Rollback uses the 0.27.0 Store image with the existing data.
+
+## Published verification — 2026-10-24
+
+Implementation `f4a6d78` is deployed at `/data/utxoplay/releases/20261024-store-0.28.0`. Public HTTPS health reports 0.28.0. All thirteen built-in credit records match the committed catalog, including Retric's unknown wallet. The public entry JavaScript/CSS match the local build by SHA-256, and publisher/developer collection routes serve the new assets. The online backup `platform-before-0.28.0-1792828388.sqlite` passed SQLite quick_check. Store container `5827a62dccd0` replaces the prior Store; all twenty other container IDs remain unchanged. Public browser visual testing was not repeated; interaction and layout verification used the same production build through the local server.
